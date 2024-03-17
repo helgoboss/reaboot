@@ -15,11 +15,14 @@
       "shell": {
         "all": false,
         "open": true
+      },
+      "dialog": {
+        "open": true
       }
     },
     "windows": [
       {
-        "title": "reaboot",
+        "title": "ReaBoot",
         "width": 800,
         "height": 600
       }

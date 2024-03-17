@@ -1,7 +1,7 @@
 import {MainButton} from "../components/MainButton.tsx";
 import {StepperTask, TaskStatus, TaskStepper} from "../components/TaskStepper.tsx";
 import {from} from "solid-js";
-import {mainService} from "../services/globals.ts";
+import {mainService, mainStore} from "../services/globals.ts";
 import {InstallationStatusEvent} from "../../src-lib/bindings/InstallationStatusEvent.ts";
 
 export function InstallPanel() {
@@ -14,6 +14,12 @@ export function InstallPanel() {
     const progressInPercent = () => `${(effectiveInstallationStatusProgress() * 100).toFixed(2)}`
     return (
         <>
+            <div>
+                <div>
+                REAPER resource directory:
+                </div>
+                <div class="font-mono">{mainStore.state.chosenReaperResourceDir}</div>
+            </div>
             <div class="flex flex-row gap-10">
                 <TaskStepper tasks={stepperTasks()}/>
                 <div class="grow flex flex-row items-center gap-5 bg-amber-100">

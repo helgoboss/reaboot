@@ -4,6 +4,7 @@ import {PageId} from "../model/page.ts";
 export type MainStoreState = {
     currentPageId: PageId,
     mainReaperResourceDir?: string,
+    chosenReaperResourceDir?: string,
 }
 
 export class MainStore {
@@ -20,7 +21,11 @@ export class MainStore {
         this.setState("currentPageId", pageId);
     }
 
-    setMainReaperResourceDir(value?: string) {
+    set mainReaperResourceDir(value: string | undefined) {
         this.setState("mainReaperResourceDir", value);
+    }
+
+    set chosenReaperResourceDir(value: string | undefined) {
+        this.setState("chosenReaperResourceDir", value);
     }
 }
