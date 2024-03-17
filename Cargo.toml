@@ -1,3 +1,6 @@
 [workspace]
 resolver = "2"
 members = ["src-lib", "src-tauri"]
+
+[workspace.dependencies]
+reaboot-lib = { path = "src-lib" }

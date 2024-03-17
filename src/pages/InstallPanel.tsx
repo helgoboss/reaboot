@@ -1,7 +1,7 @@
 import {MainButton} from "../components/MainButton.tsx";
 import {StepperTask, TaskStatus, TaskStepper} from "../components/TaskStepper.tsx";
 import {from} from "solid-js";
-import {mainService, mainStore} from "../services/globals.ts";
+import {mainService, mainStore} from "../globals.ts";
 import {InstallationStatusEvent} from "../../src-lib/bindings/InstallationStatusEvent.ts";
 
 export function InstallPanel() {
@@ -16,7 +16,7 @@ export function InstallPanel() {
         <>
             <div>
                 <div>
-                REAPER resource directory:
+                    REAPER resource directory:
                 </div>
                 <div class="font-mono">{mainStore.state.chosenReaperResourceDir}</div>
             </div>

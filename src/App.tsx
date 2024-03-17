@@ -2,10 +2,10 @@ import {WelcomePanel} from "./pages/WelcomePanel.tsx";
 import {Page} from "./components/Page.tsx";
 import {PageDescriptor} from "./model/page.ts";
 import {PickReaperPanel} from "./pages/PickReaperPanel.tsx";
-import { InstallPanel } from "./pages/InstallPanel.tsx";
+import {InstallPanel} from "./pages/InstallPanel.tsx";
 import {DonePanel} from "./pages/DonePanel.tsx";
 import {Stepper} from "./components/Stepper.tsx";
-import {mainStore} from "./services/globals.ts";
+import {mainStore} from "./globals.ts";
 
 export function App() {
     const currentPageDescriptor = () => pages.find((p) => p.id == mainStore.state.currentPageId)!;

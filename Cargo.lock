@@ -2105,10 +2105,12 @@ checksum = "f2ff9a1f06a88b01621b7ae906ef0211290d1c8a168a15542486a8f61c0833b9"
 name = "reaboot"
 version = "0.0.0"
 dependencies = [
+ "reaboot-lib",
  "serde",
  "serde_json",
  "tauri",
  "tauri-build",
+ "tokio",
 ]
 
 [[package]]

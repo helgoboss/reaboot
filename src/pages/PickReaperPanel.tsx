@@ -2,8 +2,8 @@ import {MainButton} from "../components/MainButton.tsx";
 import {ButtonList} from "../components/ButtonList.tsx";
 import {SecondaryButton} from "../components/SecondaryButton.tsx";
 import {onMount} from "solid-js";
-import {mainService, mainStore} from "../services/globals.ts";
-import { open } from '@tauri-apps/api/dialog';
+import {mainService, mainStore} from "../globals.ts";
+import {open} from '@tauri-apps/api/dialog';
 
 export function PickReaperPanel() {
     onMount(async () => {
@@ -18,7 +18,8 @@ export function PickReaperPanel() {
                 </div>
                 <ButtonList>
                     <MainButton>Install REAPER</MainButton>
-                    <SecondaryButton onClick={pickPortableReaperInstallation}>Pick portable REAPER installation</SecondaryButton>
+                    <SecondaryButton onClick={pickPortableReaperInstallation}>Pick portable REAPER
+                        installation</SecondaryButton>
                 </ButtonList>
             </>
         );
@@ -31,7 +32,8 @@ export function PickReaperPanel() {
                 </div>
                 <ButtonList>
                     <MainButton>Use main REAPER installation</MainButton>
-                    <SecondaryButton onClick={pickPortableReaperInstallation}>Pick portable REAPER installation</SecondaryButton>
+                    <SecondaryButton onClick={pickPortableReaperInstallation}>Pick portable REAPER
+                        installation</SecondaryButton>
                     <SecondaryButton>Create new portable REAPER installation</SecondaryButton>
                 </ButtonList>
             </>
