@@ -1,53 +1,56 @@
-import { createSignal } from "solid-js";
-import logo from "./assets/logo.svg";
-import { invoke } from "@tauri-apps/api/tauri";
-import "./App.css";
+import MainStore from "./store/main-store.ts";
+import WelcomePanel from "./components/WelcomePanel.tsx";
+import Page from "./components/Page.tsx";
+import {PageDescriptor} from "./model/page.ts";
+import {PickReaperPanel} from "./components/PickReaperPanel.tsx";
+import { InstallPanel } from "./components/InstallPanel.tsx";
+import DonePanel from "./components/DonePanel.tsx";
+import Stepper from "./components/Stepper.tsx";
 
 function App() {
-  const [greetMsg, setGreetMsg] = createSignal("");
-  const [name, setName] = createSignal("");
-
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
-    setGreetMsg(await invoke("greet", { name: name() }));
-  }
-
-  return (
-    <div class="container">
-      <h1>Welcome to Tauri!</h1>
-
-      <div class="row">
-        <a href="https://vitejs.dev" target="_blank">
-          <img src="/vite.svg" class="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" class="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://solidjs.com" target="_blank">
-          <img src={logo} class="logo solid" alt="Solid logo" />
-        </a>
-      </div>
-
-      <p>Click on the Tauri, Vite, and Solid logos to learn more.</p>
-
-      <form
-        class="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-
-      <p>{greetMsg()}</p>
+    const currentPageDescriptor = () => pages.find((p) => p.id == MainStore.state.currentPageId)!;
+    return <div class="w-screen h-screen flex flex-col">
+        <header class="flex-none bg-gray-100"><Stepper pages={pages} currentPageId={currentPageDescriptor().id}/>
+        </header>
+        <main class="flex-grow bg-white">
+            <Page title={currentPageDescriptor().title} description={currentPageDescriptor().description}>
+                {currentPageDescriptor().content({})}
+            </Page>
+        </main>
     </div>
-  );
 }
+
+const pages: PageDescriptor[] = [
+    {
+        id: "welcome",
+        title: "Welcome!",
+        description: "This installer provides an easy and clean way to set up REAPER, ReaPack and add-ons of your choice.",
+        content: WelcomePanel,
+    },
+    {
+        id: "pick-reaper",
+        title: "Pick REAPER",
+        description: "You can install REAPER from scratch or choose an existing installation.",
+        content: PickReaperPanel,
+    },
+    {
+        id: "pick-bundles",
+        title: "Pick bundles",
+        description: "ReaBoot allows you to add initial bundles. Bundles are simply collections of ReaPack packages. You can add packages at a later time, either here or within ReaPack itself.",
+        content: PickReaperPanel,
+    },
+    {
+        id: "install",
+        title: "Install",
+        description: "Now it's time to review your settings and start the installation.",
+        content: InstallPanel,
+    },
+    {
+        id: "done",
+        title: "Done",
+        description: "Congratulations! Installation is finished",
+        content: DonePanel,
+    },
+]
 
 export default App;
