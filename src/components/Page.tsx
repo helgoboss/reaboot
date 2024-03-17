@@ -1,12 +1,12 @@
 import {JSX} from "solid-js";
 
-type PageProps = {
+export type PageProps = {
     title: string,
     description: string,
     children?: JSX.Element
 }
 
-function Page(props: PageProps) {
+export function Page(props: PageProps) {
     return (
         <div class="flex flex-col text-center justify-center">
             <h1 class="flex-none text-3xl font-bold">{props.title}</h1>
@@ -17,5 +17,3 @@ function Page(props: PageProps) {
         </div>
     );
 }
-
-export default Page;

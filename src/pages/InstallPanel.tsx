@@ -1,5 +1,5 @@
-import MainButton from "./MainButton.tsx";
-import { StepperTask, TaskStepper } from "./TaskStepper.tsx";
+import {MainButton} from "../components/MainButton.tsx";
+import { StepperTask, TaskStepper } from "../components/TaskStepper.tsx";
 
 export function InstallPanel() {
     return (

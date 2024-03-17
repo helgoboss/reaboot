@@ -1,10 +1,14 @@
-import MainStore from "../store/main-store.ts";
-import MainButton from "./MainButton.tsx";
-import {ButtonList} from "./ButtonList.tsx";
-import SecondaryButton from "./SecondaryButton.tsx";
+import {MainButton} from "../components/MainButton.tsx";
+import {ButtonList} from "../components/ButtonList.tsx";
+import {SecondaryButton} from "../components/SecondaryButton.tsx";
+import {onMount} from "solid-js";
+import {mainService, mainStore} from "../services/globals.ts";
 
 export function PickReaperPanel() {
-    const mainReaperResourcePath = MainStore.state.mainReaperResourcePath;
+    onMount(async () => {
+        mainStore.setMainReaperResourceDir(await mainService.getMainReaperResourceDir());
+    });
+    const mainReaperResourcePath = mainStore.state.mainReaperResourceDir;
     if (mainReaperResourcePath == null) {
         return (
             <>

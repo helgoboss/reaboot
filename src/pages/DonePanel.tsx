@@ -1,8 +1,8 @@
-import MainButton from "./MainButton.tsx";
-import { ButtonList } from "./ButtonList.tsx";
-import SecondaryButton from "./SecondaryButton.tsx";
+import {MainButton} from "../components/MainButton.tsx";
+import { ButtonList } from "../components/ButtonList.tsx";
+import {SecondaryButton} from "../components/SecondaryButton.tsx";
 
-function DonePanel() {
+export function DonePanel() {
     return (
         <>
             <ButtonList>
@@ -16,5 +16,3 @@ function DonePanel() {
         </>
     );
 }
-
-export default DonePanel;

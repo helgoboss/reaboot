@@ -1,14 +1,14 @@
-import MainStore from "./store/main-store.ts";
-import WelcomePanel from "./components/WelcomePanel.tsx";
-import Page from "./components/Page.tsx";
+import {WelcomePanel} from "./pages/WelcomePanel.tsx";
+import {Page} from "./components/Page.tsx";
 import {PageDescriptor} from "./model/page.ts";
-import {PickReaperPanel} from "./components/PickReaperPanel.tsx";
-import { InstallPanel } from "./components/InstallPanel.tsx";
-import DonePanel from "./components/DonePanel.tsx";
-import Stepper from "./components/Stepper.tsx";
+import {PickReaperPanel} from "./pages/PickReaperPanel.tsx";
+import { InstallPanel } from "./pages/InstallPanel.tsx";
+import {DonePanel} from "./pages/DonePanel.tsx";
+import {Stepper} from "./components/Stepper.tsx";
+import {mainStore} from "./services/globals.ts";
 
-function App() {
-    const currentPageDescriptor = () => pages.find((p) => p.id == MainStore.state.currentPageId)!;
+export function App() {
+    const currentPageDescriptor = () => pages.find((p) => p.id == mainStore.state.currentPageId)!;
     return <div class="w-screen h-screen flex flex-col">
         <header class="flex-none bg-gray-100"><Stepper pages={pages} currentPageId={currentPageDescriptor().id}/>
         </header>
@@ -51,6 +51,4 @@ const pages: PageDescriptor[] = [
         description: "Congratulations! Installation is finished",
         content: DonePanel,
     },
-]
-
-export default App;
+];

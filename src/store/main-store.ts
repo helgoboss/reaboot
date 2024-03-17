@@ -1,25 +1,26 @@
-import {createStore} from "solid-js/store";
+import {createStore, SetStoreFunction} from "solid-js/store";
 import {PageId} from "../model/page.ts";
 
-export type MainStore = {
+export type MainStoreState = {
     currentPageId: PageId,
-    mainReaperResourcePath?: string,
+    mainReaperResourceDir?: string,
 }
 
-function createMainStore() {
-    const [state, setState] = createStore<MainStore>(initialState);
-    return {
-        state,
-        openPage: (pageId: PageId) => {
-            setState("currentPageId", pageId);
-        }
-    };
+export class MainStore {
+    readonly state: MainStoreState;
+    private readonly setState: SetStoreFunction<MainStoreState>;
+
+    constructor(initialState: MainStoreState) {
+        const [state, setState] = createStore<MainStoreState>(initialState);
+        this.state = state;
+        this.setState = setState;
+    }
+
+    openPage(pageId: PageId) {
+        this.setState("currentPageId", pageId);
+    }
+
+    setMainReaperResourceDir(value?: string) {
+        this.setState("mainReaperResourceDir", value);
+    }
 }
-
-
-const initialState: MainStore = {
-    currentPageId: "welcome",
-    mainReaperResourcePath: undefined,
-};
-
-export default createMainStore();
