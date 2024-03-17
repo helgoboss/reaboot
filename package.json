@@ -13,6 +13,7 @@
   "license": "MIT",
   "dependencies": {
     "@tauri-apps/api": "^1",
+    "rxjs": "^7.8.1",
     "solid-js": "^1.7.8"
   },
   "devDependencies": {

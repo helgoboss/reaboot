@@ -5,7 +5,6 @@ export type TaskStepperProps = {
 }
 
 export type StepperTask = {
-    id: string,
     title: string,
     status: TaskStatus,
 }
