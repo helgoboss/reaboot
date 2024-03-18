@@ -70,8 +70,10 @@ function getTaskPos(status: InstallationStatusEvent) {
     switch (status.kind) {
         case "Idle":
             return INITIAL_POS;
+        case "CheckingLatestReaperVersion":
         case "DownloadingReaper":
             return INSTALL_REAPER_POS;
+        case "CheckingLatestReaPackVersion":
         case "DownloadingReaPack":
         case "InitializingReaPack":
             return INSTALL_REAPACK_POS;

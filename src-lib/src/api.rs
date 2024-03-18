@@ -13,7 +13,9 @@ pub enum WorkerCommand {
 #[serde(tag = "kind")]
 pub enum InstallationStatusEvent {
     Idle,
+    CheckingLatestReaperVersion,
     DownloadingReaper { file: RemoteFile },
+    CheckingLatestReaPackVersion,
     DownloadingReaPack { file: RemoteFile },
     InitializingReaPack,
     DownloadingRepositoryIndex { file: RemoteFile },

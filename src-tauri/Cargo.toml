@@ -11,11 +11,13 @@ edition = "2021"
 tauri-build = { version = "1", features = [] }
 
 [dependencies]
-tauri = { version = "1", features = ["shell-open", "dialog-open"] }
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+tauri = { workspace = true, features = ["shell-open", "dialog-open"] }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
 reaboot-lib = { workspace = true }
-tokio = { version = "1", features = ["time"] }
+tokio = { workspace = true, features = ["time"] }
+anyhow = { workspace = true }
+tempdir = { workspace = true }
 
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!

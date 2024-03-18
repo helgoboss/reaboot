@@ -2,4 +2,4 @@
 import type { Package } from "./Package";
 import type { RemoteFile } from "./RemoteFile";
 
-export type InstallationStatusEvent = { "kind": "Idle" } | { "kind": "DownloadingReaper", file: RemoteFile, } | { "kind": "DownloadingReaPack", file: RemoteFile, } | { "kind": "InitializingReaPack" } | { "kind": "DownloadingRepositoryIndex", file: RemoteFile, } | { "kind": "DownloadingPackageFile", file: RemoteFile, package: Package, } | { "kind": "InstallingPackage", package: Package, } | { "kind": "Done" };
+export type InstallationStatusEvent = { "kind": "Idle" } | { "kind": "CheckingLatestReaperVersion" } | { "kind": "DownloadingReaper", file: RemoteFile, } | { "kind": "CheckingLatestReaPackVersion" } | { "kind": "DownloadingReaPack", file: RemoteFile, } | { "kind": "InitializingReaPack" } | { "kind": "DownloadingRepositoryIndex", file: RemoteFile, } | { "kind": "DownloadingPackageFile", file: RemoteFile, package: Package, } | { "kind": "InstallingPackage", package: Package, } | { "kind": "Done" };
