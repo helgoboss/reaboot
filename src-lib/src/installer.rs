@@ -37,6 +37,14 @@ impl Installer {
     }
 
     pub async fn download_reapack(&self, listener: &impl InstallerListener) -> anyhow::Result<()> {
+        // TODO Initial reapack.ini:
+        //  a) Set general/version to 4
+        //     => no repo screen shown
+        //     => no default repos will be added: we can add them on our own
+        //  b) Don't set general/version
+        //     => repo screen will be shown
+        //     => default repos will be added (but *after* existing ones)
+        //
         let octocrab = Octocrab::builder().build().unwrap();
         let latest_release = octocrab
             .repos("cfillion", "reapack")
