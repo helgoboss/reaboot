@@ -1,10 +1,11 @@
+use crate::VersionName;
 use serde::de::IntoDeserializer;
 use serde::{Deserialize, Deserializer};
 use time::OffsetDateTime;
 
 /// This is the root element of any ReaPack index file.
-#[derive(Debug, Deserialize)]
-struct Index {
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize)]
+pub struct Index {
     /// Must be "1".
     version: String,
     /// Display name of the repository (must contain filename-friendly characters only).
@@ -16,7 +17,7 @@ struct Index {
     entries: Vec<IndexEntry>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize)]
 #[serde(rename_all = "lowercase")]
 enum IndexEntry {
     /// Many
@@ -30,8 +31,8 @@ enum IndexEntry {
 ///
 /// The target directory can also be changed using the `file` attribute of the [`source`](Source)
 /// element.
-#[derive(Debug, Deserialize)]
-struct Category {
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize)]
+pub struct Category {
     /// Path divided with slashes
     name: String,
     #[serde(default)]
@@ -47,8 +48,8 @@ struct Category {
 /// - The package type is invalid/unsupported
 /// - The package contains no version
 /// - None of the versions have files (`source` elements) compatible with the current platform
-#[derive(Debug, Deserialize)]
-struct Reapack {
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize)]
+pub struct Reapack {
     /// Default filename of the package
     name: String,
     r#type: ReapackType,
@@ -59,7 +60,7 @@ struct Reapack {
     entries: Vec<ReapackEntry>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize)]
 #[serde(rename_all = "lowercase")]
 enum ReapackEntry {
     /// Many
@@ -68,13 +69,13 @@ enum ReapackEntry {
     Metadata(Metadata),
 }
 
-#[derive(Debug, Deserialize)]
-struct Version {
-    /// Syntax is described in [Version Names](#version-names)
-    name: String,
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize)]
+pub struct Version {
+    name: VersionName,
     /// Author(s) of the release (no specific format)
     author: Option<String>,
     /// Release datetime in ISO 8601 format (UTC timezone)
+    #[serde(default)]
     #[serde(with = "time::serde::iso8601::option")]
     time: Option<OffsetDateTime>,
     #[serde(default)]
@@ -82,7 +83,7 @@ struct Version {
     entries: Vec<VersionEntry>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize)]
 #[serde(rename_all = "lowercase")]
 enum VersionEntry {
     /// Zero or one
@@ -92,19 +93,19 @@ enum VersionEntry {
 }
 
 /// Sets the plain text changelog of the [`version`](Version) containing this element.
-#[derive(Debug, Deserialize)]
-struct Changelog {
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize)]
+pub struct Changelog {
     #[serde(rename = "$value")]
-    value: String,
+    content: String,
 }
 
 /// This element represent a single file in a version.
 ///
-/// The content of this node must be the download URL.
+/// The content of this node must be the downloadˆ URL.
 ///
 /// Use a version-specific URL and keep previous version available when possible.
-#[derive(Debug, Deserialize)]
-struct Source {
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize)]
+pub struct Source {
     /// File name/path (relative to the category name). Defaults to the package name.
     file: Option<String>,
     platform: Option<Platform>,
@@ -117,16 +118,19 @@ struct Source {
     /// [Multihash](https://multiformats.io/multihash/) checksum of the file in hexadecimal form
     /// (added in v1.2.2). Supports SHA-256 (`1220` prefix).
     hash: Option<String>,
+    /// Download URL.
+    #[serde(rename = "$value")]
+    content: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize)]
 #[serde(untagged)]
 enum ReapackType {
     Known(KnownReapackType),
     Unknown(String),
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize)]
 #[serde(rename_all = "lowercase")]
 enum KnownReapackType {
     Script,
@@ -144,14 +148,14 @@ enum KnownReapackType {
     AutoItem,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize)]
 #[serde(untagged)]
 enum Platform {
     Known(KnownPlatform),
     Unknown(String),
 }
 
-#[derive(Debug, Default, Deserialize)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 enum KnownPlatform {
     #[default]
@@ -170,14 +174,14 @@ enum KnownPlatform {
     Win64,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize)]
 #[serde(untagged)]
 enum Section {
     Known(KnownSection),
     Unknown(String),
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize)]
 #[serde(rename_all = "lowercase")]
 enum KnownSection {
     #[serde(rename = "main")]
@@ -197,14 +201,14 @@ enum KnownSection {
 }
 
 /// Fills the about dialog of the repository or of a package.
-#[derive(Debug, Deserialize)]
-struct Metadata {
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize)]
+pub struct Metadata {
     #[serde(default)]
     #[serde(rename = "$value")]
     entries: Vec<MetadataEntry>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize)]
 #[serde(rename_all = "lowercase")]
 enum MetadataEntry {
     /// Zero or one
@@ -215,23 +219,28 @@ enum MetadataEntry {
 
 /// If the `href` argument is present, the content of the element becomes the display name of the
 /// link.
-#[derive(Debug, Deserialize)]
-struct Link {
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize)]
+pub struct Link {
     /// Path divided with slashes
     rel: Option<Rel>,
-    /// Must start with `http://` or `https://`. If omitted, the content of the element becomes the
-    /// URL.
+    /// If present, the content of the element becomes the display name of the link.
+    ///
+    /// If omitted, the content of the element becomes the URL.
+    ///
+    /// Must start with `http://` or `https://`.
     href: Option<String>,
+    #[serde(rename = "$value")]
+    content: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize)]
 #[serde(untagged)]
 enum Rel {
     Known(KnownRel),
     Unknown(String),
 }
 
-#[derive(Debug, Default, Deserialize)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Deserialize)]
 #[serde(rename_all = "lowercase")]
 enum KnownRel {
     #[default]
@@ -250,13 +259,92 @@ where
         .collect()
 }
 
+impl Index {
+    pub fn find_category(&self, name: &str) -> Option<&Category> {
+        self.categories().find(|cat| cat.name == name)
+    }
+
+    pub fn categories(&self) -> impl Iterator<Item = &Category> {
+        self.entries.iter().filter_map(|entry| match entry {
+            IndexEntry::Category(c) => Some(c),
+            IndexEntry::Metadata(_) => None,
+        })
+    }
+
+    pub fn metadata(&self) -> Option<&Metadata> {
+        self.entries.iter().find_map(|entry| match entry {
+            IndexEntry::Category(_) => None,
+            IndexEntry::Metadata(m) => Some(m),
+        })
+    }
+}
+
+impl Category {
+    pub fn find_package(&self, name: &str) -> Option<&Reapack> {
+        self.reapacks.iter().find(|p| p.name == name)
+    }
+}
+
+impl Reapack {
+    pub fn latest_version(&self) -> Option<&Version> {
+        self.versions().max_by_key(|e| &e.name)
+    }
+
+    pub fn latest_stable_version(&self) -> Option<&Version> {
+        self.stable_versions().max_by_key(|e| &e.name)
+    }
+
+    pub fn stable_versions(&self) -> impl Iterator<Item = &Version> {
+        self.versions().filter(|v| v.name.is_stable())
+    }
+
+    pub fn versions(&self) -> impl Iterator<Item = &Version> {
+        self.entries.iter().filter_map(|entry| match entry {
+            ReapackEntry::Version(v) => Some(v),
+            ReapackEntry::Metadata(_) => None,
+        })
+    }
+
+    pub fn metadata(&self) -> Option<&Metadata> {
+        self.entries.iter().find_map(|entry| match entry {
+            ReapackEntry::Version(_) => None,
+            ReapackEntry::Metadata(m) => Some(m),
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn basics() {
-        let src = include_str!("test/example.xml");
+    fn simple_example() {
+        let src = include_str!("test/Simple Example.xml");
         let index: Index = serde_xml_rs::from_str(src).unwrap();
+    }
+
+    #[test]
+    fn advanced() {
+        let src = include_str!("test/Helgoboss Projects.xml");
+        let index: Index = serde_xml_rs::from_str(src).unwrap();
+        let extensions = index.find_category("Extensions").unwrap();
+        let realearn = extensions.find_package("ReaLearn-x64").unwrap();
+        let stable_versions: Vec<_> = realearn.versions().map(|v| v.name.to_string()).collect();
+        assert_eq!(realearn.name, "ReaLearn-x64");
+        assert_eq!(
+            realearn.desc,
+            Some(
+                "ReaLearn: Sophisticated MIDI/OSC-learn tool for controlling REAPER with feedback"
+                    .to_string()
+            )
+        );
+        assert_eq!(
+            realearn.r#type,
+            ReapackType::Known(KnownReapackType::Extension)
+        );
+        let latest_version = realearn.latest_version().unwrap();
+        assert_eq!(latest_version.name, "2.16.0-pre.13".parse().unwrap());
+        let latest_stable_version = realearn.latest_stable_version().unwrap();
+        assert_eq!(latest_stable_version.name, "2.15.0".parse().unwrap());
     }
 }

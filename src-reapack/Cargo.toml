@@ -9,3 +9,6 @@ edition = "2021"
 serde = { workspace = true, features = ["derive"] }
 serde-xml-rs = { workspace = true }
 time = { workspace = true, features = ["serde", "parsing"] }
+thiserror = { workspace = true }
+regex = { workspace = true }
+tinyvec = { workspace = true, features = ["alloc", "rustc_1_57"] }

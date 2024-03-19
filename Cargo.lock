@@ -2655,9 +2655,12 @@ dependencies = [
 name = "reaboot-reapack"
 version = "0.1.0"
 dependencies = [
+ "regex",
  "serde",
  "serde-xml-rs",
+ "thiserror",
  "time",
+ "tinyvec",
 ]
 
 [[package]]
