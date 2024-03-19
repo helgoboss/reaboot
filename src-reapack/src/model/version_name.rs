@@ -1,4 +1,3 @@
-use crate::Version;
 use serde::Deserialize;
 use std::cmp;
 use std::cmp::Ordering;
@@ -164,8 +163,6 @@ pub enum ParseVersionError {
     InvalidVersionName(String),
     #[error("version segment overflow in '{0}'")]
     VersionSegmentOverflow(String),
-    #[error("unknown error")]
-    Unknown,
 }
 
 fn search_segments_regex() -> &'static regex::Regex {
