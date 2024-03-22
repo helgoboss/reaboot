@@ -1,3 +1,5 @@
+use crate::reaper_target::ReaperTarget;
+use reaboot_reapack::model::VersionName;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::path::PathBuf;
@@ -31,6 +33,9 @@ pub struct ReabootConfig {
     /// These recipes will be installed *in addition* to the packages that are going to be installed
     /// anyway (if the installer is branded).
     pub recipes: Vec<Recipe>,
+    /// Custom REAPER target.
+    #[ts(optional)]
+    pub custom_reaper_target: Option<ReaperTarget>,
 }
 
 /// Event emitted by the backend.
@@ -63,6 +68,8 @@ pub struct ResolvedReabootConfig {
     /// `true` if the resource directory is part of a portable REAPER installation (not the one of
     /// the main REAPER installation).
     pub portable: bool,
+    /// Resolved REAPER target.
+    pub reaper_target: ReaperTarget,
 }
 
 /// Status of the installation process.
@@ -93,10 +100,22 @@ pub enum InstallationStatus {
     /// This means that the ReaPack shared library already exists in the desired REAPER resource
     /// directory.
     InstalledReaPack,
-    /// Downloading all repositories in parallel.
-    DownloadingRepositories {
+    /// Downloading all repository indexes in parallel.
+    DownloadingRepositoryIndexes {
         download: MultiDownloadInfo,
     },
+    /// Checking each downloaded repository index whether it's valid and converting it into a
+    /// suitable data structure.
+    ParsingRepositoryIndexes,
+    /// Preparing package installation.
+    ///
+    /// This includes:
+    /// - Deduplicate package descriptors
+    /// - Search within repository indexes for packages mentioned in the given recipes
+    /// - Deduplicate package versions
+    /// - Check for conflicting package versions
+    /// - Check for duplicate files
+    PreparingPackageInstallation,
     /// Downloading all package files in parallel.
     DownloadingPackageFiles {
         download: MultiDownloadInfo,
@@ -161,7 +180,7 @@ pub struct PackageSet {
 }
 
 /// Uniquely identifies a specific version of a package, within the context of a repository.
-#[derive(Clone, Debug, Deserialize, TS)]
+#[derive(Clone, Eq, PartialEq, Hash, Debug, Deserialize, TS)]
 #[ts(export)]
 pub struct PackageDescriptor {
     /// Category of the package.
@@ -173,21 +192,21 @@ pub struct PackageDescriptor {
 }
 
 /// Describes a package version.
-#[derive(Clone, Debug, Deserialize, TS)]
+#[derive(Clone, Eq, PartialEq, Hash, Debug, Deserialize, TS)]
 #[ts(export)]
 #[serde(rename_all = "kebab-case")]
 pub enum VersionDescriptor {
-    /// Refers to the latest available version of a package, including pre-releases.
-    Latest,
     /// Refers to the latest available version of a package, excluding pre-releases.
-    LatestStable,
+    Latest,
+    /// Refers to the latest available version of a package, including pre-releases.
+    LatestPre,
     /// Refers to a specific version of a package.
     #[serde(untagged)]
-    Specific(String),
+    Specific(VersionName),
 }
 
 impl Recipe {
-    pub fn repository_urls(&self) -> impl Iterator<Item = &Url> {
+    pub fn all_repository_urls(&self) -> impl Iterator<Item = &Url> {
         self.package_sets.iter().map(|set| &set.repository_url)
     }
 }

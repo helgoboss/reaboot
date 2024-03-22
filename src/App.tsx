@@ -16,6 +16,7 @@ export function App() {
         mainService.configure({
             recipes: mainStore.state.recipes,
             custom_reaper_resource_dir: undefined,
+            custom_reaper_target: undefined,
         });
     });
     const currentPageDescriptor = () => pages.find((p) => p.id == mainStore.state.currentPageId)!;

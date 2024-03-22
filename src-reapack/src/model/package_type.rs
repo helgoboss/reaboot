@@ -1,4 +1,5 @@
 use serde::Deserialize;
+use std::borrow::Cow;
 
 /// Package type.
 ///

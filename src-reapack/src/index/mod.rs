@@ -1,8 +1,16 @@
+use crate::model::PackageType::{
+    AutomationItem, Data, Effect, Extension, LangPack, MidiNoteNames, ProjectTemplate, Script,
+    Theme, TrackTemplate, WebInterface,
+};
 use crate::model::{PackageType, Platform, Section, VersionName};
 use serde::de::IntoDeserializer;
 use serde::{Deserialize, Deserializer};
+use std::borrow::Cow;
 use std::io::Read;
+use std::path::PathBuf;
+use thiserror::Error;
 use time::OffsetDateTime;
+use url::Url;
 
 /// This is the root element of any ReaPack index file.
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize)]
@@ -35,10 +43,10 @@ pub enum IndexEntry {
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize)]
 pub struct Category {
     /// Path divided with slashes
-    name: String,
+    pub name: String,
     #[serde(default)]
     #[serde(rename = "$value")]
-    packages: Vec<Package>,
+    pub packages: Vec<Package>,
 }
 
 /// Represents a single package, made of multiple versions, each consisting of one
@@ -110,7 +118,8 @@ pub struct Changelog {
 pub struct Source {
     /// File name/path (relative to the category name). Defaults to the package name.
     pub file: Option<String>,
-    pub platform: Option<IndexPlatform>,
+    #[serde(default)]
+    pub platform: IndexPlatform,
     /// Overrides the [package type](Package).
     pub typ: Option<IndexPackageType>,
     /// List of Action List sections.
@@ -122,7 +131,7 @@ pub struct Source {
     pub hash: Option<String>,
     /// Download URL.
     #[serde(rename = "$value")]
-    pub content: String,
+    pub content: Url,
 }
 
 /// Fills the about dialog of the repository or of a package.
@@ -147,7 +156,7 @@ pub enum MetadataEntry {
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize)]
 pub struct Link {
     /// Path divided with slashes
-    pub rel: Option<Rel>,
+    pub rel: Rel,
     /// If present, the content of the element becomes the display name of the link.
     ///
     /// If omitted, the content of the element becomes the URL.
@@ -165,6 +174,12 @@ pub enum Rel {
     Unknown(String),
 }
 
+impl Default for Rel {
+    fn default() -> Self {
+        Self::Known(KnownRel::default())
+    }
+}
+
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum KnownRel {
@@ -172,6 +187,33 @@ pub enum KnownRel {
     Website,
     Donation,
     Screenshot,
+}
+
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize)]
+#[serde(untagged)]
+pub enum IndexPackageType {
+    Known(PackageType),
+    Unknown(String),
+}
+
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize)]
+#[serde(untagged)]
+pub enum IndexSection {
+    Known(Section),
+    Unknown(String),
+}
+
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize)]
+#[serde(untagged)]
+pub enum IndexPlatform {
+    Known(Platform),
+    Unknown(String),
+}
+
+impl Default for IndexPlatform {
+    fn default() -> Self {
+        Self::Known(Platform::default())
+    }
 }
 
 fn deserialize_sections<'de, D>(deserializer: D) -> Result<Vec<IndexSection>, D::Error>
@@ -215,8 +257,12 @@ impl Category {
 }
 
 impl Package {
-    pub fn latest_version(&self) -> Option<&Version> {
-        self.versions().max_by_key(|e| &e.name)
+    pub fn find_version(&self, name: &VersionName) -> Option<&Version> {
+        self.all_versions().find(|v| &v.name == name)
+    }
+
+    pub fn latest_version_including_pre_releases(&self) -> Option<&Version> {
+        self.all_versions().max_by_key(|e| &e.name)
     }
 
     pub fn latest_stable_version(&self) -> Option<&Version> {
@@ -224,10 +270,10 @@ impl Package {
     }
 
     pub fn stable_versions(&self) -> impl Iterator<Item = &Version> {
-        self.versions().filter(|v| v.name.is_stable())
+        self.all_versions().filter(|v| v.name.is_stable())
     }
 
-    pub fn versions(&self) -> impl Iterator<Item = &Version> {
+    pub fn all_versions(&self) -> impl Iterator<Item = &Version> {
         self.entries.iter().filter_map(|entry| match entry {
             PackageEntry::Version(v) => Some(v),
             PackageEntry::Metadata(_) => None,
@@ -242,25 +288,54 @@ impl Package {
     }
 }
 
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize)]
-#[serde(untagged)]
-pub enum IndexPackageType {
-    Known(PackageType),
-    Unknown(String),
+impl Version {
+    pub fn sources(&self) -> impl Iterator<Item = &Source> {
+        self.entries.iter().filter_map(|entry| match entry {
+            VersionEntry::Changelog(_) => None,
+            VersionEntry::Source(s) => Some(s),
+        })
+    }
 }
 
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize)]
-#[serde(untagged)]
-pub enum IndexSection {
-    Known(Section),
-    Unknown(String),
+impl Source {
+    /// Returns the destination file relative to the REAPER resource directory.
+    ///
+    /// Returns `None` if the package type is unknown.
+    pub fn determine_destination_file(
+        &self,
+        index_name: &str,
+        category: &str,
+        package: &Package,
+    ) -> Option<String> {
+        use PackageType::*;
+        let typ = self.typ.as_ref().unwrap_or(&package.typ);
+        let IndexPackageType::Known(typ) = typ else {
+            return None;
+        };
+        let file = self.file.as_ref().unwrap_or(&package.name);
+        let dest_file = match typ {
+            Script => format!("Scripts/{index_name}/{category}/{file}"),
+            Extension => format!("UserPlugins/{file}"),
+            Effect => format!("Effects/{index_name}/{category}/{file}"),
+            Data => format!("Data/{file}"),
+            Theme => format!("ColorThemes/{file}"),
+            LangPack => format!("LangPack/{file}"),
+            WebInterface => format!("reaper_www_root/{file}"),
+            ProjectTemplate => format!("ProjectTemplates/{file}"),
+            TrackTemplate => format!("TrackTemplates/{file}"),
+            MidiNoteNames => format!("MIDINoteNames/{file}"),
+            AutomationItem => format!("AutomationItems/{index_name}/{category}/{file}"),
+        };
+        Some(dest_file)
+    }
 }
 
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize)]
-#[serde(untagged)]
-pub enum IndexPlatform {
-    Known(Platform),
-    Unknown(String),
+#[derive(Error, Debug)]
+pub enum ParseVersionError {
+    #[error("invalid version name '{0}'")]
+    InvalidVersionName(String),
+    #[error("version segment overflow in '{0}'")]
+    VersionSegmentOverflow(String),
 }
 
 #[cfg(test)]
@@ -280,7 +355,10 @@ mod tests {
         let index: Index = serde_xml_rs::from_str(src).unwrap();
         let extensions = index.find_category("Extensions").unwrap();
         let realearn = extensions.find_package("ReaLearn-x64").unwrap();
-        let stable_versions: Vec<_> = realearn.versions().map(|v| v.name.to_string()).collect();
+        let stable_versions: Vec<_> = realearn
+            .all_versions()
+            .map(|v| v.name.to_string())
+            .collect();
         assert_eq!(realearn.name, "ReaLearn-x64");
         assert_eq!(
             realearn.desc,
@@ -293,7 +371,7 @@ mod tests {
             realearn.typ,
             IndexPackageType::Known(PackageType::Extension)
         );
-        let latest_version = realearn.latest_version().unwrap();
+        let latest_version = realearn.latest_version_including_pre_releases().unwrap();
         assert_eq!(latest_version.name, "2.16.0-pre.13".parse().unwrap());
         let latest_stable_version = realearn.latest_stable_version().unwrap();
         assert_eq!(latest_stable_version.name, "2.15.0".parse().unwrap());

@@ -14,6 +14,7 @@ export class DummyMainService implements MainService {
             state: {
                 reaper_resource_dir: config.custom_reaper_resource_dir ?? "main/resource/dir",
                 portable: config.custom_reaper_resource_dir != null,
+                reaper_target: "LinuxAarch64",
             }
         });
     }

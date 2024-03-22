@@ -17,6 +17,7 @@ impl ReabootAppHandle {
         let resolved_config = reaboot_util::resolve_config(config)?;
         let installation_status = reaboot_util::determine_initial_installation_status(
             &resolved_config.reaper_resource_dir,
+            resolved_config.reaper_target,
         );
         self.emit_reaboot_event(ReabootEvent::ConfigResolved {
             state: resolved_config,
@@ -29,7 +30,7 @@ impl ReabootAppHandle {
 
     pub fn emit_generic_error(&self, error: impl Display) {
         let error = ReabootError {
-            display_msg: error.to_string(),
+            display_msg: format!("{error:#}"),
         };
         self.emit_reaboot_event(ReabootEvent::Error { error })
     }

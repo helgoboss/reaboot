@@ -4,7 +4,9 @@ use crate::api::{
 };
 use crate::downloader::{Download, DownloadProgress, Downloader};
 use crate::multi_downloader::MultiDownloader;
+use crate::package_installation_plan::{PackageInstallationPlan, QualifiedFile, QualifiedIndex};
 use crate::reaper_resource_dir::ReaperResourceDir;
+use crate::reaper_target::ReaperTarget;
 use crate::task_tracker::{Summary, TaskTracker};
 use crate::{reaboot_util, reapack_util};
 use anyhow::{bail, Context};
@@ -25,6 +27,7 @@ pub struct Installer<L> {
     temp_reaper_resource_dir: ReaperResourceDir<PathBuf>,
     final_reaper_resource_dir: ReaperResourceDir<PathBuf>,
     recipes: Vec<Recipe>,
+    reaper_target: ReaperTarget,
     listener: L,
 }
 
@@ -32,7 +35,7 @@ impl<L: InstallerListener> Installer<L> {
     /// Creates a new installer with all the values that stay the same throughout the complete
     /// installation process.
     pub async fn new(
-        reaper_resource_dir: PathBuf,
+        resolved_config: ResolvedReabootConfig,
         recipes: Vec<Recipe>,
         downloader: Downloader,
         temp_download_dir: PathBuf,
@@ -48,7 +51,8 @@ impl<L: InstallerListener> Installer<L> {
             recipes,
             temp_download_dir,
             temp_reaper_resource_dir: ReaperResourceDir::new(temp_reaper_resource_dir),
-            final_reaper_resource_dir: ReaperResourceDir::new(reaper_resource_dir),
+            final_reaper_resource_dir: ReaperResourceDir::new(resolved_config.reaper_resource_dir),
+            reaper_target: resolved_config.reaper_target,
             listener,
         };
         Ok(installer)
@@ -57,8 +61,10 @@ impl<L: InstallerListener> Installer<L> {
     pub async fn install(&self) -> anyhow::Result<()> {
         // Create temporary directory structure
         // Determine initial installation status, so that we know where to start off
-        let initial_installation_status =
-            reaboot_util::determine_initial_installation_status(&self.final_reaper_resource_dir);
+        let initial_installation_status = reaboot_util::determine_initial_installation_status(
+            &self.final_reaper_resource_dir,
+            self.reaper_target,
+        );
         // Download REAPER if necessary
         if initial_installation_status < InstallationStatus::InstalledReaper {
             bail!("installing REAPER automatically currently not supported");
@@ -71,8 +77,23 @@ impl<L: InstallerListener> Installer<L> {
             None
         };
         // Download repositories
-        self.download_repositories().await?;
+        let downloaded_indexes = self.download_repository_indexes().await?;
+        // Make package installation plan
+        let plan = self.make_package_installation_plan(&downloaded_indexes);
+        self.download_packages(plan.final_files).await;
         Ok(())
+    }
+
+    fn make_package_installation_plan<'a>(
+        &'a self,
+        downloaded_indexes: &'a [DownloadedIndex],
+    ) -> PackageInstallationPlan {
+        let qualified_indexes = downloaded_indexes.iter().map(|i| QualifiedIndex {
+            url: &i.url,
+            name: &i.name,
+            index: &i.index,
+        });
+        PackageInstallationPlan::make(&self.recipes, qualified_indexes, self.reaper_target)
     }
 
     async fn download_reaper(&self) -> anyhow::Result<()> {
@@ -108,7 +129,8 @@ impl<L: InstallerListener> Installer<L> {
         //     => default repos will be added (but *after* existing ones)
         //
         let latest_release = reapack_util::get_latest_reapack_release().await?;
-        let asset = reapack_util::get_correct_reapack_asset(latest_release).await?;
+        let asset =
+            reapack_util::get_correct_reapack_asset(latest_release, self.reaper_target).await?;
         let file = self
             .temp_reaper_resource_dir
             .user_plugins()
@@ -130,12 +152,12 @@ impl<L: InstallerListener> Installer<L> {
         Ok(file)
     }
 
-    async fn download_repositories(&self) -> anyhow::Result<Vec<ParsedRepository>> {
+    async fn download_repository_indexes(&self) -> anyhow::Result<Vec<DownloadedIndex>> {
         let temp_cache_dir = self.temp_reaper_resource_dir.reapack_cache();
         let repository_urls: HashSet<_> = self
             .recipes
             .iter()
-            .flat_map(|recipe| recipe.repository_urls())
+            .flat_map(|recipe| recipe.all_repository_urls())
             .collect();
         let downloads = repository_urls
             .into_iter()
@@ -147,12 +169,13 @@ impl<L: InstallerListener> Installer<L> {
                 downloads,
                 |info| {
                     let installation_status =
-                        InstallationStatus::DownloadingRepositories { download: info };
+                        InstallationStatus::DownloadingRepositoryIndexes { download: info };
                     self.listener.emit_installation_status(installation_status)
                 },
                 |progress| self.listener.emit_progress(progress),
             )
             .await;
+        // TODO Emit new installation status
         let repos = download_results
             .into_iter()
             .flatten()
@@ -163,8 +186,9 @@ impl<L: InstallerListener> Installer<L> {
                 let final_cache_file_name = format!("{index_name}.xml");
                 let final_cache_file = download.file.with_file_name(final_cache_file_name);
                 std::fs::rename(&download.file, final_cache_file).ok()?;
-                let repo = ParsedRepository {
+                let repo = DownloadedIndex {
                     url: download.url,
+                    name: index_name.clone(),
                     index,
                     temp_download_file: download.file,
                 };
@@ -172,6 +196,25 @@ impl<L: InstallerListener> Installer<L> {
             })
             .collect();
         Ok(repos)
+    }
+
+    async fn download_packages(&self, files: Vec<QualifiedFile<'_>>) {
+        let downloads = files.into_iter().map(|file| Download {
+            url: file.source.source.content.clone(),
+            file: self.temp_reaper_resource_dir.get().join(file.relative_path),
+        });
+        let download_results = self
+            .multi_downloader
+            .download_multiple(
+                downloads,
+                |info| {
+                    let installation_status =
+                        InstallationStatus::DownloadingPackageFiles { download: info };
+                    self.listener.emit_installation_status(installation_status)
+                },
+                |progress| self.listener.emit_progress(progress),
+            )
+            .await;
     }
 }
 
@@ -192,8 +235,9 @@ async fn sleep(millis: u64) {
     tokio::time::sleep(Duration::from_millis(millis)).await
 }
 
-struct ParsedRepository {
+struct DownloadedIndex {
     url: Url,
     temp_download_file: PathBuf,
+    name: String,
     index: Index,
 }

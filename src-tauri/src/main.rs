@@ -2,12 +2,12 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::sync::Mutex;
-use tauri::command::private::tracing::log::LevelFilter;
 
 use crate::app_handle::ReabootAppHandle;
 use reaboot_lib::api::ReabootConfig;
 use tauri::Manager;
 use tauri_plugin_log::LogTarget;
+use tracing::log::LevelFilter;
 
 use crate::state::ReabootAppState;
 use crate::worker::ReabootWorker;

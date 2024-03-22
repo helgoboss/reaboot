@@ -79,7 +79,9 @@ function getTaskPos(status: InstallationStatus) {
             return INSTALL_REAPACK_POS;
         case "InstalledReaPack":
             return INSTALLED_REAPACK_POS;
-        case "DownloadingRepositories":
+        case "DownloadingRepositoryIndexes":
+        case "ParsingRepositoryIndexes":
+        case "PreparingPackageInstallation":
         case "DownloadingPackageFiles":
         case "InstallingPackage":
             return INSTALL_PACKAGES_POS;

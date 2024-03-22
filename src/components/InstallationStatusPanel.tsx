@@ -13,7 +13,8 @@ export function InstallationStatusPanel(props: Props) {
 
 function build(status: InstallationStatus) {
     switch (status.kind) {
-        case "DownloadingRepositories":
+        case "DownloadingRepositoryIndexes":
+        case "DownloadingPackageFiles":
             const download = status.download;
             return <div>
                 <div>Downloads so far: {download.success_count + download.error_count} / {download.total_count}</div>

@@ -7,6 +7,7 @@ use std::str::FromStr;
 use std::sync::OnceLock;
 use thiserror::Error;
 use tinyvec::{tiny_vec, TinyVec};
+use ts_rs::TS;
 
 /// ReaPack treats versions names as segments of whole numbers and letters optionally separated by
 /// one or more non-alphanumeric character (such as dots).
@@ -21,6 +22,28 @@ pub struct VersionName {
     string: String,
     segments: TinyVec<[Segment; 3]>,
     stable: bool,
+}
+
+// With this, we instruct ts-rs to treat it just like a string when generating TypeScript.
+// I followed the example of "Url" (its impl_primitives! macro generates the same).
+impl TS for VersionName {
+    type WithoutGenerics = Self;
+
+    fn name() -> String {
+        "string".to_string()
+    }
+    fn inline() -> String {
+        <Self as TS>::name()
+    }
+    fn inline_flattened() -> String {
+        panic!("{} cannot be flattened", <Self as TS>::name())
+    }
+    fn decl() -> String {
+        panic!("{} cannot be declared", <Self as TS>::name())
+    }
+    fn decl_concrete() -> String {
+        panic!("{} cannot be declared", <Self as TS>::name())
+    }
 }
 
 impl Hash for VersionName {

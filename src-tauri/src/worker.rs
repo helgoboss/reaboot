@@ -6,6 +6,7 @@ use tauri::Manager;
 use reaboot_lib::downloader::Downloader;
 use reaboot_lib::installer::Installer;
 use reaboot_lib::reaboot_util;
+use reaboot_lib::reaper_target::ReaperTarget;
 
 use crate::app_handle::ReabootAppHandle;
 
@@ -56,7 +57,7 @@ impl ReabootWorker {
         let mut recipes = config.recipes;
         recipes.push(fixed_recipe);
         let installer = Installer::new(
-            resolved_config.reaper_resource_dir,
+            resolved_config,
             recipes,
             downloader,
             download_dir,

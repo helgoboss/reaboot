@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Deserialize)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Platform {
     #[default]

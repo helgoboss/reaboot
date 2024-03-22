@@ -3230,6 +3230,7 @@ dependencies = [
  "tauri-plugin-log",
  "tempdir",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -3269,6 +3270,8 @@ dependencies = [
  "time",
  "tinyvec",
  "tokio",
+ "ts-rs",
+ "url",
 ]
 
 [[package]]
@@ -4654,7 +4657,6 @@ dependencies = [
  "tempfile",
  "thiserror",
  "tokio",
- "tracing",
  "url",
  "uuid",
  "webkit2gtk",
@@ -4770,7 +4772,6 @@ dependencies = [
  "raw-window-handle",
  "tauri-runtime",
  "tauri-utils",
- "tracing",
  "uuid",
  "webkit2gtk",
  "webview2-com",
@@ -6086,7 +6087,6 @@ dependencies = [
  "soup2",
  "tao",
  "thiserror",
- "tracing",
  "url",
  "webkit2gtk",
  "webkit2gtk-sys",
