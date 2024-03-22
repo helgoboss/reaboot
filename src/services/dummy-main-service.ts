@@ -1,49 +1,36 @@
-import {GetInstallationEventsReply, InstallationRequest, MainService} from "./main-service.ts";
-import {BehaviorSubject} from "rxjs";
-import {InstallationStatusEvent} from "../../src-lib/bindings/InstallationStatusEvent.ts";
+import {MainService} from "./main-service.ts";
+import {ReabootEvent} from "../../src-lib/bindings/ReabootEvent.ts";
+import {ReabootConfig} from "../../src-lib/bindings/ReabootConfig.ts";
+import {Observable, Subject} from "rxjs";
 
 export class DummyMainService implements MainService {
-    statusProgressSubject = new BehaviorSubject<number>(0);
+    private progressEventsSubject = new Subject<number>();
 
-    statusSubject = new BehaviorSubject<InstallationStatusEvent>({
-        kind: "Idle",
-    });
+    private normalEventsSubject = new Subject<ReabootEvent>();
 
-    async getMainReaperResourceDir() {
-        return Math.random() < 0.5 ? undefined : "/bla/foo";
+    configure(config: ReabootConfig) {
+        this.normalEventsSubject.next({
+            kind: "ConfigResolved",
+            state: {
+                reaper_resource_dir: config.custom_reaper_resource_dir ?? "main/resource/dir",
+                portable: config.custom_reaper_resource_dir != null,
+            }
+        });
     }
 
-    getInstallationEvents(): GetInstallationEventsReply {
-        return {
-            statusEvents: this.statusSubject.asObservable(),
-            statusProgress: this.statusProgressSubject.asObservable(),
-        }
+    cancelInstallation() {
     }
 
-    async startInstallation(_: InstallationRequest) {
-        this.statusSubject.next({
-            kind: "DownloadingReaper",
-            file: {
-                label: "REAPER v7.11 for macOS 10.15+",
-                url: "https://www.reaper.fm/files/7.x/reaper711_universal.dmg",
-            }
-        });
-        await simulateProgress(this.statusProgressSubject, 4000);
-        this.statusSubject.next({
-            kind: "DownloadingReaPack",
-            file: {
-                label: "ReaPack for macOS 10.15+",
-                url: "https://www.reaper.fm/files/7.x/reaper711_universal.dmg",
-            }
-        });
-        await simulateProgress(this.statusProgressSubject, 7000);
-        this.statusSubject.next({
-            kind: "DownloadingRepositoryIndex",
-            file: {
-                label: "Nice repo",
-                url: "https://www.reaper.fm/files/7.x/reaper711_universal.dmg",
-            }
-        });
+    getNormalEvents(): Observable<ReabootEvent> {
+        return this.normalEventsSubject;
+    }
+
+    getProgressEvents(): Observable<number> {
+        return this.progressEventsSubject;
+    }
+
+    async startInstallation() {
+        await simulateProgress(this.progressEventsSubject, 3000);
     }
 }
 
@@ -51,7 +38,7 @@ function timeout(value: number) {
     return new Promise(resolve => setTimeout(resolve, value));
 }
 
-async function simulateProgress(subject: BehaviorSubject<number>, millis: number) {
+async function simulateProgress(subject: Subject<number>, millis: number) {
     for (var i = 0; i < millis; i += 30) {
         subject.next(i / millis);
         await timeout(1);

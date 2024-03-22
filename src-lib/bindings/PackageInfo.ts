@@ -3,4 +3,4 @@
 /**
  * Basic information about a package.
  */
-export type Package = { name: string, desc: string, version: string, author: string, };
+export type PackageInfo = { name: string, desc: string, version: string, author: string, };

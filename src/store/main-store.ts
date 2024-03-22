@@ -1,10 +1,20 @@
 import {createStore, SetStoreFunction} from "solid-js/store";
 import {PageId} from "../model/page.ts";
+import {InstallationStatus} from "../../src-lib/bindings/InstallationStatus.ts";
+import {Recipe} from "../../src-lib/bindings/Recipe.ts";
+import {ResolvedReabootConfig} from "../../src-lib/bindings/ResolvedReabootConfig.ts";
 
 export type MainStoreState = {
+    // ID of the currently displayed page.
     currentPageId: PageId,
-    mainReaperResourceDir?: string,
-    chosenReaperResourceDir?: string,
+    // Resolved configuration.
+    //
+    // If undefined, it means the installer has not been configured yet.
+    resolvedConfig?: ResolvedReabootConfig,
+    // Current installation status.
+    installationStatus: InstallationStatus,
+    // Additional recipes to be installed.
+    recipes: Recipe[],
 }
 
 export class MainStore {
@@ -17,15 +27,19 @@ export class MainStore {
         this.setState = setState;
     }
 
-    openPage(pageId: PageId) {
+    set currentPageId(pageId: PageId) {
         this.setState("currentPageId", pageId);
     }
 
-    set mainReaperResourceDir(value: string | undefined) {
-        this.setState("mainReaperResourceDir", value);
+    set resolvedConfig(value: ResolvedReabootConfig) {
+        this.setState("resolvedConfig", value);
     }
 
-    set chosenReaperResourceDir(value: string | undefined) {
-        this.setState("chosenReaperResourceDir", value);
+    set installationStatus(value: InstallationStatus) {
+        this.setState("installationStatus", value);
+    }
+
+    set recipes(value: Recipe[]) {
+        this.setState("recipes", value);
     }
 }

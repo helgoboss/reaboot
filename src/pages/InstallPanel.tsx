@@ -2,15 +2,14 @@ import {MainButton} from "../components/MainButton.tsx";
 import {StepperTask, TaskStatus, TaskStepper} from "../components/TaskStepper.tsx";
 import {from} from "solid-js";
 import {mainService, mainStore} from "../globals.ts";
-import {InstallationStatusEvent} from "../../src-lib/bindings/InstallationStatusEvent.ts";
+import {InstallationStatus} from "../../src-lib/bindings/InstallationStatus.ts";
+import {InstallationStatusPanel} from "../components/InstallationStatusPanel.tsx";
 
 export function InstallPanel() {
-    const installationEvents = mainService.getInstallationEvents();
-    const installationStatus = from(installationEvents.statusEvents);
-    const installationStatusProgress = from(installationEvents.statusProgress);
-    const effectiveInstallationStatus = () => installationStatus() ?? {kind: "Idle"};
+    const installationStatus = mainStore.state.installationStatus;
+    const installationStatusProgress = from(mainService.getProgressEvents());
     const effectiveInstallationStatusProgress = () => installationStatusProgress() ?? 0.0;
-    const stepperTasks = () => deriveStepperTasks(effectiveInstallationStatus());
+    const stepperTasks = () => deriveStepperTasks(installationStatus);
     const progressInPercent = () => `${(effectiveInstallationStatusProgress() * 100).toFixed(2)}`
     return (
         <>
@@ -18,27 +17,27 @@ export function InstallPanel() {
                 <div>
                     REAPER resource directory:
                 </div>
-                <div class="font-mono">{mainStore.state.chosenReaperResourceDir}</div>
+                <div class="font-mono">{mainStore.state.resolvedConfig?.reaper_resource_dir}</div>
             </div>
             <div class="flex flex-row gap-10">
                 <TaskStepper tasks={stepperTasks()}/>
                 <div class="grow flex flex-row items-center gap-5 bg-amber-100">
                     <div class="flex-1">
-                        {effectiveInstallationStatus().kind}
+                        <InstallationStatusPanel status={installationStatus}/>
                     </div>
                     <div class="flex-1">
                         {progressInPercent()}%
                     </div>
                 </div>
             </div>
-            <MainButton onClick={() => mainService.startInstallation({})}>
+            <MainButton onClick={() => mainService.startInstallation()}>
                 Start installation
             </MainButton>
         </>
     );
 }
 
-function deriveStepperTasks(status: InstallationStatusEvent): StepperTask[] {
+function deriveStepperTasks(status: InstallationStatus): StepperTask[] {
     const actualTaskPos = getTaskPos(status);
     return [
         {
@@ -66,19 +65,22 @@ function getTaskStatus(actualTaskPos: number, expectedTaskPos: number): TaskStat
     return "done";
 }
 
-function getTaskPos(status: InstallationStatusEvent) {
+function getTaskPos(status: InstallationStatus) {
     switch (status.kind) {
-        case "Idle":
+        case "Initial":
             return INITIAL_POS;
         case "CheckingLatestReaperVersion":
         case "DownloadingReaper":
             return INSTALL_REAPER_POS;
+        case "InstalledReaper":
+            return INSTALLED_REAPER_POS;
         case "CheckingLatestReaPackVersion":
         case "DownloadingReaPack":
-        case "InitializingReaPack":
             return INSTALL_REAPACK_POS;
-        case "DownloadingRepositoryIndex":
-        case "DownloadingPackageFile":
+        case "InstalledReaPack":
+            return INSTALLED_REAPACK_POS;
+        case "DownloadingRepositories":
+        case "DownloadingPackageFiles":
         case "InstallingPackage":
             return INSTALL_PACKAGES_POS;
         case "Done":
@@ -88,6 +90,8 @@ function getTaskPos(status: InstallationStatusEvent) {
 
 const INITIAL_POS = 0;
 const INSTALL_REAPER_POS = 1;
-const INSTALL_REAPACK_POS = 2;
-const INSTALL_PACKAGES_POS = 3;
+const INSTALLED_REAPER_POS = 2;
+const INSTALL_REAPACK_POS = 3;
+const INSTALLED_REAPACK_POS = 4;
+const INSTALL_PACKAGES_POS = 5;
 const DONE_POS = 4;

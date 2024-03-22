@@ -4,7 +4,7 @@ import {MainButton} from "../components/MainButton.tsx";
 export function WelcomePanel() {
     return (
         <>
-            <MainButton onClick={() => mainStore.openPage("pick-reaper")}>
+            <MainButton onClick={() => mainStore.currentPageId = "pick-reaper"}>
                 Let's go!
             </MainButton>
         </>

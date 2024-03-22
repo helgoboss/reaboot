@@ -1,39 +1,45 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use crate::worker::keep_processing;
-use reaboot_lib::api::WorkerCommand;
-use tauri::{Manager, State};
+use std::sync::Mutex;
+use tauri::command::private::tracing::log::LevelFilter;
 
+use crate::app_handle::ReabootAppHandle;
+use reaboot_lib::api::ReabootConfig;
+use tauri::Manager;
+use tauri_plugin_log::LogTarget;
+
+use crate::state::ReabootAppState;
+use crate::worker::ReabootWorker;
+
+mod app_handle;
+mod command_handlers;
+mod state;
 mod worker;
 
 fn main() {
     let (worker_command_sender, worker_command_receiver) = tauri::async_runtime::channel(1);
-    let work_state = WorkState {
-        command_sender: worker_command_sender,
+    let simple_command_state = ReabootAppState {
+        worker_command_sender,
+        config: Mutex::new(ReabootConfig::default()),
     };
     tauri::Builder::default()
-        .manage(work_state)
-        .invoke_handler(tauri::generate_handler![greet, work])
+        .plugin(
+            tauri_plugin_log::Builder::default()
+                .level(LevelFilter::Debug)
+                .targets([LogTarget::Stdout])
+                .build(),
+        )
+        .manage(simple_command_state)
+        .invoke_handler(tauri::generate_handler![command_handlers::reaboot_command])
         .setup(move |app| {
-            tauri::async_runtime::spawn(keep_processing(worker_command_receiver, app.app_handle()));
+            let mut worker =
+                ReabootWorker::new(worker_command_receiver, ReabootAppHandle(app.app_handle()));
+            tauri::async_runtime::spawn(async move {
+                worker.keep_processing_incoming_commands().await;
+            });
             Ok(())
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
-}
-
-// Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
-}
-
-#[tauri::command]
-fn work(command: WorkerCommand, state: State<WorkState>) {
-    state.command_sender.blocking_send(command).unwrap()
-}
-
-struct WorkState {
-    command_sender: tauri::async_runtime::Sender<WorkerCommand>,
 }

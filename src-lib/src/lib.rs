@@ -1,3 +1,11 @@
 pub mod api;
 pub mod downloader;
 pub mod installer;
+pub mod multi_downloader;
+pub mod package_installation_plan;
+pub mod reaboot_util;
+pub mod reapack_util;
+pub mod reaper_resource_dir;
+pub mod reaper_target;
+pub mod reaper_util;
+pub mod task_tracker;

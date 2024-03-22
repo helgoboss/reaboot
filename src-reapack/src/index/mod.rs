@@ -1,17 +1,18 @@
 use crate::model::{PackageType, Platform, Section, VersionName};
 use serde::de::IntoDeserializer;
 use serde::{Deserialize, Deserializer};
+use std::io::Read;
 use time::OffsetDateTime;
 
 /// This is the root element of any ReaPack index file.
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize)]
 pub struct Index {
     /// Must be "1".
-    version: String,
+    pub version: String,
     /// Display name of the repository (must contain filename-friendly characters only).
     ///
     /// Required for import.
-    name: Option<String>,
+    pub name: Option<String>,
     #[serde(default)]
     #[serde(rename = "$value")]
     entries: Vec<IndexEntry>,
@@ -51,11 +52,11 @@ pub struct Category {
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize)]
 pub struct Package {
     /// Default filename of the package
-    name: String,
+    pub name: String,
     #[serde(rename = "type")]
-    typ: IndexPackageType,
+    pub typ: IndexPackageType,
     /// (Added in v1.1) Display name of the package (the value of `name` is used if omitted)
-    desc: Option<String>,
+    pub desc: Option<String>,
     #[serde(default)]
     #[serde(rename = "$value")]
     entries: Vec<PackageEntry>,
@@ -72,13 +73,13 @@ pub enum PackageEntry {
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize)]
 pub struct Version {
-    name: VersionName,
+    pub name: VersionName,
     /// Author(s) of the release (no specific format)
-    author: Option<String>,
+    pub author: Option<String>,
     /// Release datetime in ISO 8601 format (UTC timezone)
     #[serde(default)]
     #[serde(with = "time::serde::iso8601::option")]
-    time: Option<OffsetDateTime>,
+    pub time: Option<OffsetDateTime>,
     #[serde(default)]
     #[serde(rename = "$value")]
     entries: Vec<VersionEntry>,
@@ -97,7 +98,7 @@ pub enum VersionEntry {
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize)]
 pub struct Changelog {
     #[serde(rename = "$value")]
-    content: String,
+    pub content: String,
 }
 
 /// This element represent a single file in a version.
@@ -108,20 +109,20 @@ pub struct Changelog {
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize)]
 pub struct Source {
     /// File name/path (relative to the category name). Defaults to the package name.
-    file: Option<String>,
-    platform: Option<IndexPlatform>,
+    pub file: Option<String>,
+    pub platform: Option<IndexPlatform>,
     /// Overrides the [package type](Package).
-    typ: Option<IndexPackageType>,
+    pub typ: Option<IndexPackageType>,
     /// List of Action List sections.
     #[serde(default)]
     #[serde(deserialize_with = "deserialize_sections")]
-    main: Vec<IndexSection>,
+    pub main: Vec<IndexSection>,
     /// [Multihash](https://multiformats.io/multihash/) checksum of the file in hexadecimal form
     /// (added in v1.2.2). Supports SHA-256 (`1220` prefix).
-    hash: Option<String>,
+    pub hash: Option<String>,
     /// Download URL.
     #[serde(rename = "$value")]
-    content: String,
+    pub content: String,
 }
 
 /// Fills the about dialog of the repository or of a package.
@@ -146,15 +147,15 @@ pub enum MetadataEntry {
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize)]
 pub struct Link {
     /// Path divided with slashes
-    rel: Option<Rel>,
+    pub rel: Option<Rel>,
     /// If present, the content of the element becomes the display name of the link.
     ///
     /// If omitted, the content of the element becomes the URL.
     ///
     /// Must start with `http://` or `https://`.
-    href: Option<String>,
+    pub href: Option<String>,
     #[serde(rename = "$value")]
-    content: String,
+    pub content: String,
 }
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize)]
@@ -184,6 +185,10 @@ where
 }
 
 impl Index {
+    pub fn parse(reader: impl Read) -> Result<Self, serde_xml_rs::Error> {
+        serde_xml_rs::from_reader(reader)
+    }
+
     pub fn find_category(&self, name: &str) -> Option<&Category> {
         self.categories().find(|cat| cat.name == name)
     }

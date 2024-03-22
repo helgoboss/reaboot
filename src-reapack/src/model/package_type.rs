@@ -29,7 +29,7 @@ pub enum PackageType {
     #[serde(rename = "tracktpl")]
     TrackTemplate = 9,
     #[serde(rename = "midinotenames")]
-    MiiNoteNames = 10,
+    MidiNoteNames = 10,
     #[serde(rename = "autoitem")]
     AutomationItem = 11,
 }

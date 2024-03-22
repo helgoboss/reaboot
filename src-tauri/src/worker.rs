@@ -1,56 +1,70 @@
-use anyhow::Context;
-use reaboot_lib::api::{InstallationStatusEvent, RemoteFile, WorkerCommand};
-use reaboot_lib::downloader::{DownloadStatus, Downloader};
-use reaboot_lib::installer::{Installer, InstallerListener};
-use serde::Serialize;
+use anyhow::{bail, Context};
+use reaboot_lib::api::{InstallationStatus, ReabootConfig, Recipe, ResolvedReabootConfig};
 use tauri::async_runtime::Receiver;
-use tauri::{AppHandle, Manager};
+use tauri::Manager;
 
-pub async fn keep_processing(mut receiver: Receiver<WorkerCommand>, app_handle: AppHandle) {
-    while let Some(command) = receiver.recv().await {
-        if let Err(e) = process(command, &app_handle).await {
-            // TODO-high Add ability to emit error
+use reaboot_lib::downloader::Downloader;
+use reaboot_lib::installer::Installer;
+use reaboot_lib::reaboot_util;
+
+use crate::app_handle::ReabootAppHandle;
+
+pub struct ReabootWorker {
+    receiver: Receiver<ReabootWorkerCommand>,
+    app_handle: ReabootAppHandle,
+}
+
+pub enum ReabootWorkerCommand {
+    Install(ReabootConfig),
+}
+
+impl ReabootWorker {
+    pub fn new(receiver: Receiver<ReabootWorkerCommand>, app_handle: ReabootAppHandle) -> Self {
+        Self {
+            receiver,
+            app_handle,
         }
     }
-}
 
-async fn process(command: WorkerCommand, app_handle: &AppHandle) -> anyhow::Result<()> {
-    match command {
-        WorkerCommand::Install => {
-            process_install(app_handle).await?;
+    pub async fn keep_processing_incoming_commands(&mut self) {
+        while let Some(command) = self.receiver.recv().await {
+            if let Err(e) = self.process_command(command).await {
+                self.app_handle.emit_generic_error(e);
+            }
         }
     }
-    Ok(())
-}
 
-async fn process_install(app_handle: &AppHandle) -> anyhow::Result<()> {
-    let downloader = Downloader::new(3);
-    let download_dir =
-        tempdir::TempDir::new("reaboot-").context("couldn't create temp directory")?;
-    let installer = Installer::new(downloader, download_dir.path().to_path_buf());
-    let listening_app_handle = ListeningAppHandle(app_handle);
-    installer.download_reaper(&listening_app_handle).await?;
-    installer.download_reapack(&listening_app_handle).await?;
-    Ok(())
-}
-
-struct ListeningAppHandle<'a>(&'a AppHandle);
-
-impl<'a> ListeningAppHandle<'a> {
-    fn emit_simple<T>(&self, name: &str, evt: T)
-    where
-        T: Clone + Serialize,
-    {
-        self.0.emit_all(name, evt).unwrap();
-    }
-}
-
-impl<'a> InstallerListener for ListeningAppHandle<'a> {
-    fn emit_installation_status(&self, event: InstallationStatusEvent) {
-        self.emit_simple("installation-status", event);
+    async fn process_command(&self, command: ReabootWorkerCommand) -> anyhow::Result<()> {
+        match command {
+            ReabootWorkerCommand::Install(config) => {
+                self.process_install(config).await?;
+            }
+        }
+        Ok(())
     }
 
-    fn emit_download_status(&self, event: DownloadStatus) {
-        self.emit_simple("installation-status-progress", event.to_simple_progress());
+    async fn process_install(&self, config: ReabootConfig) -> anyhow::Result<()> {
+        let downloader = Downloader::new(3);
+        let download_temp_dir =
+            tempdir::TempDir::new("reaboot-").context("couldn't create temp directory")?;
+        // TODO Take the first variant when done with debugging. This clears the temp dir after use.
+        // let download_dir = download_temp_dir.path().to_path_buf()
+        let download_dir = download_temp_dir.into_path();
+        let resolved_config = reaboot_util::resolve_config(&config)?;
+        let fixed_recipe: Recipe = serde_json::from_str(include_str!("branding/recipe.json"))
+            .context("couldn't parse fixed recipe")?;
+        let mut recipes = config.recipes;
+        recipes.push(fixed_recipe);
+        let installer = Installer::new(
+            resolved_config.reaper_resource_dir,
+            recipes,
+            downloader,
+            download_dir,
+            5,
+            self.app_handle.clone(),
+        )
+        .await?;
+        installer.install().await?;
+        Ok(())
     }
 }
