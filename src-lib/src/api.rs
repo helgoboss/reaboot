@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::path::PathBuf;
 use ts_rs::TS;
+use url::Url;
 
 /// A simple fire-and-forget command sent from the frontend to the backend.
 #[derive(Clone, Debug, Deserialize, TS)]
@@ -124,7 +125,7 @@ pub struct DownloadInfo {
     /// A human-friendly label for the download.
     pub label: String,
     /// Remote URL from which we are downloading.
-    pub url: String,
+    pub url: Url,
     /// Destination file on the local file system.
     pub file: PathBuf,
 }
@@ -154,7 +155,7 @@ pub struct Recipe {
 #[ts(export)]
 pub struct PackageSet {
     /// URL of the repository to which all packages in this set belong.
-    pub repository_url: String,
+    pub repository_url: Url,
     /// Packages in this set.
     pub packages: Vec<PackageDescriptor>,
 }
@@ -186,9 +187,7 @@ pub enum VersionDescriptor {
 }
 
 impl Recipe {
-    pub fn repository_urls(&self) -> impl Iterator<Item = &str> {
-        self.package_sets
-            .iter()
-            .map(|set| set.repository_url.as_str())
+    pub fn repository_urls(&self) -> impl Iterator<Item = &Url> {
+        self.package_sets.iter().map(|set| &set.repository_url)
     }
 }

@@ -1,15 +1,30 @@
 use futures::stream::StreamExt;
 use reqwest::header::HeaderMap;
-use reqwest::IntoUrl;
 use reqwest_middleware::ClientWithMiddleware;
 use reqwest_retry::policies::ExponentialBackoff;
 use reqwest_retry::RetryTransientMiddleware;
 use std::fs;
 use std::path::{Path, PathBuf};
 use tokio::{fs::OpenOptions, io::AsyncWriteExt};
+use url::Url;
 
+#[derive(Clone)]
 pub struct Downloader {
     client: ClientWithMiddleware,
+}
+
+#[derive(Clone, Debug)]
+pub struct Download {
+    pub url: Url,
+    pub file: PathBuf,
+}
+
+pub type DownloadResult = anyhow::Result<Download>;
+
+impl Download {
+    pub fn new(url: Url, file: PathBuf) -> Self {
+        Self { url, file }
+    }
 }
 
 impl Downloader {
@@ -24,24 +39,23 @@ impl Downloader {
 
     pub async fn download(
         &self,
-        url: impl IntoUrl,
-        dest_path: PathBuf,
+        download: Download,
         progress_listener: impl Fn(DownloadProgress),
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<Download> {
         progress_listener(DownloadProgress::Connecting);
-        let mut req = self.client.get(url);
+        let mut req = self.client.get(download.url.clone());
         let res = req.send().await?;
         progress_listener(DownloadProgress::CreatingDestFile);
         res.error_for_status_ref()?;
         let content_length = get_content_length(res.headers());
-        if let Some(dir) = dest_path.parent() {
+        if let Some(dir) = download.file.parent() {
             fs::create_dir_all(dir)?;
         }
         let mut dest_file = OpenOptions::new()
             .create(true)
             .write(true)
             .append(false)
-            .open(dest_path)
+            .open(&download.file)
             .await?;
         let mut stream = res.bytes_stream();
         let mut bytes_already_downloaded = 0;
@@ -59,7 +73,7 @@ impl Downloader {
             dest_file.write_all_buf(&mut chunk).await?;
         }
         progress_listener(DownloadProgress::Finished);
-        Ok(())
+        Ok(download)
     }
 }
 

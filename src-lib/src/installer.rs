@@ -2,7 +2,8 @@ use crate::api::{
     DownloadInfo, InstallationStatus, MultiDownloadInfo, ReabootConfig, Recipe,
     ResolvedReabootConfig,
 };
-use crate::downloader::{DownloadProgress, Downloader};
+use crate::downloader::{Download, DownloadProgress, Downloader};
+use crate::multi_downloader::MultiDownloader;
 use crate::reaper_resource_dir::ReaperResourceDir;
 use crate::task_tracker::{Summary, TaskTracker};
 use crate::{reaboot_util, reapack_util};
@@ -14,11 +15,12 @@ use std::io::BufReader;
 use std::path::PathBuf;
 use std::time::Duration;
 use tokio::fs;
+use url::Url;
 
 /// Responsible for orchestrating and carrying out the actual installation.
 pub struct Installer<L> {
     downloader: Downloader,
-    concurrent_downloads: usize,
+    multi_downloader: MultiDownloader,
     temp_download_dir: PathBuf,
     temp_reaper_resource_dir: ReaperResourceDir<PathBuf>,
     final_reaper_resource_dir: ReaperResourceDir<PathBuf>,
@@ -41,8 +43,8 @@ impl<L: InstallerListener> Installer<L> {
         let temp_reaper_resource_dir = temp_download_dir.join("REAPER");
         fs::create_dir_all(&temp_reaper_resource_dir).await?;
         let installer = Self {
+            multi_downloader: MultiDownloader::new(downloader.clone(), concurrent_downloads),
             downloader,
-            concurrent_downloads,
             recipes,
             temp_download_dir,
             temp_reaper_resource_dir: ReaperResourceDir::new(temp_reaper_resource_dir),
@@ -75,18 +77,19 @@ impl<L: InstallerListener> Installer<L> {
 
     async fn download_reaper(&self) -> anyhow::Result<()> {
         // TODO
-        let url = "https://www.reaper.fm/files/7.x/reaper711_universal.dmg";
+        let url = Url::parse("https://www.reaper.fm/files/7.x/reaper711_universal.dmg")?;
         let file = self.temp_download_dir.join("reaboot-reaper.dmg");
         self.listener
             .emit_installation_status(InstallationStatus::DownloadingReaper {
                 download: DownloadInfo {
                     label: "bla".to_string(),
-                    url: url.to_string(),
+                    url: url.clone(),
                     file: file.clone(),
                 },
             });
+        let download = Download::new(url, file.clone());
         self.downloader
-            .download(url, file.clone(), |s| {
+            .download(download, |s| {
                 self.listener.emit_progress(s.to_simple_progress())
             })
             .await?;
@@ -114,12 +117,13 @@ impl<L: InstallerListener> Installer<L> {
             .emit_installation_status(InstallationStatus::DownloadingReaPack {
                 download: DownloadInfo {
                     label: file.to_string_lossy().to_string(),
-                    url: asset.url.to_string(),
+                    url: asset.url.clone(),
                     file: file.clone(),
                 },
             });
+        let download = Download::new(asset.url, file.clone());
         self.downloader
-            .download(asset.url, file.clone(), |s| {
+            .download(download, |s| {
                 self.listener.emit_progress(s.to_simple_progress())
             })
             .await?;
@@ -127,85 +131,46 @@ impl<L: InstallerListener> Installer<L> {
     }
 
     async fn download_repositories(&self) -> anyhow::Result<Vec<ParsedRepository>> {
+        let temp_cache_dir = self.temp_reaper_resource_dir.reapack_cache();
         let repository_urls: HashSet<_> = self
             .recipes
             .iter()
-            .flat_map(|r| r.repository_urls().map(|u| u.to_string()))
+            .flat_map(|recipe| recipe.repository_urls())
             .collect();
-        let temp_cache_dir = self.temp_reaper_resource_dir.reapack_cache();
-        let (task_tracker, tasks) = TaskTracker::new(repository_urls);
-        let progress_reporting_future = async move {
-            loop {
-                let summary = task_tracker.summary();
-                let multi_download_info = MultiDownloadInfo {
-                    in_progress_count: summary.in_progress_count,
-                    success_count: summary.success_count,
-                    error_count: summary.error_count,
-                    total_count: summary.total_count,
+        let downloads = repository_urls
+            .into_iter()
+            .enumerate()
+            .map(|(i, url)| Download::new(url.clone(), temp_cache_dir.join(i.to_string())));
+        let download_results = self
+            .multi_downloader
+            .download_multiple(
+                downloads,
+                |info| {
+                    let installation_status =
+                        InstallationStatus::DownloadingRepositories { download: info };
+                    self.listener.emit_installation_status(installation_status)
+                },
+                |progress| self.listener.emit_progress(progress),
+            )
+            .await;
+        let repos = download_results
+            .into_iter()
+            .flatten()
+            .filter_map(|download| {
+                let temp_file = std::fs::File::open(&download.file).ok()?;
+                let index = Index::parse(BufReader::new(temp_file)).ok()?;
+                let index_name = index.name.as_ref()?;
+                let final_cache_file_name = format!("{index_name}.xml");
+                let final_cache_file = download.file.with_file_name(final_cache_file_name);
+                std::fs::rename(&download.file, final_cache_file).ok()?;
+                let repo = ParsedRepository {
+                    url: download.url,
+                    index,
+                    temp_download_file: download.file,
                 };
-                let installation_status = InstallationStatus::DownloadingRepositories {
-                    download: multi_download_info,
-                };
-                self.listener.emit_progress(summary.total_progress);
-                self.listener.emit_installation_status(installation_status);
-                if summary.done() {
-                    return;
-                }
-                tokio::time::sleep(Duration::from_millis(20)).await;
-            }
-        };
-        let download_future = async {
-            let repos: Vec<_> = stream::iter(tasks)
-                .enumerate()
-                .map(|(i, task)| {
-                    let url = task.payload;
-                    let temp_download_file = temp_cache_dir.join(i.to_string());
-                    async move {
-                        task.record.start();
-                        let download_result = self
-                            .downloader
-                            .download(&url, temp_download_file.clone(), |progress| {
-                                task.record.set_progress(progress.to_simple_progress());
-                            })
-                            .await;
-                        if download_result.is_ok() {
-                            task.record.finish();
-                        } else {
-                            task.record.fail();
-                        }
-                        let repo = DownloadedRepository {
-                            url,
-                            temp_download_file,
-                        };
-                        Some(repo)
-                    }
-                })
-                .buffer_unordered(self.concurrent_downloads)
-                .filter_map(|downloaded_repo| async {
-                    let downloaded_repo = downloaded_repo?;
-                    let temp_file =
-                        std::fs::File::open(&downloaded_repo.temp_download_file).ok()?;
-                    let index = Index::parse(BufReader::new(temp_file)).ok()?;
-                    let index_name = index.name.as_ref()?;
-                    let final_cache_file_name = format!("{index_name}.xml");
-                    let final_cache_file = downloaded_repo
-                        .temp_download_file
-                        .with_file_name(final_cache_file_name);
-                    tokio::fs::rename(&downloaded_repo.temp_download_file, final_cache_file)
-                        .await
-                        .ok()?;
-                    let repo = ParsedRepository {
-                        url: downloaded_repo.url,
-                        index,
-                        temp_download_file: downloaded_repo.temp_download_file,
-                    };
-                    Some(repo)
-                })
-                .collect()
-                .await;
-            repos
-        };
-        let (_, repos) = futures::join!(progress_reporting_future, download_future);
+                Some(repo)
+            })
+            .collect();
         Ok(repos)
     }
 }
@@ -227,13 +192,8 @@ async fn sleep(millis: u64) {
     tokio::time::sleep(Duration::from_millis(millis)).await
 }
 
-struct DownloadedRepository {
-    url: String,
-    temp_download_file: PathBuf,
-}
-
 struct ParsedRepository {
-    url: String,
+    url: Url,
     temp_download_file: PathBuf,
     index: Index,
 }

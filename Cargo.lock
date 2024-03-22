@@ -3251,6 +3251,7 @@ dependencies = [
  "tokio",
  "tracing",
  "ts-rs",
+ "url",
 ]
 
 [[package]]
@@ -5244,6 +5245,7 @@ checksum = "ceb8fe78a9de6544a6c5a027900e38e12d769e3cb6206543a0d6ee66685c9caa"
 dependencies = [
  "thiserror",
  "ts-rs-macros",
+ "url",
 ]
 
 [[package]]

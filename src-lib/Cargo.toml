@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 reaboot-reapack = { workspace = true }
-ts-rs = { workspace = true }
+ts-rs = { workspace = true, features = ["url-impl"] }
 serde = { workspace = true, features = ["derive"] }
 reqwest = { workspace = true, features = ["stream", "socks"] }
 reqwest-middleware = { workspace = true }
@@ -21,3 +21,4 @@ thiserror = { workspace = true }
 tracing = { workspace = true }
 atomic = { workspace = true }
 bytemuck = { workspace = true, features = ["derive"] }
+url = { workspace = true }
