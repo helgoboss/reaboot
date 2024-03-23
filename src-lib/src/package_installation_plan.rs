@@ -36,7 +36,8 @@ impl<'a> PackageInstallationPlan<'a> {
                 reaper_target,
             );
         let (files, unsupported_sources) = resolve_files_weeding_out_unsupported_sources(sources);
-        let (files, file_conflicts) = weed_out_files_with_conflicts(files);
+        let (mut files, file_conflicts) = weed_out_files_with_conflicts(files);
+        remove_incomplete_versions(&mut files, &unsupported_sources, &file_conflicts);
         Self {
             package_descriptors_with_failures,
             version_conflicts,
@@ -313,4 +314,29 @@ where
         })
         .collect();
     (cool_items, conflicts)
+}
+
+fn remove_incomplete_versions(
+    files: &mut Vec<QualifiedFile>,
+    unsupported_sources: &Vec<QualifiedSource>,
+    file_conflicts: &Vec<FileConflict>,
+) {
+    let incomplete_versions = identify_incomplete_versions(&unsupported_sources, &file_conflicts);
+    files.retain(|f| !incomplete_versions.contains(&f.source.version.id()));
+}
+
+fn identify_incomplete_versions<'a>(
+    unsupported_sources: &'a Vec<QualifiedSource>,
+    file_conflicts: &'a Vec<FileConflict>,
+) -> HashSet<QualifiedVersionId<'a>> {
+    unsupported_sources
+        .iter()
+        .map(|s| s.version.id())
+        .chain(
+            file_conflicts
+                .iter()
+                .flat_map(|c| c.conflicting_files.iter())
+                .map(|f| f.source.version.id()),
+        )
+        .collect()
 }
