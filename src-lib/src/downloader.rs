@@ -1,5 +1,5 @@
 use futures::stream::StreamExt;
-use reqwest::header::HeaderMap;
+use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest_middleware::ClientWithMiddleware;
 use reqwest_retry::policies::ExponentialBackoff;
 use reqwest_retry::RetryTransientMiddleware;
@@ -19,8 +19,6 @@ pub struct Download {
     pub file: PathBuf,
 }
 
-pub type DownloadResult = anyhow::Result<Download>;
-
 impl Download {
     pub fn new(url: Url, file: PathBuf) -> Self {
         Self { url, file }
@@ -30,7 +28,12 @@ impl Download {
 impl Downloader {
     pub fn new(retries: u32) -> Self {
         let retry_policy = ExponentialBackoff::builder().build_with_max_retries(retries);
-        let client = reqwest::Client::builder().build().unwrap();
+        let mut headers = HeaderMap::new();
+        headers.insert("User-Agent", HeaderValue::from_static("reaboot"));
+        let client = reqwest::Client::builder()
+            .default_headers(headers)
+            .build()
+            .unwrap();
         let client = reqwest_middleware::ClientBuilder::new(client)
             .with(RetryTransientMiddleware::new_with_policy(retry_policy))
             .build();
@@ -41,7 +44,7 @@ impl Downloader {
         &self,
         download: Download,
         progress_listener: impl Fn(DownloadProgress),
-    ) -> anyhow::Result<Download> {
+    ) -> anyhow::Result<()> {
         progress_listener(DownloadProgress::Connecting);
         let mut req = self.client.get(download.url.clone());
         let res = req.send().await?;
@@ -73,7 +76,7 @@ impl Downloader {
             dest_file.write_all_buf(&mut chunk).await?;
         }
         progress_listener(DownloadProgress::Finished);
-        Ok(download)
+        Ok(())
     }
 }
 

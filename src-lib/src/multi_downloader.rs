@@ -1,5 +1,5 @@
 use crate::api::{InstallationStatus, MultiDownloadInfo};
-use crate::downloader::{Download, DownloadResult, Downloader};
+use crate::downloader::{Download, Downloader};
 use crate::task_tracker::TaskTracker;
 use futures::{stream, StreamExt};
 use reaboot_reapack::index::Index;
@@ -12,6 +12,24 @@ pub struct MultiDownloader {
     concurrent_downloads: usize,
 }
 
+pub struct DownloadWithPayload<P> {
+    pub download: Download,
+    pub payload: P,
+}
+
+impl<P> DownloadWithPayload<P> {
+    pub fn new(download: Download, payload: P) -> Self {
+        Self { download, payload }
+    }
+}
+
+pub struct DownloadError<P> {
+    pub download: DownloadWithPayload<P>,
+    pub error: anyhow::Error,
+}
+
+pub type DownloadResult<P> = Result<DownloadWithPayload<P>, DownloadError<P>>;
+
 impl MultiDownloader {
     pub fn new(downloader: Downloader, concurrent_downloads: usize) -> Self {
         Self {
@@ -20,12 +38,12 @@ impl MultiDownloader {
         }
     }
 
-    pub async fn download_multiple(
+    pub async fn download_multiple<P>(
         &self,
-        downloads: impl IntoIterator<Item = Download>,
+        downloads: impl IntoIterator<Item = DownloadWithPayload<P>>,
         status_listener: impl Fn(MultiDownloadInfo),
         progress_listener: impl Fn(f64),
-    ) -> Vec<DownloadResult> {
+    ) -> Vec<DownloadResult<P>> {
         let (task_tracker, tasks) = TaskTracker::new(downloads);
         // Keep reporting progress while we are downloading
         let progress_reporting_future = async move {
@@ -53,16 +71,24 @@ impl MultiDownloader {
                     task.record.start();
                     let download_result = self
                         .downloader
-                        .download(task.payload, |progress| {
+                        .download(task.payload.download.clone(), |progress| {
                             task.record.set_progress(progress.to_simple_progress());
                         })
                         .await;
-                    if download_result.is_ok() {
-                        task.record.finish();
-                    } else {
-                        task.record.fail();
+                    match download_result {
+                        Ok(_) => {
+                            task.record.finish();
+                            Ok(task.payload)
+                        }
+                        Err(e) => {
+                            task.record.fail();
+                            let download_error = DownloadError {
+                                download: task.payload,
+                                error: e,
+                            };
+                            Err(download_error)
+                        }
                     }
-                    download_result
                 })
                 .buffer_unordered(self.concurrent_downloads)
                 .collect()

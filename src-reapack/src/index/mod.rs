@@ -124,8 +124,7 @@ pub struct Source {
     pub typ: Option<IndexPackageType>,
     /// List of Action List sections.
     #[serde(default)]
-    #[serde(deserialize_with = "deserialize_sections")]
-    pub main: Vec<IndexSection>,
+    pub main: IndexSection,
     /// [Multihash](https://multiformats.io/multihash/) checksum of the file in hexadecimal form
     /// (added in v1.2.2). Supports SHA-256 (`1220` prefix).
     pub hash: Option<String>,
@@ -197,8 +196,25 @@ pub enum IndexPackageType {
 }
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize)]
-#[serde(untagged)]
 pub enum IndexSection {
+    /// For compatibility with v1.0, a special value true is also supported. This uses the category
+    /// name to determine the section.
+    #[serde(rename = "true")]
+    Implicit,
+    #[serde(untagged)]
+    #[serde(deserialize_with = "deserialize_sections")]
+    Normal(Vec<NormalIndexSection>),
+}
+
+impl Default for IndexSection {
+    fn default() -> Self {
+        Self::Normal(vec![])
+    }
+}
+
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize)]
+#[serde(untagged)]
+pub enum NormalIndexSection {
     Known(Section),
     Unknown(String),
 }
@@ -216,13 +232,14 @@ impl Default for IndexPlatform {
     }
 }
 
-fn deserialize_sections<'de, D>(deserializer: D) -> Result<Vec<IndexSection>, D::Error>
+/// Deserialize sections separated by space as list.
+fn deserialize_sections<'de, D>(deserializer: D) -> Result<Vec<NormalIndexSection>, D::Error>
 where
     D: Deserializer<'de>,
 {
     let text = String::deserialize(deserializer)?;
     text.split(' ')
-        .map(|item| IndexSection::deserialize(item.into_deserializer()))
+        .map(|item| NormalIndexSection::deserialize(item.into_deserializer()))
         .collect()
 }
 
@@ -299,21 +316,16 @@ impl Version {
 
 impl Source {
     /// Returns the destination file relative to the REAPER resource directory.
-    ///
-    /// Returns `None` if the package type is unknown.
     pub fn determine_destination_file(
         &self,
         index_name: &str,
         category: &str,
         package: &Package,
-    ) -> Option<String> {
+        typ: PackageType,
+    ) -> String {
         use PackageType::*;
-        let typ = self.typ.as_ref().unwrap_or(&package.typ);
-        let IndexPackageType::Known(typ) = typ else {
-            return None;
-        };
         let file = self.file.as_ref().unwrap_or(&package.name);
-        let dest_file = match typ {
+        match typ {
             Script => format!("Scripts/{index_name}/{category}/{file}"),
             Extension => format!("UserPlugins/{file}"),
             Effect => format!("Effects/{index_name}/{category}/{file}"),
@@ -325,8 +337,7 @@ impl Source {
             TrackTemplate => format!("TrackTemplates/{file}"),
             MidiNoteNames => format!("MIDINoteNames/{file}"),
             AutomationItem => format!("AutomationItems/{index_name}/{category}/{file}"),
-        };
-        Some(dest_file)
+        }
     }
 }
 

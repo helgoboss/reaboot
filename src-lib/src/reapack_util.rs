@@ -15,14 +15,14 @@ pub fn get_default_reapack_shared_lib_file(
 ) -> PathBuf {
     let file_name = get_os_specific_reapack_file_name(reaper_target);
     ReaperResourceDir::new(reaper_resource_dir)
-        .user_plugins()
+        .user_plugins_dir()
         .join(file_name)
 }
 
 /// Returns the location of the first existing ReaPack shared library, no matter OS or architecture.
 pub fn find_reapack_shared_lib_file(reaper_resource_dir: impl AsRef<Path>) -> Option<PathBuf> {
     let reaper_resource_dir = ReaperResourceDir::new(reaper_resource_dir);
-    let user_plugins_dir = reaper_resource_dir.user_plugins();
+    let user_plugins_dir = reaper_resource_dir.user_plugins_dir();
     if !user_plugins_dir.exists() {
         return None;
     }

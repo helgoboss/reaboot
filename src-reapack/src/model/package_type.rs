@@ -1,3 +1,4 @@
+use num_enum::TryFromPrimitive;
 use serde::Deserialize;
 use std::borrow::Cow;
 
@@ -7,7 +8,9 @@ use std::borrow::Cow;
 /// ReaPack's [Index Format](https://github.com/cfillion/reapack/wiki/Index-Format).
 ///
 /// The numbers must not change in order to stay compatible with ReaPack's database schema.
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize)]
+#[derive(
+    Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize, TryFromPrimitive,
+)]
 #[serde(rename_all = "lowercase")]
 #[repr(i32)]
 pub enum PackageType {

@@ -1,84 +1,116 @@
 use crate::api::{PackageDescriptor, Recipe, VersionDescriptor};
+use crate::installer::DownloadedIndex;
 use crate::reaper_target::ReaperTarget;
 use anyhow::{Context, Error};
-use reaboot_reapack::index::{Category, Index, IndexPlatform, Package, Source, Version};
-use reaboot_reapack::model::VersionName;
+use reaboot_reapack::index::{
+    Category, Index, IndexPackageType, IndexPlatform, Package, Source, Version,
+};
+use reaboot_reapack::model::{
+    InstalledPackage, LightPackageId, LightVersionId, PackageType, VersionName,
+};
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 use std::path::PathBuf;
+use thiserror::Error;
 use url::Url;
 
 pub struct PackageInstallationPlan<'a> {
-    pub package_descriptors_with_failures: Vec<PackageFailure<'a>>,
+    /// Packages that were mentioned in the recipes but are not in the repository index.
+    pub package_descriptors_with_failures: Vec<PackageDescFailure<'a>>,
+    /// Packages for which it's unclear which version to install.
     pub version_conflicts: Vec<VersionConflict<'a>>,
-    pub empty_versions: Vec<QualifiedVersion<'a>>,
-    pub unsupported_sources: Vec<QualifiedSource<'a>>,
-    pub file_conflicts: Vec<FileConflict<'a>>,
-    pub final_files: Vec<QualifiedFile<'a>>,
+    /// Package versions that have an unsupported package type override or don't have any files to
+    /// install and therefore can be considered as not supported on this operating system.
+    pub incompatible_versions: Vec<QualifiedVersion<'a>>,
+    /// Package files that clash with other package files of packages mentioned in the recipes,
+    /// because they would be installed to exactly the same destination (directory and name).
+    pub recipe_file_conflicts: Vec<RecipeFileConflict<'a>>,
+    /// Package files that clash with other package files of already installed packages,
+    /// because they would be installed to exactly the same destination (directory and name).
+    pub files_conflicting_with_already_installed_files: Vec<QualifiedSource<'a>>,
+    /// All remaining files to be installed, with files belonging to incomplete packages removed.
+    pub final_files: Vec<QualifiedSource<'a>>,
+}
+
+#[derive(Error, Debug)]
+pub enum PackageDescError {
+    #[error("Repository is unavailable")]
+    RepositoryIndexUnavailable,
+    #[error("Desired package category was not found")]
+    PackageCategoryNotFound,
+    #[error("Desired package was not found")]
+    PackageNotFound,
+    #[error("Package has unknown type")]
+    PackageHasUnknownType,
+    #[error("Desired package has no stable version yet")]
+    PackageHasNoStableVersion,
+    #[error("Desired package has no versions at all")]
+    PackageHasNoVersionsAtAll,
+    #[error("Desired package version was not found")]
+    PackageVersionNotFound,
 }
 
 impl<'a> PackageInstallationPlan<'a> {
     pub fn make(
         recipes: &'a [Recipe],
-        indexes: impl IntoIterator<Item = QualifiedIndex<'a>>,
+        indexes: &'a HashMap<Url, DownloadedIndex>,
+        already_installed_non_replaced_packages: &[InstalledPackage],
         reaper_target: ReaperTarget,
     ) -> Self {
-        let index_by_url: HashMap<_, _> = indexes.into_iter().map(|i| (i.url, i)).collect();
         let package_descriptors = extract_and_deduplicate_package_descriptors(&recipes);
         let (versions, package_descriptors_with_failures) =
-            resolve_and_deduplicate_versions(package_descriptors, |url| {
-                index_by_url.get(url).copied()
-            });
+            resolve_and_deduplicate_versions(package_descriptors, indexes);
         let (versions, version_conflicts) = weed_out_packages_with_version_conflicts(versions);
-        let (sources, empty_versions) =
+        let (sources, incompatible_versions) =
             resolve_package_sources_weeding_out_platform_incompatible_versions(
                 versions,
                 reaper_target,
             );
-        let (files, unsupported_sources) = resolve_files_weeding_out_unsupported_sources(sources);
-        let (mut files, file_conflicts) = weed_out_files_with_conflicts(files);
-        remove_incomplete_versions(&mut files, &unsupported_sources, &file_conflicts);
+        let (sources, recipe_file_conflicts) = weed_out_conflicting_files_within_recipes(sources);
+        let (mut files, files_conflicting_with_already_installed_files) =
+            weed_out_conflicting_files_with_already_installed_packages(
+                sources,
+                already_installed_non_replaced_packages,
+            );
+        remove_incomplete_versions(&mut files, &recipe_file_conflicts);
         Self {
             package_descriptors_with_failures,
             version_conflicts,
-            empty_versions,
-            unsupported_sources,
-            file_conflicts,
+            incompatible_versions,
+            recipe_file_conflicts,
+            files_conflicting_with_already_installed_files,
             final_files: files,
         }
     }
 }
 
-#[derive(Copy, Clone)]
-pub struct QualifiedIndex<'a> {
-    pub url: &'a Url,
-    pub name: &'a str,
-    pub index: &'a Index,
-}
-
-pub struct QualifiedFile<'a> {
-    pub source: QualifiedSource<'a>,
+pub struct QualifiedSource<'a> {
+    pub version: QualifiedVersion<'a>,
+    pub source: &'a Source,
+    /// If the source has a package type override, it must be a supported type, otherwise we weed
+    /// it out early in the process. We save the supported type here.
+    pub typ: Option<PackageType>,
     pub relative_path: String,
 }
 
-pub struct QualifiedSource<'a> {
-    version: QualifiedVersion<'a>,
-    pub source: &'a Source,
-}
-
 struct VersionConflict<'a> {
-    package_id: QualifiedPackageId<'a>,
+    package_id: LightPackageId<'a>,
     conflicting_versions: Vec<QualifiedVersion<'a>>,
 }
 
-struct FileConflict<'a> {
+struct RecipeFileConflict<'a> {
     relative_path: String,
-    conflicting_files: Vec<QualifiedFile<'a>>,
+    conflicting_files: Vec<QualifiedSource<'a>>,
 }
 
-struct PackageFailure<'a> {
+struct AlreadyInstalledFileConflict<'a> {
+    relative_path: String,
+    conflicting_files: Vec<QualifiedSource<'a>>,
+}
+
+struct PackageDescFailure<'a> {
     desc: QualifiedPackageDescriptor<'a>,
-    error: anyhow::Error,
+    error: PackageDescError,
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
@@ -87,37 +119,43 @@ struct QualifiedPackageDescriptor<'a> {
     package: &'a PackageDescriptor,
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
-struct QualifiedPackageId<'a> {
-    index_name: &'a str,
-    category: &'a str,
-    package_name: &'a str,
+#[derive(Copy, Clone)]
+pub struct QualifiedPackage<'a> {
+    pub index: &'a DownloadedIndex,
+    pub category: &'a Category,
+    pub package: &'a Package,
+    /// Packages with unknown type are sorted out early, so we save the known type here.
+    pub typ: PackageType,
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
-struct QualifiedVersionId<'a> {
-    package_id: QualifiedPackageId<'a>,
-    version_name: &'a VersionName,
+impl<'a> QualifiedPackage<'a> {
+    pub fn id(&self) -> LightPackageId<'a> {
+        LightPackageId {
+            remote: &self.index.name,
+            category: &self.category.name,
+            package: &self.package.name,
+        }
+    }
 }
 
 #[derive(Copy, Clone)]
-struct QualifiedVersion<'a> {
-    index: QualifiedIndex<'a>,
-    category: &'a Category,
-    package: &'a Package,
-    version: &'a Version,
+pub struct QualifiedVersion<'a> {
+    pub package: QualifiedPackage<'a>,
+    pub version: &'a Version,
 }
 
 impl<'a> QualifiedVersion<'a> {
-    fn id(&self) -> QualifiedVersionId<'a> {
-        QualifiedVersionId {
-            package_id: QualifiedPackageId {
-                index_name: self.index.name,
-                category: &self.category.name,
-                package_name: &self.package.name,
-            },
-            version_name: &self.version.name,
+    pub fn id(&self) -> LightVersionId<'a> {
+        LightVersionId {
+            package_id: self.package.id(),
+            version: &self.version.name,
         }
+    }
+}
+
+impl<'a> QualifiedSource<'a> {
+    pub fn package_id(&self) -> LightPackageId<'a> {
+        self.version.id().package_id
     }
 }
 
@@ -141,16 +179,16 @@ fn extract_and_deduplicate_package_descriptors(
 
 fn resolve_and_deduplicate_versions<'a>(
     package_descriptors: HashSet<QualifiedPackageDescriptor<'a>>,
-    lookup_index: impl Fn(&Url) -> Option<QualifiedIndex<'a>> + Copy,
-) -> (Vec<QualifiedVersion<'a>>, Vec<PackageFailure<'a>>) {
+    indexes: &'a HashMap<Url, DownloadedIndex>,
+) -> (Vec<QualifiedVersion<'a>>, Vec<PackageDescFailure<'a>>) {
     let mut failures = vec![];
     let qualified_versions: HashMap<_, _> = package_descriptors
         .into_iter()
         .filter_map(
-            |desc| match lookup_package_version_in_indexes(&desc, lookup_index) {
+            |desc| match lookup_package_version_in_indexes(&desc, indexes) {
                 Ok(v) => Some((v.id().package_id, v)),
                 Err(error) => {
-                    failures.push(PackageFailure { desc, error });
+                    failures.push(PackageDescFailure { desc, error });
                     None
                 }
             },
@@ -161,38 +199,47 @@ fn resolve_and_deduplicate_versions<'a>(
 
 fn lookup_package_version_in_indexes<'i>(
     desc: &QualifiedPackageDescriptor,
-    lookup_index: impl FnOnce(&Url) -> Option<QualifiedIndex<'i>>,
-) -> anyhow::Result<QualifiedVersion<'i>> {
-    let index = lookup_index(desc.repository_url).context("Repository index unavailable")?;
+    indexes: &'i HashMap<Url, DownloadedIndex>,
+) -> Result<QualifiedVersion<'i>, PackageDescError> {
+    let index = indexes
+        .get(desc.repository_url)
+        .ok_or(PackageDescError::RepositoryIndexUnavailable)?;
     lookup_package_version_in_index(desc, index)
 }
 
 fn lookup_package_version_in_index<'i>(
     desc: &QualifiedPackageDescriptor,
-    index: QualifiedIndex<'i>,
-) -> anyhow::Result<QualifiedVersion<'i>> {
+    index: &'i DownloadedIndex,
+) -> Result<QualifiedVersion<'i>, PackageDescError> {
     let category = index
         .index
         .find_category(&desc.package.category)
-        .context("Couldn't find package category in repository index")?;
+        .ok_or(PackageDescError::PackageCategoryNotFound)?;
     let package = category
         .find_package(&desc.package.name)
-        .context("Couldn't find package in repository index")?;
-    let version = match &desc.package.version {
-        VersionDescriptor::Latest => package
-            .latest_stable_version()
-            .context("Package has no stable version yet")?,
-        VersionDescriptor::LatestPre => package
-            .latest_version_including_pre_releases()
-            .context("Package has no versions yet, not even pre-release versions")?,
-        VersionDescriptor::Specific(v) => package
-            .find_version(&v)
-            .context("That specific package version is not available in the repository index")?,
+        .ok_or(PackageDescError::PackageNotFound)?;
+    let IndexPackageType::Known(typ) = &package.typ else {
+        return Err(PackageDescError::PackageHasUnknownType);
     };
-    let qualified_version = QualifiedVersion {
+    let qualified_package = QualifiedPackage {
         index,
         category,
         package,
+        typ: *typ,
+    };
+    let version = match &desc.package.version {
+        VersionDescriptor::Latest => package
+            .latest_stable_version()
+            .ok_or(PackageDescError::PackageHasNoStableVersion)?,
+        VersionDescriptor::LatestPre => package
+            .latest_version_including_pre_releases()
+            .ok_or(PackageDescError::PackageHasNoVersionsAtAll)?,
+        VersionDescriptor::Specific(v) => package
+            .find_version(&v)
+            .ok_or(PackageDescError::PackageVersionNotFound)?,
+    };
+    let qualified_version = QualifiedVersion {
+        package: qualified_package,
         version,
     };
     Ok(qualified_version)
@@ -220,7 +267,36 @@ fn resolve_package_sources_weeding_out_platform_incompatible_versions(
         .into_iter()
         .flat_map(|v| {
             let sources: Vec<_> = get_platform_compatible_sources(v.version, reaper_target)
-                .map(|source| QualifiedSource { version: v, source })
+                .filter_map(|source| {
+                    let typ = match source.typ.as_ref() {
+                        None => {
+                            // No package type override. Cool.
+                            None
+                        }
+                        Some(IndexPackageType::Known(t)) => {
+                            // Override with known package type. Cool.
+                            Some(*t)
+                        }
+                        Some(IndexPackageType::Unknown(_)) => {
+                            // Override with unknown package type. Not cool.
+                            return None;
+                        }
+                    };
+                    let resolved_typ = typ.unwrap_or(v.package.typ);
+                    let relative_path = source.determine_destination_file(
+                        &v.package.index.name,
+                        &v.package.category.name,
+                        &v.package.package,
+                        resolved_typ,
+                    );
+                    let qualified_source = QualifiedSource {
+                        version: v,
+                        source,
+                        typ,
+                        relative_path,
+                    };
+                    Some(qualified_source)
+                })
                 .collect();
             if sources.is_empty() {
                 // Versions with no sources that match the current platform are silently discarded
@@ -246,43 +322,32 @@ fn get_platform_compatible_sources(
     })
 }
 
-fn resolve_files_weeding_out_unsupported_sources(
-    sources: Vec<QualifiedSource>,
-) -> (Vec<QualifiedFile>, Vec<QualifiedSource>) {
-    let mut unsupported_sources = vec![];
-    let files = sources
-        .into_iter()
-        .filter_map(|s| {
-            let relative_file = s.source.determine_destination_file(
-                s.version.index.name,
-                &s.version.category.name,
-                s.version.package,
-            );
-            let Some(relative_file) = relative_file else {
-                unsupported_sources.push(s);
-                return None;
-            };
-            let file = QualifiedFile {
-                source: s,
-                relative_path: relative_file,
-            };
-            Some(file)
-        })
-        .collect();
-    (files, unsupported_sources)
-}
-
-fn weed_out_files_with_conflicts(
-    files: Vec<QualifiedFile>,
-) -> (Vec<QualifiedFile>, Vec<FileConflict>) {
+fn weed_out_conflicting_files_within_recipes(
+    files: Vec<QualifiedSource>,
+) -> (Vec<QualifiedSource>, Vec<RecipeFileConflict>) {
     weed_out_conflicts(
         files,
         |f| f.relative_path.to_string(),
-        |relative_path, conflicting_files| FileConflict {
+        |relative_path, conflicting_files| RecipeFileConflict {
             relative_path,
             conflicting_files,
         },
     )
+}
+
+fn weed_out_conflicting_files_with_already_installed_packages<'a>(
+    files: Vec<QualifiedSource<'a>>,
+    already_installed_non_replaced_packages: &[InstalledPackage],
+) -> (Vec<QualifiedSource<'a>>, Vec<QualifiedSource<'a>>) {
+    let already_installed_paths: HashSet<_> = already_installed_non_replaced_packages
+        .iter()
+        .flat_map(|p| p.files.iter())
+        .map(|f| &f.path)
+        .collect();
+    let (files, conflicting_files): (Vec<_>, Vec<_>) = files
+        .into_iter()
+        .partition(|f| !already_installed_paths.contains(&f.relative_path));
+    (files, conflicting_files)
 }
 
 fn weed_out_conflicts<T, Key, Conflict>(
@@ -317,26 +382,19 @@ where
 }
 
 fn remove_incomplete_versions(
-    files: &mut Vec<QualifiedFile>,
-    unsupported_sources: &Vec<QualifiedSource>,
-    file_conflicts: &Vec<FileConflict>,
+    sources: &mut Vec<QualifiedSource>,
+    file_conflicts: &Vec<RecipeFileConflict>,
 ) {
-    let incomplete_versions = identify_incomplete_versions(&unsupported_sources, &file_conflicts);
-    files.retain(|f| !incomplete_versions.contains(&f.source.version.id()));
+    let incomplete_versions = identify_incomplete_versions(&file_conflicts);
+    sources.retain(|source| !incomplete_versions.contains(&source.version.id()));
 }
 
 fn identify_incomplete_versions<'a>(
-    unsupported_sources: &'a Vec<QualifiedSource>,
-    file_conflicts: &'a Vec<FileConflict>,
-) -> HashSet<QualifiedVersionId<'a>> {
-    unsupported_sources
+    file_conflicts: &'a Vec<RecipeFileConflict>,
+) -> HashSet<LightVersionId<'a>> {
+    file_conflicts
         .iter()
+        .flat_map(|c| c.conflicting_files.iter())
         .map(|s| s.version.id())
-        .chain(
-            file_conflicts
-                .iter()
-                .flat_map(|c| c.conflicting_files.iter())
-                .map(|f| f.source.version.id()),
-        )
         .collect()
 }

@@ -11,20 +11,24 @@ impl<P: AsRef<Path>> ReaperResourceDir<P> {
         self.0.as_ref()
     }
 
-    pub fn user_plugins(&self) -> PathBuf {
+    pub fn user_plugins_dir(&self) -> PathBuf {
         self.get().join("UserPlugins")
     }
 
-    pub fn reapack(&self) -> PathBuf {
+    pub fn reapack_dir(&self) -> PathBuf {
         self.get().join("ReaPack")
     }
 
-    pub fn reapack_cache(&self) -> PathBuf {
-        self.reapack().join("Cache")
+    pub fn reapack_cache_dir(&self) -> PathBuf {
+        self.reapack_dir().join("Cache")
     }
 
-    pub fn reapack_registry(&self) -> PathBuf {
-        self.reapack().join("registry.db")
+    pub fn reapack_registry_db_file(&self) -> PathBuf {
+        self.reapack_dir().join("registry.db")
+    }
+
+    pub fn reapack_ini_file(&self) -> PathBuf {
+        self.get().join("reapack.ini")
     }
 }
 

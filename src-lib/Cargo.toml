@@ -22,3 +22,4 @@ tracing = { workspace = true }
 atomic = { workspace = true }
 bytemuck = { workspace = true, features = ["derive"] }
 url = { workspace = true }
+enumset = { workspace = true }
