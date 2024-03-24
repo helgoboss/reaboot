@@ -121,6 +121,7 @@ pub struct Source {
     #[serde(default)]
     pub platform: IndexPlatform,
     /// Overrides the [package type](Package).
+    #[serde(rename = "type")]
     pub typ: Option<IndexPackageType>,
     /// List of Action List sections.
     #[serde(default)]

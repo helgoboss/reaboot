@@ -68,13 +68,13 @@ struct InstallArgs {
     #[arg(long, default_value = "latest")]
     reaper_version: String,
     #[arg(short, long)]
-    package_urls: Vec<Url>,
+    package_url: Option<Vec<Url>>,
 }
 
 async fn install(args: InstallArgs) -> anyhow::Result<()> {
     let config = ReabootConfig {
         custom_reaper_resource_dir: args.portable.map(PathBuf::from),
-        package_urls: args.package_urls,
+        package_urls: args.package_url.unwrap_or_default(),
         // TODO
         custom_reaper_target: None,
     };
