@@ -2,7 +2,9 @@ use crate::reaper_target::ReaperTarget;
 use reaboot_reapack::model::VersionName;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
+use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
+use strum::{AsRefStr, Display};
 use ts_rs::TS;
 use url::Url;
 
@@ -28,11 +30,11 @@ pub struct ReabootConfig {
     /// If `None`, we will use the resource directory of the main installation.
     #[ts(optional)]
     pub custom_reaper_resource_dir: Option<PathBuf>,
-    /// A list of recipes with packages to install.
+    /// A list of package URLs pointing to packages to be installed.
     ///
-    /// These recipes will be installed *in addition* to the packages that are going to be installed
+    /// These recipes will be installed *in addition* to those that are going to be installed
     /// anyway (if the installer is branded).
-    pub recipes: Vec<Recipe>,
+    pub package_urls: Vec<Url>,
     /// Custom REAPER target.
     #[ts(optional)]
     pub custom_reaper_target: Option<ReaperTarget>,
@@ -73,39 +75,42 @@ pub struct ResolvedReabootConfig {
 }
 
 /// Status of the installation process.
-#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Serialize, TS)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, AsRefStr, Serialize, TS)]
 #[ts(export)]
 #[serde(tag = "kind")]
 pub enum InstallationStatus {
     /// Initial status.
+    #[strum(serialize = "Nothing is installed yet")]
     Initial,
     /// Checking which is the latest available REAPER version.
+    #[strum(serialize = "Checking latest REAPER version")]
     CheckingLatestReaperVersion,
     /// Downloading REAPER.
-    DownloadingReaper {
-        download: DownloadInfo,
-    },
+    #[strum(serialize = "Downloading REAPER")]
+    DownloadingReaper { download: DownloadInfo },
     /// REAPER is already installed.
     ///
     /// This means that the desired REAPER resource directory already exists.
+    #[strum(serialize = "REAPER is installed, ReaPack not yet")]
     InstalledReaper,
     /// Checking which is the latest available ReaPack version.
+    #[strum(serialize = "Checking latest ReaPack version")]
     CheckingLatestReaPackVersion,
     /// Downloading ReaPack.
-    DownloadingReaPack {
-        download: DownloadInfo,
-    },
+    #[strum(to_string = "Download ReaPack")]
+    DownloadingReaPack { download: DownloadInfo },
     /// ReaPack is already installed.
     ///
     /// This means that the ReaPack shared library already exists in the desired REAPER resource
     /// directory.
+    #[strum(to_string = "REAPER and ReaPack are installed")]
     InstalledReaPack,
     /// Downloading all repository indexes in parallel.
-    DownloadingRepositoryIndexes {
-        download: MultiDownloadInfo,
-    },
+    #[strum(serialize = "Downloading repository indexes")]
+    DownloadingRepositoryIndexes { download: MultiDownloadInfo },
     /// Checking each downloaded repository index whether it's valid and converting it into a
     /// suitable data structure.
+    #[strum(serialize = "Parsing repository indexes")]
     ParsingRepositoryIndexes,
     /// Preparing package installation.
     ///
@@ -115,15 +120,15 @@ pub enum InstallationStatus {
     /// - Deduplicate package versions
     /// - Check for conflicting package versions
     /// - Check for duplicate files
-    PreparingPackageInstallation,
+    #[strum(serialize = "Preparing package downloading")]
+    PreparingPackageDownloading,
     /// Downloading all package files in parallel.
-    DownloadingPackageFiles {
-        download: MultiDownloadInfo,
-    },
+    #[strum(serialize = "Downloading package files")]
+    DownloadingPackageFiles { download: MultiDownloadInfo },
     /// Moving the files of each package to its correct location and updating the database.
-    InstallingPackage {
-        package: PackageInfo,
-    },
+    #[strum(serialize = "Installing package")]
+    InstallingPackage { package: PackageInfo },
+    #[strum(serialize = "Done")]
     Done,
 }
 
@@ -159,54 +164,28 @@ pub struct PackageInfo {
     pub author: String,
 }
 
-/// A collection of repositories and packages to be installed.
-#[derive(Clone, Debug, Deserialize, TS)]
-#[ts(export)]
-pub struct Recipe {
-    /// Short display name.
-    pub name: String,
-    /// List of repositories along with packages to install from them.
-    pub package_sets: Vec<PackageSet>,
-}
-
-/// A collection of packages within one repository.
-#[derive(Clone, Debug, Deserialize, TS)]
-#[ts(export)]
-pub struct PackageSet {
-    /// URL of the repository to which all packages in this set belong.
-    pub repository_url: Url,
-    /// Packages in this set.
-    pub packages: Vec<PackageDescriptor>,
-}
-
-/// Uniquely identifies a specific version of a package, within the context of a repository.
-#[derive(Clone, Eq, PartialEq, Hash, Debug, Deserialize, TS)]
-#[ts(export)]
-pub struct PackageDescriptor {
-    /// Category of the package.
-    pub category: String,
-    /// Package name.
-    pub name: String,
-    /// Describes the version to be installed.
-    pub version: VersionDescriptor,
-}
-
-/// Describes a package version.
-#[derive(Clone, Eq, PartialEq, Hash, Debug, Deserialize, TS)]
-#[ts(export)]
-#[serde(rename_all = "kebab-case")]
-pub enum VersionDescriptor {
-    /// Refers to the latest available version of a package, excluding pre-releases.
-    Latest,
-    /// Refers to the latest available version of a package, including pre-releases.
-    LatestPre,
-    /// Refers to a specific version of a package.
-    #[serde(untagged)]
-    Specific(VersionName),
-}
-
-impl Recipe {
-    pub fn all_repository_urls(&self) -> impl Iterator<Item = &Url> {
-        self.package_sets.iter().map(|set| &set.repository_url)
+impl Display for InstallationStatus {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let simple_name: &str = self.as_ref();
+        match self {
+            InstallationStatus::DownloadingRepositoryIndexes { download }
+            | InstallationStatus::DownloadingPackageFiles { download } => {
+                let error_count = download.error_count;
+                let actual_count = download.success_count + error_count;
+                let total_count = download.total_count;
+                write!(
+                    f,
+                    "{simple_name}: Downloaded {actual_count} of {total_count}"
+                )?;
+                if error_count > 0 {
+                    write!(f, " ({error_count} errors)")?;
+                }
+            }
+            InstallationStatus::InstallingPackage { .. } => {}
+            _ => {
+                simple_name.fmt(f)?;
+            }
+        }
+        Ok(())
     }
 }

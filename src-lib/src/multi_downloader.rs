@@ -9,7 +9,7 @@ use std::time::Duration;
 
 pub struct MultiDownloader {
     downloader: Downloader,
-    concurrent_downloads: usize,
+    concurrent_downloads: u32,
 }
 
 pub struct DownloadWithPayload<P> {
@@ -31,7 +31,7 @@ pub struct DownloadError<P> {
 pub type DownloadResult<P> = Result<DownloadWithPayload<P>, DownloadError<P>>;
 
 impl MultiDownloader {
-    pub fn new(downloader: Downloader, concurrent_downloads: usize) -> Self {
+    pub fn new(downloader: Downloader, concurrent_downloads: u32) -> Self {
         Self {
             downloader,
             concurrent_downloads,
@@ -90,7 +90,7 @@ impl MultiDownloader {
                         }
                     }
                 })
-                .buffer_unordered(self.concurrent_downloads)
+                .buffer_unordered(self.concurrent_downloads as usize)
                 .collect()
                 .await;
             download_results

@@ -20,3 +20,5 @@ ts-rs = { workspace = true }
 url = { workspace = true, features = ["serde"] }
 num_enum = { workspace = true }
 enumset = { workspace = true }
+# For parsing a version descriptor via serde
+serde_plain = { workspace = true }

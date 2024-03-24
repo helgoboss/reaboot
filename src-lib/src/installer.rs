@@ -1,6 +1,5 @@
 use crate::api::{
-    DownloadInfo, InstallationStatus, MultiDownloadInfo, ReabootConfig, Recipe,
-    ResolvedReabootConfig,
+    DownloadInfo, InstallationStatus, MultiDownloadInfo, ReabootConfig, ResolvedReabootConfig,
 };
 use crate::downloader::{Download, DownloadProgress, Downloader};
 use crate::multi_downloader::{
@@ -10,7 +9,7 @@ use crate::package_installation_plan::{PackageInstallationPlan, QualifiedSource}
 use crate::reaper_resource_dir::ReaperResourceDir;
 use crate::reaper_target::ReaperTarget;
 use crate::task_tracker::{Summary, TaskTracker};
-use crate::{reaboot_util, reapack_util};
+use crate::{reaboot_util, reapack_util, reaper_util};
 use anyhow::{bail, Context};
 use enumset::EnumSet;
 use futures::{stream, StreamExt};
@@ -18,7 +17,7 @@ use reaboot_reapack::database::Database;
 use reaboot_reapack::index::{Index, IndexSection, NormalIndexSection};
 use reaboot_reapack::model::{
     InstalledFile, InstalledPackage, InstalledPackageType, InstalledVersionName, LightPackageId,
-    Section,
+    PackageUrl, ParsePackageUrlError, Section, VersionRef,
 };
 use std::collections::{HashMap, HashSet};
 use std::io::BufReader;
@@ -34,39 +33,63 @@ pub struct Installer<L> {
     temp_download_dir: PathBuf,
     temp_reaper_resource_dir: ReaperResourceDir<PathBuf>,
     final_reaper_resource_dir: ReaperResourceDir<PathBuf>,
-    recipes: Vec<Recipe>,
+    package_urls: Vec<PackageUrl>,
     reaper_target: ReaperTarget,
+    dry_run: bool,
     listener: L,
+    reaper_version: VersionRef,
+}
+
+pub struct InstallerConfig<L> {
+    pub resolved_config: ResolvedReabootConfig,
+    pub package_urls: Vec<Url>,
+    pub downloader: Downloader,
+    pub temp_download_dir: PathBuf,
+    pub concurrent_downloads: u32,
+    pub dry_run: bool,
+    pub listener: L,
+    pub reaper_version: VersionRef,
 }
 
 impl<L: InstallerListener> Installer<L> {
     /// Creates a new installer with all the values that stay the same throughout the complete
     /// installation process.
-    pub async fn new(
-        resolved_config: ResolvedReabootConfig,
-        recipes: Vec<Recipe>,
-        downloader: Downloader,
-        temp_download_dir: PathBuf,
-        concurrent_downloads: usize,
-        listener: L,
-    ) -> anyhow::Result<Self> {
-        tracing::debug!("Creating installer with temp download dir {temp_download_dir:?}");
-        let temp_reaper_resource_dir = temp_download_dir.join("REAPER");
+    ///
+    /// Creates a temporary directly already.
+    pub async fn new(config: InstallerConfig<L>) -> anyhow::Result<Self> {
+        tracing::debug!(
+            "Creating installer with temp download dir {:?}",
+            &config.temp_download_dir
+        );
+        let temp_reaper_resource_dir = config.temp_download_dir.join("REAPER");
         fs::create_dir_all(&temp_reaper_resource_dir).await?;
+        let package_urls: Result<Vec<_>, ParsePackageUrlError> = config
+            .package_urls
+            .into_iter()
+            .map(PackageUrl::parse_from_url)
+            .collect();
         let installer = Self {
-            multi_downloader: MultiDownloader::new(downloader.clone(), concurrent_downloads),
-            downloader,
-            recipes,
-            temp_download_dir,
+            multi_downloader: MultiDownloader::new(
+                config.downloader.clone(),
+                config.concurrent_downloads,
+            ),
+            downloader: config.downloader,
+            package_urls: package_urls?,
+            temp_download_dir: config.temp_download_dir,
             temp_reaper_resource_dir: ReaperResourceDir::new(temp_reaper_resource_dir),
-            final_reaper_resource_dir: ReaperResourceDir::new(resolved_config.reaper_resource_dir),
-            reaper_target: resolved_config.reaper_target,
-            listener,
+            final_reaper_resource_dir: ReaperResourceDir::new(
+                config.resolved_config.reaper_resource_dir,
+            ),
+            reaper_target: config.resolved_config.reaper_target,
+            listener: config.listener,
+            dry_run: config.dry_run,
+            reaper_version: config.reaper_version,
         };
         Ok(installer)
     }
 
     pub async fn install(&self) -> anyhow::Result<()> {
+        // Parse package URLs
         // Create temporary directory structure
         // Determine initial installation status, so that we know where to start off
         let initial_installation_status = reaboot_util::determine_initial_installation_status(
@@ -74,10 +97,11 @@ impl<L: InstallerListener> Installer<L> {
             self.reaper_target,
         );
         // Download REAPER if necessary
-        if initial_installation_status < InstallationStatus::InstalledReaper {
-            bail!("installing REAPER automatically is currently not supported");
-            // installer.download_reaper(&self.app_handle).await?;
-        }
+        let reaper_file = if initial_installation_status < InstallationStatus::InstalledReaper {
+            Some(self.download_reaper().await?)
+        } else {
+            None
+        };
         // Download ReaPack if necessary
         let reapack_file = if initial_installation_status < InstallationStatus::InstalledReaPack {
             Some(self.download_reapack().await?)
@@ -99,7 +123,7 @@ impl<L: InstallerListener> Installer<L> {
         };
         // Make package installation plan
         let plan = PackageInstallationPlan::make(
-            &self.recipes,
+            &self.package_urls,
             &downloaded_indexes,
             &installed_untouched_packages,
             self.reaper_target,
@@ -190,42 +214,46 @@ impl<L: InstallerListener> Installer<L> {
         };
         // Remove files, remove package, add package and move/copy files ... all within one database
         // transaction. Our atomic unit at this stage is a package.
-        let mut db = self.open_reapack_db().await?;
-        db.with_transaction(|mut transaction| async {
-            if let Some(p) = replace_package {
-                // Remove files
-                for file in &p.files {
-                    let path = self.final_reaper_resource_dir.get().join(&file.path);
-                    tokio::fs::remove_file(path)
-                        .await
-                        .context("couldn't remove file of package to be replaced")?;
+        self.listener
+            .log_write_activity(format!("Installing package {}...", package_id.package));
+        if !self.dry_run {
+            let mut db = self.open_reapack_db().await?;
+            db.with_transaction(|mut transaction| async {
+                if let Some(p) = replace_package {
+                    // Remove files
+                    for file in &p.files {
+                        let path = self.final_reaper_resource_dir.get().join(&file.path);
+                        tokio::fs::remove_file(path)
+                            .await
+                            .context("couldn't remove file of package to be replaced")?;
+                    }
+                    // Remove package
+                    transaction.remove_package(package_id).await?;
                 }
-                // Remove package
-                transaction.remove_package(package_id).await?;
-            }
-            // Add
-            transaction.add_package(installed_package).await?;
-            // Copy/move
-            for download in downloads {
-                let src_file = download.download.file;
-                let dest_file = self
-                    .final_reaper_resource_dir
-                    .get()
-                    .join(download.payload.relative_path);
-                if let Some(dest_dir) = dest_file.parent() {
-                    tokio::fs::create_dir_all(dest_dir).await?;
+                // Add
+                transaction.add_package(installed_package).await?;
+                // Copy/move
+                for download in downloads {
+                    let src_file = download.download.file;
+                    let dest_file = self
+                        .final_reaper_resource_dir
+                        .get()
+                        .join(download.payload.relative_path);
+                    if let Some(dest_dir) = dest_file.parent() {
+                        tokio::fs::create_dir_all(dest_dir).await?;
+                    }
+                    if tokio::fs::rename(&src_file, &dest_file).await.is_err() {
+                        // Simple move/rename was not possible, REAPER resource dir seems to be on
+                        // other mount than the temp dir. Need to copy.
+                        tokio::fs::copy(&src_file, &dest_file).await.context(
+                            "couldn't copy file from package to REAPER resource directory",
+                        )?;
+                    }
                 }
-                if tokio::fs::rename(&src_file, &dest_file).await.is_err() {
-                    // Simple move/rename was not possible, REAPER resource dir seems to be on
-                    // other mount than the temp dir. Need to copy.
-                    tokio::fs::copy(&src_file, &dest_file)
-                        .await
-                        .context("couldn't copy file from package to REAPER resource directory")?;
-                }
-            }
-            Ok(transaction)
-        })
-        .await?;
+                Ok(transaction)
+            })
+            .await?;
+        }
         Ok(())
     }
 
@@ -236,19 +264,17 @@ impl<L: InstallerListener> Installer<L> {
         let mut db = self.open_reapack_db().await?;
         let already_installed_packages = db.installed_packages().await?;
         let package_ids_to_be_installed: HashSet<LightPackageId> = self
-            .recipes
+            .package_urls
             .iter()
-            .flat_map(|r| r.package_sets.iter())
-            .filter_map(|s| {
-                let downloaded_index = downloaded_indexes.get(&s.repository_url)?;
-                Some((downloaded_index, s))
-            })
-            .flat_map(|(i, s)| {
-                s.packages.iter().map(|p| LightPackageId {
-                    remote: &i.name,
-                    category: &p.category,
-                    package: &p.name,
-                })
+            .filter_map(|purl| {
+                let downloaded_index = downloaded_indexes.get(&purl.repository_url())?;
+                let package_path = purl.package_version_ref().package_path();
+                let package_id = LightPackageId {
+                    remote: &downloaded_index.name,
+                    category: package_path.category(),
+                    package: package_path.package_name(),
+                };
+                Some(package_id)
             })
             .collect();
         let (installed_packages_to_be_replaced, installed_untouched_packages) =
@@ -270,18 +296,21 @@ impl<L: InstallerListener> Installer<L> {
     }
 
     async fn download_reaper(&self) -> anyhow::Result<()> {
-        // TODO
-        let url = Url::parse("https://www.reaper.fm/files/7.x/reaper711_universal.dmg")?;
-        let file = self.temp_download_dir.join("reaboot-reaper.dmg");
+        let installer_asset = reaper_util::get_latest_reaper_installer_asset(
+            self.reaper_target,
+            &self.reaper_version,
+        )
+        .await?;
+        let file = self.temp_download_dir.join(installer_asset.file_name);
         self.listener
             .emit_installation_status(InstallationStatus::DownloadingReaper {
                 download: DownloadInfo {
-                    label: "bla".to_string(),
-                    url: url.clone(),
+                    label: installer_asset.version.to_string(),
+                    url: installer_asset.url.clone(),
                     file: file.clone(),
                 },
             });
-        let download = Download::new(url, file.clone());
+        let download = Download::new(installer_asset.url, file.clone());
         self.downloader
             .download(download, |s| {
                 self.listener.emit_progress(s.to_simple_progress())
@@ -329,9 +358,9 @@ impl<L: InstallerListener> Installer<L> {
     async fn download_repository_indexes(&self) -> anyhow::Result<HashMap<Url, DownloadedIndex>> {
         let temp_cache_dir = self.temp_reaper_resource_dir.reapack_cache_dir();
         let repository_urls: HashSet<_> = self
-            .recipes
+            .package_urls
             .iter()
-            .flat_map(|recipe| recipe.all_repository_urls())
+            .map(|purl| purl.repository_url())
             .collect();
         let downloads = repository_urls.into_iter().enumerate().map(|(i, url)| {
             DownloadWithPayload::new(
@@ -352,6 +381,7 @@ impl<L: InstallerListener> Installer<L> {
             )
             .await;
         // TODO Emit new installation status
+        let mut index_names_so_far = HashSet::new();
         let repos = download_results
             .into_iter()
             .flatten()
@@ -363,6 +393,15 @@ impl<L: InstallerListener> Installer<L> {
                     })
                     .ok()?;
                 let index_name = index.name.as_ref()?;
+                if !index_names_so_far.insert(index_name.clone()) {
+                    // Another index was downloaded with the same index name. The first one wins!
+                    tracing::warn!(
+                        msg = "Encountered multiple URLs returning index with same name",
+                        index_name,
+                        ignored_url = %download.download.url
+                    );
+                    return None;
+                }
                 let final_cache_file_name = format!("{index_name}.xml");
                 let final_cache_file = download.download.file.with_file_name(final_cache_file_name);
                 std::fs::rename(&download.download.file, final_cache_file).ok()?;
@@ -417,6 +456,7 @@ async fn simulate_download(millis: u64, listener: &impl InstallerListener) {
 pub trait InstallerListener {
     fn emit_installation_status(&self, event: InstallationStatus);
     fn emit_progress(&self, progress: f64);
+    fn log_write_activity(&self, activity: String);
 }
 
 async fn sleep(millis: u64) {
@@ -426,6 +466,8 @@ async fn sleep(millis: u64) {
 pub struct DownloadedIndex {
     pub url: Url,
     pub temp_download_file: PathBuf,
+    /// This name is the actual repository ID (not the URL)! Multiple URLs can point to the same
+    /// logical index.
     pub name: String,
     pub index: Index,
 }

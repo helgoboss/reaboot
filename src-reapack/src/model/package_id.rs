@@ -1,3 +1,4 @@
+/// Borrowed package ID.
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct LightPackageId<'a> {
     pub remote: &'a str,

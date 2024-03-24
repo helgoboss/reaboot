@@ -60,6 +60,18 @@ impl VersionName {
     pub fn is_stable(&self) -> bool {
         self.stable
     }
+
+    /// Returns the major version number.
+    pub fn major(&self) -> Numeric {
+        let first_segment = self
+            .segments
+            .first()
+            .expect("versions without any segment shouldn't exist, this is a bug in VersionName");
+        match first_segment {
+            Segment::Numeric(i) => *i,
+            Segment::String(_) => panic!("versions where the first segment is a string should not exist, this is a bug in VersionName")
+        }
+    }
 }
 
 impl AsRef<str> for VersionName {

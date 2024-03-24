@@ -1,0 +1,23 @@
+[package]
+name = "reaboot-cli"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+reaboot-lib = { workspace = true }
+# For building a command-line interface
+clap = { workspace = true, features = ["derive"] }
+# Async runtime
+tokio = { workspace = true }
+# For convenient error handling
+anyhow = { workspace = true }
+# For progress bars
+indicatif = { workspace = true }
+# For getting a correctly removed temporary download directory
+tempdir = { workspace = true }
+# For displaying a report table
+comfy-table = { workspace = true }
+# For parsing URLs
+url = { workspace = true }

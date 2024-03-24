@@ -5,6 +5,7 @@
       <sourceFolder url="file://$MODULE_DIR$/src-lib/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src-reapack/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src-tauri/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src-cli/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/src-tauri/target" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>

@@ -1,4 +1,3 @@
-use crate::api::{PackageDescriptor, Recipe, VersionDescriptor};
 use crate::installer::DownloadedIndex;
 use crate::reaper_target::ReaperTarget;
 use anyhow::{Context, Error};
@@ -6,7 +5,8 @@ use reaboot_reapack::index::{
     Category, Index, IndexPackageType, IndexPlatform, Package, Source, Version,
 };
 use reaboot_reapack::model::{
-    InstalledPackage, LightPackageId, LightVersionId, PackageType, VersionName,
+    InstalledPackage, LightPackageId, LightVersionId, PackageType, PackageUrl, VersionName,
+    VersionRef,
 };
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
@@ -52,14 +52,14 @@ pub enum PackageDescError {
 
 impl<'a> PackageInstallationPlan<'a> {
     pub fn make(
-        recipes: &'a [Recipe],
+        package_urls: &'a [PackageUrl],
         indexes: &'a HashMap<Url, DownloadedIndex>,
         already_installed_non_replaced_packages: &[InstalledPackage],
         reaper_target: ReaperTarget,
     ) -> Self {
-        let package_descriptors = extract_and_deduplicate_package_descriptors(&recipes);
+        let deduplicated_package_urls = HashSet::from_iter(package_urls);
         let (versions, package_descriptors_with_failures) =
-            resolve_and_deduplicate_versions(package_descriptors, indexes);
+            resolve_and_deduplicate_versions(deduplicated_package_urls, indexes);
         let (versions, version_conflicts) = weed_out_packages_with_version_conflicts(versions);
         let (sources, incompatible_versions) =
             resolve_package_sources_weeding_out_platform_incompatible_versions(
@@ -109,14 +109,8 @@ struct AlreadyInstalledFileConflict<'a> {
 }
 
 struct PackageDescFailure<'a> {
-    desc: QualifiedPackageDescriptor<'a>,
+    package_url: &'a PackageUrl,
     error: PackageDescError,
-}
-
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
-struct QualifiedPackageDescriptor<'a> {
-    repository_url: &'a Url,
-    package: &'a PackageDescriptor,
 }
 
 #[derive(Copy, Clone)]
@@ -159,36 +153,21 @@ impl<'a> QualifiedSource<'a> {
     }
 }
 
-fn extract_and_deduplicate_package_descriptors(
-    recipes: &[Recipe],
-) -> HashSet<QualifiedPackageDescriptor> {
-    recipes
-        .iter()
-        .flat_map(|recipe| {
-            recipe.package_sets.iter().flat_map(|set| {
-                set.packages
-                    .iter()
-                    .map(move |desc| QualifiedPackageDescriptor {
-                        repository_url: &set.repository_url,
-                        package: desc,
-                    })
-            })
-        })
-        .collect()
-}
-
 fn resolve_and_deduplicate_versions<'a>(
-    package_descriptors: HashSet<QualifiedPackageDescriptor<'a>>,
+    package_urls: HashSet<&'a PackageUrl>,
     indexes: &'a HashMap<Url, DownloadedIndex>,
 ) -> (Vec<QualifiedVersion<'a>>, Vec<PackageDescFailure<'a>>) {
     let mut failures = vec![];
-    let qualified_versions: HashMap<_, _> = package_descriptors
+    let qualified_versions: HashMap<_, _> = package_urls
         .into_iter()
         .filter_map(
             |desc| match lookup_package_version_in_indexes(&desc, indexes) {
                 Ok(v) => Some((v.id().package_id, v)),
                 Err(error) => {
-                    failures.push(PackageDescFailure { desc, error });
+                    failures.push(PackageDescFailure {
+                        package_url: desc,
+                        error,
+                    });
                     None
                 }
             },
@@ -198,25 +177,25 @@ fn resolve_and_deduplicate_versions<'a>(
 }
 
 fn lookup_package_version_in_indexes<'i>(
-    desc: &QualifiedPackageDescriptor,
+    package_url: &PackageUrl,
     indexes: &'i HashMap<Url, DownloadedIndex>,
 ) -> Result<QualifiedVersion<'i>, PackageDescError> {
     let index = indexes
-        .get(desc.repository_url)
+        .get(package_url.repository_url())
         .ok_or(PackageDescError::RepositoryIndexUnavailable)?;
-    lookup_package_version_in_index(desc, index)
+    lookup_package_version_in_index(package_url, index)
 }
 
 fn lookup_package_version_in_index<'i>(
-    desc: &QualifiedPackageDescriptor,
+    package_url: &PackageUrl,
     index: &'i DownloadedIndex,
 ) -> Result<QualifiedVersion<'i>, PackageDescError> {
     let category = index
         .index
-        .find_category(&desc.package.category)
+        .find_category(&package_url.category())
         .ok_or(PackageDescError::PackageCategoryNotFound)?;
     let package = category
-        .find_package(&desc.package.name)
+        .find_package(&package_url.package_name())
         .ok_or(PackageDescError::PackageNotFound)?;
     let IndexPackageType::Known(typ) = &package.typ else {
         return Err(PackageDescError::PackageHasUnknownType);
@@ -227,14 +206,14 @@ fn lookup_package_version_in_index<'i>(
         package,
         typ: *typ,
     };
-    let version = match &desc.package.version {
-        VersionDescriptor::Latest => package
+    let version = match &package_url.version_ref() {
+        VersionRef::Latest => package
             .latest_stable_version()
             .ok_or(PackageDescError::PackageHasNoStableVersion)?,
-        VersionDescriptor::LatestPre => package
+        VersionRef::LatestPre => package
             .latest_version_including_pre_releases()
             .ok_or(PackageDescError::PackageHasNoVersionsAtAll)?,
-        VersionDescriptor::Specific(v) => package
+        VersionRef::Specific(v) => package
             .find_version(&v)
             .ok_or(PackageDescError::PackageVersionNotFound)?,
     };
