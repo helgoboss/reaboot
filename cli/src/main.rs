@@ -7,15 +7,30 @@ use reaboot_core::installer::{Installer, InstallerConfig, InstallerListener};
 use reaboot_core::reaboot_util::resolve_config;
 use std::path::PathBuf;
 use tempdir::TempDir;
+use tracing_subscriber::{EnvFilter, FmtSubscriber};
 use url::Url;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    tracing_subscriber::fmt::init();
+    let _ = init_tracing();
     let app = App::parse();
     match app.command {
         Command::Install(args) => install(args).await,
     }
+}
+
+fn init_tracing() -> anyhow::Result<()> {
+    let env_var = std::env::var("REABOOT_LOG")?;
+    let env_filter = EnvFilter::new(env_var);
+    let subscriber = FmtSubscriber::builder()
+        .pretty()
+        .with_thread_ids(true)
+        .with_thread_names(true)
+        // .compact()
+        .with_env_filter(env_filter)
+        .finish();
+    tracing::subscriber::set_global_default(subscriber).context("setting default subscriber failed")?;
+    Ok(())
 }
 
 #[derive(Debug, Parser)]

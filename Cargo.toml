@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["cli", "core", "reapack", "gui/src-tauri"]
+members = ["cli", "core", "reapack"]
 
 [workspace.dependencies]
 reaboot-core = { path = "core" }
