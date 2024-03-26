@@ -3648,22 +3648,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "reaboot"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "reaboot-lib",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-log",
- "tempdir",
- "tokio",
- "tracing",
-]
-
-[[package]]
 name = "reaboot-cli"
 version = "0.1.0"
 dependencies = [
@@ -3671,7 +3655,7 @@ dependencies = [
  "clap 4.5.3",
  "comfy-table",
  "indicatif",
- "reaboot-lib",
+ "reaboot-core",
  "tempdir",
  "tokio",
  "tracing",
@@ -3680,7 +3664,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "reaboot-lib"
+name = "reaboot-core"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -3704,6 +3688,22 @@ dependencies = [
  "tracing",
  "ts-rs",
  "url",
+]
+
+[[package]]
+name = "reaboot-gui"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "reaboot-core",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-log",
+ "tempdir",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]

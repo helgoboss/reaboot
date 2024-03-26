@@ -1,12 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<module type="CPP_MODULE" version="4">
+<module type="EMPTY_MODULE" version="4">
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
-      <sourceFolder url="file://$MODULE_DIR$/src-lib/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/src-reapack/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/src-tauri/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/src-cli/src" isTestSource="false" />
-      <excludeFolder url="file://$MODULE_DIR$/src-tauri/target" />
+      <sourceFolder url="file://$MODULE_DIR$/cli/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/gui/src-tauri/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reapack/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />

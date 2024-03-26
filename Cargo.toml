@@ -1,10 +1,10 @@
 [workspace]
 resolver = "2"
-members = ["src-cli", "src-lib", "src-reapack", "src-tauri"]
+members = ["cli", "core", "reapack", "gui/src-tauri"]
 
 [workspace.dependencies]
-reaboot-lib = { path = "src-lib" }
-reaboot-reapack = { path = "src-reapack" }
+reaboot-core = { path = "core" }
+reaboot-reapack = { path = "reapack" }
 tauri = "1"
 serde = "1"
 serde_json = "1"

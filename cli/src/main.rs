@@ -1,10 +1,10 @@
 use anyhow::Context;
 use clap::{Args, Parser, Subcommand};
 use indicatif::{ProgressBar, ProgressStyle};
-use reaboot_lib::api::{InstallationStatus, ReabootConfig, ResolvedReabootConfig};
-use reaboot_lib::downloader::Downloader;
-use reaboot_lib::installer::{Installer, InstallerConfig, InstallerListener};
-use reaboot_lib::reaboot_util::resolve_config;
+use reaboot_core::api::{InstallationStatus, ReabootConfig, ResolvedReabootConfig};
+use reaboot_core::downloader::Downloader;
+use reaboot_core::installer::{Installer, InstallerConfig, InstallerListener};
+use reaboot_core::reaboot_util::resolve_config;
 use std::path::PathBuf;
 use tempdir::TempDir;
 use url::Url;

@@ -1,5 +1,5 @@
 [package]
-name = "reaboot-lib"
+name = "reaboot-core"
 version = "0.1.0"
 edition = "2021"
 

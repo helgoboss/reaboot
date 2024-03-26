@@ -1,5 +1,5 @@
 [package]
-name = "reaboot"
+name = "reaboot-gui"
 version = "0.0.0"
 description = "A Tauri App"
 authors = ["you"]
@@ -14,7 +14,7 @@ tauri-build = { version = "1", features = [] }
 tauri = { workspace = true, features = ["shell-open", "dialog-open"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
-reaboot-lib = { workspace = true }
+reaboot-core = { workspace = true }
 tokio = { workspace = true, features = ["time"] }
 anyhow = { workspace = true }
 tempdir = { workspace = true }
