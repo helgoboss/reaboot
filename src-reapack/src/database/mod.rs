@@ -53,15 +53,8 @@ pub const REAPACK_DB_USER_VERSION: DbUserVersion = DbUserVersion { major: 0, min
 
 #[derive(Debug)]
 pub struct Database {
-    connection: Option<SqliteConnection>,
+    connection: SqliteConnection,
 }
-
-// impl Drop for Database {
-//     fn drop(&mut self) {
-//         let connection = self.connection.take();
-//         let _ = Handle::current().block_on(connection.close());
-//     }
-// }
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct DbUserVersion {
@@ -115,15 +108,21 @@ impl Database {
         Self::new(db_file, false).await
     }
 
+    /// Closes the database, making sure that everything has been written to disk when the future
+    /// is finished.
+    #[instrument]
+    pub async fn close(self) -> anyhow::Result<()> {
+        self.connection.close().await?;
+        Ok(())
+    }
+
     async fn new(db_file: impl AsRef<Path>, create_if_missing: bool) -> anyhow::Result<Self> {
         let options = SqliteConnectOptions::new()
             .filename(db_file)
             .pragma("foreign_keys", "1")
             .create_if_missing(create_if_missing);
         let connection = SqliteConnection::connect_with(&options).await?;
-        let db = Self {
-            connection: Some(connection),
-        };
+        let db = Self { connection };
         Ok(db)
     }
 

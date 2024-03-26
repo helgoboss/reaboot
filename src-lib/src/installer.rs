@@ -279,10 +279,11 @@ impl<L: InstallerListener> Installer<L> {
                 .push(download);
         }
         let mut plan = PackageApplicationPlan::default();
+        let mut db = self.open_temp_reapack_db().await?;
         for (package_id, downloads) in downloads_by_package {
             let replace_package = replace_package_by_id.remove(&package_id);
             let install_result = self
-                .update_reapack_db_for_one_package(package_id, &downloads, replace_package)
+                .update_reapack_db_for_one_package(&mut db, package_id, &downloads, replace_package)
                 .await;
             match install_result {
                 Ok(_) => {
@@ -298,11 +299,13 @@ impl<L: InstallerListener> Installer<L> {
                 }
             }
         }
+        db.close().await?;
         Ok(plan)
     }
 
     async fn update_reapack_db_for_one_package<'a>(
         &self,
+        db: &mut Database,
         package_id: LightPackageId<'a>,
         downloads: &[DownloadWithPayload<QualifiedSource<'a>>],
         replace_package: Option<&InstalledPackage>,
@@ -346,7 +349,6 @@ impl<L: InstallerListener> Installer<L> {
         // all within one database transaction. Our atomic unit at this stage is a package.
         self.listener
             .log_write_activity(format!("Installing package {}...", package_id.package));
-        let mut db = self.open_temp_reapack_db().await?;
         let transaction = db.with_transaction(|mut transaction| async {
             if let Some(p) = replace_package {
                 // Dry remove installed package files
@@ -387,7 +389,6 @@ impl<L: InstallerListener> Installer<L> {
             true,
         )
         .context("moving ReaPack INI file failed")?;
-        // TODO We must make sure that the DB file was written, otherwise we end up with an empty one
         self.move_file(
             self.temp_reaper_resource_dir.reapack_registry_db_file(),
             self.final_reaper_resource_dir.reapack_registry_db_file(),
