@@ -41,3 +41,7 @@ rust-ini = { workspace = true }
 serde_plain = { workspace = true }
 # For being able to treat ReaPack categories as UTF-8 paths
 camino = { workspace = true }
+# For having one remote per index name but ordered
+indexmap = { workspace = true }
+# For logging
+tracing = { workspace = true }

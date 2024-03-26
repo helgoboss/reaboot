@@ -1,4 +1,5 @@
 use anyhow::Context;
+use indexmap::IndexMap;
 use ini::{EscapePolicy, Ini, LineSeparator, ParseOption, Properties, WriteOption};
 use std::fs::File;
 use std::iter::Map;
@@ -11,18 +12,16 @@ use url::Url;
 /// For ReaBoot, that means:
 ///
 /// - If the INI file doesn't exist yet, it will create a new one with that version and
-///   an INI schema corresponding to that version. If the latest ReaPack version is
+///   a *minimal* INI schema corresponding to that version. If the latest ReaPack version is
 ///   made for a newer config version, it's still okay. ReaPack will carry out the necessary
-///   migration. However, ReaBoot will not be usable *after* that initial installation because
-///   ReaPack raised the config version (see below).
+///   migration. ReaBoot will still continue to operate.
 /// - If the INI file exists already and its version is *lower* than the one defined here,
-///   ReaBoot will apply the same INI file migrations that ReaPack would do and raise the version
-///   to the one defined here.
+///   ReaBoot will apply the same INI file migrations as ReaPack would do (restoring repos) and
+///   raise the version to the one defined here.
 /// - If the INI file exists already and its user version is *greater* than the one defined here,
-///   ReaBoot will refuse to continue because it's not familiar with the options. In that
-///   case, it's a good idea to prompt the user to check if a new ReaBoot version is available.
-// TODO What to do if the version is newer? Check ReaPack and update above docs.
-pub const REAPACK_CONFIG_VERSION: i16 = 4;
+///   ReaBoot will continue to operate because breaking INI schema changes don't
+///   seem to be part of ReaPack's plan, it's more about stuff like restoring repositories etc.
+pub const REAPACK_CONFIG_VERSION: u32 = 4;
 
 /// ReaPack configuration that's typically saved in the "reapack.ini" file.
 ///
@@ -30,7 +29,7 @@ pub const REAPACK_CONFIG_VERSION: i16 = 4;
 /// Other properties will not be touched.
 pub struct Config {
     pub general_version: u32,
-    pub remotes: Vec<Remote>,
+    pub remote_by_name: IndexMap<String, Remote>,
 }
 
 pub struct Remote {
@@ -44,8 +43,10 @@ pub struct Remote {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            general_version: 4,
-            remotes: create_default_remotes().collect(),
+            general_version: REAPACK_CONFIG_VERSION,
+            remote_by_name: create_default_remotes()
+                .map(|r| (r.name.clone(), r))
+                .collect(),
         }
     }
 }
@@ -87,13 +88,6 @@ const DEFAULT_REMOTES: &[(&str, &str)] = &[
 ];
 
 impl Config {
-    pub fn create_initial_ini_file(path: &Path) -> anyhow::Result<()> {
-        drop(File::create(path)?);
-        let config = Config::default();
-        config.apply_to_ini_file(path)?;
-        Ok(())
-    }
-
     pub fn load_from_ini_file(path: &Path) -> anyhow::Result<Self> {
         let ini = load_ini(path)?;
         Ok(Self::from_ini(&ini))
@@ -110,12 +104,12 @@ impl Config {
             .unwrap_or_default();
         Self {
             general_version,
-            remotes,
+            remote_by_name: remotes,
         }
     }
 
     pub fn apply_to_ini_file(&self, path: &Path) -> anyhow::Result<()> {
-        let mut ini = load_ini(path)?;
+        let mut ini = load_ini(path).unwrap_or_else(|_| Ini::new());
         self.apply_to_ini(&mut ini);
         ini.write_to_file_opt(
             path,
@@ -135,13 +129,18 @@ impl Config {
             self.general_version.to_string(),
         );
         ini.delete(REMOTES_INI_SECTION);
-        for (i, remote) in self.remotes.iter().enumerate() {
+        for (i, remote) in self.remote_by_name.values().enumerate() {
             ini.set_to(
                 REMOTES_INI_SECTION,
                 format!("remote{i}"),
                 remote.to_ini_value(),
             );
         }
+        ini.set_to(
+            REMOTES_INI_SECTION,
+            "size".to_string(),
+            self.remote_by_name.len().to_string(),
+        );
     }
 
     /// Migrates configuration if necessary and returns `true` if it did.
@@ -150,16 +149,21 @@ impl Config {
     pub fn migrate(&mut self) -> bool {
         if self.general_version <= 3 {
             self.restore_default_remotes();
-            self.general_version = 4;
+            self.general_version = REAPACK_CONFIG_VERSION;
             true
         } else {
             false
         }
     }
 
+    pub fn add_remote(&mut self, remote: Remote) {
+        self.remote_by_name.insert(remote.name.clone(), remote);
+    }
+
     fn restore_default_remotes(&mut self) {
-        // TODO We need to add default remotes and ensure there are no duplicates
-        for remote in create_default_remotes() {}
+        for remote in create_default_remotes() {
+            self.add_remote(remote);
+        }
     }
 }
 
@@ -208,12 +212,13 @@ impl Remote {
     }
 }
 
-fn get_remotes_from_props(props: &Properties) -> Vec<Remote> {
+fn get_remotes_from_props(props: &Properties) -> IndexMap<String, Remote> {
     let size: u32 = props.get("size").and_then(|s| s.parse().ok()).unwrap_or(0);
     (0..size)
         .filter_map(|i| {
             let value = props.get(format!("remote{i}"))?;
-            Remote::from_ini_value(value).ok()
+            let remote = Remote::from_ini_value(value).ok()?;
+            Some((remote.name.clone(), remote))
         })
         .collect()
 }

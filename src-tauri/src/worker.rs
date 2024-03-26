@@ -48,9 +48,8 @@ impl ReabootWorker {
         let downloader = Downloader::new(3);
         let download_temp_dir =
             tempdir::TempDir::new("reaboot-").context("couldn't create temp directory")?;
-        // TODO Take the first variant when done with debugging. This clears the temp dir after use.
-        // let download_dir = download_temp_dir.path().to_path_buf()
-        let download_dir = download_temp_dir.into_path();
+        let download_dir = download_temp_dir.path().to_path_buf()
+        // let download_dir = download_temp_dir.into_path();
         let resolved_config = reaboot_util::resolve_config(&config)?;
         let fixed_recipe: Recipe = serde_json::from_str(include_str!("branding/recipe.json"))
             .context("couldn't parse fixed recipe")?;

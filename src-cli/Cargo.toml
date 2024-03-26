@@ -21,3 +21,7 @@ tempdir = { workspace = true }
 comfy-table = { workspace = true }
 # For parsing URLs
 url = { workspace = true }
+# For emitting log messages
+tracing = { workspace = true }
+# For printing log messages
+tracing-subscriber = { workspace = true }

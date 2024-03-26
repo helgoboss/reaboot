@@ -1,26 +1,32 @@
 use crate::api::{
-    DownloadInfo, InstallationStatus, MultiDownloadInfo, ReabootConfig, ResolvedReabootConfig,
+    DownloadInfo, InstallationStatus, MultiDownloadInfo, PackageInfo, ReabootConfig,
+    ResolvedReabootConfig,
 };
 use crate::downloader::{Download, DownloadProgress, Downloader};
+use crate::file_util::{find_first_existing_parent, get_first_existing_parent_dir};
 use crate::multi_downloader::{
     DownloadError, DownloadResult, DownloadWithPayload, MultiDownloader,
 };
-use crate::package_application_plan::PackageApplicationPlan;
+use crate::package_application_plan::{PackageApplication, PackageApplicationPlan};
 use crate::package_download_plan::{PackageDownloadPlan, QualifiedSource};
 use crate::reaboot_util::resolve_config;
-use crate::reaper_resource_dir::ReaperResourceDir;
+use crate::reaper_resource_dir::{
+    ReaperResourceDir, REAPACK_INI_FILE_PATH, REAPACK_REGISTRY_DB_FILE_PATH,
+};
 use crate::reaper_target::ReaperTarget;
 use crate::reaper_util::unpack_reaper_to_portable_dir;
 use crate::task_tracker::{Summary, TaskTracker};
 use crate::{reaboot_util, reapack_util, reaper_util};
-use anyhow::{bail, Context};
+use anyhow::{anyhow, bail, ensure, Context};
 use enumset::EnumSet;
+use fs_extra::dir::{CopyOptions, TransitProcessResult, TransitState};
+use fs_extra::error::ErrorKind;
 use futures::{stream, StreamExt};
 use reaboot_reapack::database::Database;
 use reaboot_reapack::index::{Index, IndexSection, NormalIndexSection};
 use reaboot_reapack::model::{
     Config, InstalledFile, InstalledPackage, InstalledPackageType, InstalledVersionName,
-    LightPackageId, PackageUrl, ParsePackageUrlError, Section, VersionRef,
+    LightPackageId, PackageUrl, ParsePackageUrlError, Remote, Section, VersionRef,
 };
 use std::collections::{HashMap, HashSet};
 use std::fs;
@@ -83,10 +89,10 @@ impl<L: InstallerListener> Installer<L> {
             downloader: config.downloader,
             package_urls: package_urls?,
             temp_download_dir: config.temp_download_dir,
-            temp_reaper_resource_dir: ReaperResourceDir::new(temp_reaper_resource_dir),
+            temp_reaper_resource_dir: ReaperResourceDir::new(temp_reaper_resource_dir)?,
             final_reaper_resource_dir: ReaperResourceDir::new(
                 config.resolved_config.reaper_resource_dir,
-            ),
+            )?,
             reaper_target: config.resolved_config.reaper_target,
             listener: config.listener,
             dry_run: config.dry_run,
@@ -142,18 +148,22 @@ impl<L: InstallerListener> Installer<L> {
         // Update ReaPack state
         let package_application_plan = self
             .update_reapack_state(
+                &downloaded_indexes,
                 successful_downloads,
                 &package_status_quo.installed_packages_to_be_replaced,
             )
             .await?;
+        // Actually apply the changes (by copying/moving all stuff to the destination dir)
         if !self.dry_run {
             // Apply ReaPack state
             // We do that *before* applying the packages. If something fails when
             // copying/moving the package files, the real ReaPack can still install the
             // packages via its synchronization feature.
-            self.apply_reapack_state();
+            self.apply_reapack_state(&downloaded_indexes)
+                .context("applying ReaPack state failed")?;
             // Apply packages
-            self.apply_packages(package_application_plan).await?;
+            self.apply_packages(package_application_plan)
+                .context("applying packages failed")?;
         }
         // Create report
         let report = InstallationReport {};
@@ -177,40 +187,31 @@ impl<L: InstallerListener> Installer<L> {
     fn prepare_temp_dir(&self) -> anyhow::Result<()> {
         self.listener
             .emit_installation_status(InstallationStatus::PreparingTempDirectory);
-        let existing_reapack_db_file = self.final_reaper_resource_dir.reapack_registry_db_file();
-        if existing_reapack_db_file.exists() {
-            fs::copy(
-                existing_reapack_db_file,
-                self.temp_reaper_resource_dir.reapack_registry_db_file(),
-            )?;
-        }
-        let existing_reapack_ini_file = self.final_reaper_resource_dir.reapack_ini_file();
-        if existing_reapack_db_file.exists() {
-            fs::copy(
-                existing_reapack_ini_file,
-                self.temp_reaper_resource_dir.reapack_ini_file(),
-            )?;
-        }
+        self.copy_file_from_final_to_temp_dir_if_exists(REAPACK_INI_FILE_PATH)?;
+        self.copy_file_from_final_to_temp_dir_if_exists(REAPACK_REGISTRY_DB_FILE_PATH)?;
         Ok(())
     }
 
     async fn update_reapack_state<'a>(
-        &self,
-        downloads: Vec<DownloadWithPayload<QualifiedSource<'a>>>,
-        replace_packages: &[InstalledPackage],
+        &'a self,
+        downloaded_indexes: &'a HashMap<Url, DownloadedIndex>,
+        successful_downloads: Vec<DownloadWithPayload<QualifiedSource<'a>>>,
+        installed_packages_to_be_replaced: &'a [InstalledPackage],
     ) -> anyhow::Result<PackageApplicationPlan> {
         self.listener
             .emit_installation_status(InstallationStatus::UpdatingReaPackState);
-        // Create/migrate ReaPack INI file
-        let reapack_ini_file = self.temp_reaper_resource_dir.reaper_ini_file();
-        if reapack_ini_file.exists() {
-            let mut ini = Config::load_from_ini_file(&reapack_ini_file)?;
-            if ini.migrate() {
-                ini.apply_to_ini_file(&reapack_ini_file)?;
-            }
-        } else {
-            Config::create_initial_ini_file(&reapack_ini_file)?;
-        }
+        self.create_or_update_reapack_ini_file(downloaded_indexes)?;
+        let plan = self
+            .create_or_update_reapack_db(successful_downloads, installed_packages_to_be_replaced)
+            .await?;
+        Ok(plan)
+    }
+
+    async fn create_or_update_reapack_db<'a>(
+        &'a self,
+        successful_downloads: Vec<DownloadWithPayload<QualifiedSource<'a>>>,
+        installed_packages_to_be_replaced: &'a [InstalledPackage],
+    ) -> anyhow::Result<PackageApplicationPlan> {
         // Create/migrate ReaPack database
         let reapack_db_file = self.temp_reaper_resource_dir.reapack_registry_db_file();
         if reapack_db_file.exists() {
@@ -219,21 +220,57 @@ impl<L: InstallerListener> Installer<L> {
             Database::create(reapack_db_file).await?;
         }
         // Update ReaPack database
-        self.update_reapack_database(downloads, replace_packages)
-            .await
+        let application_plan = self
+            .update_reapack_db(successful_downloads, installed_packages_to_be_replaced)
+            .await?;
+        Ok(application_plan)
     }
 
-    async fn update_reapack_database<'a>(
+    fn create_or_update_reapack_ini_file(
         &self,
+        downloaded_indexes: &HashMap<Url, DownloadedIndex>,
+    ) -> anyhow::Result<()> {
+        let reapack_ini_file = self.temp_reaper_resource_dir.reapack_ini_file();
+        // Create/migrate config
+        let mut config = if reapack_ini_file.exists() {
+            let mut config = Config::load_from_ini_file(&reapack_ini_file)?;
+            config.migrate();
+            config
+        } else {
+            Config::default()
+        };
+        // Update config
+        self.update_reapack_ini_file(&mut config, downloaded_indexes);
+        // Apply to INI file on disk
+        config.apply_to_ini_file(&reapack_ini_file)?;
+        Ok(())
+    }
+
+    fn update_reapack_ini_file<'a>(
+        &self,
+        config: &mut Config,
+        downloaded_indexes: &HashMap<Url, DownloadedIndex>,
+    ) {
+        for index in downloaded_indexes.values() {
+            let remote = Remote {
+                name: index.name.to_string(),
+                url: index.url.clone(),
+                enabled: true,
+                auto_install: None,
+            };
+            config.add_remote(remote);
+        }
+    }
+
+    async fn update_reapack_db<'a>(
+        &'a self,
         downloads: Vec<DownloadWithPayload<QualifiedSource<'a>>>,
-        replace_packages: &[InstalledPackage],
+        installed_packages_to_be_replaced: &'a [InstalledPackage],
     ) -> anyhow::Result<PackageApplicationPlan> {
-        // TODO
-        let mut replace_package_by_id: HashMap<_, _> = replace_packages
+        let mut replace_package_by_id: HashMap<_, _> = installed_packages_to_be_replaced
             .iter()
             .map(|p| (p.package_id(), p))
             .collect();
-        // Group downloads by package
         let mut downloads_by_package: HashMap<LightPackageId, Vec<_>> = HashMap::new();
         for download in downloads {
             downloads_by_package
@@ -241,23 +278,33 @@ impl<L: InstallerListener> Installer<L> {
                 .or_default()
                 .push(download);
         }
+        let mut plan = PackageApplicationPlan::default();
         for (package_id, downloads) in downloads_by_package {
             let replace_package = replace_package_by_id.remove(&package_id);
             let install_result = self
-                .update_reapack_database_for_one_package(package_id, downloads, replace_package)
+                .update_reapack_db_for_one_package(package_id, &downloads, replace_package)
                 .await;
-            if let Err(e) = install_result {
-                tracing::warn!(msg = "error while installing package", ?e);
+            match install_result {
+                Ok(_) => {
+                    let package_move = PackageApplication {
+                        package_id,
+                        to_be_moved: downloads,
+                        to_be_removed: replace_package,
+                    };
+                    plan.package_applications.push(package_move);
+                }
+                Err(e) => {
+                    tracing::warn!(msg = "Couldn't update ReaPack DB for one package", ?e)
+                }
             }
         }
-        let plan = PackageApplicationPlan {};
         Ok(plan)
     }
 
-    async fn update_reapack_database_for_one_package<'a>(
+    async fn update_reapack_db_for_one_package<'a>(
         &self,
         package_id: LightPackageId<'a>,
-        downloads: Vec<DownloadWithPayload<QualifiedSource<'a>>>,
+        downloads: &[DownloadWithPayload<QualifiedSource<'a>>],
         replace_package: Option<&InstalledPackage>,
     ) -> anyhow::Result<()> {
         // Prepare data to be inserted into DB
@@ -295,41 +342,30 @@ impl<L: InstallerListener> Installer<L> {
                 })
                 .collect(),
         };
-        // Remove files, remove package, add package and move/copy files ... all within one database
-        // transaction. Our atomic unit at this stage is a package.
+        // Dry-remove files, dry-remove package, add package to DB and dry-move/copy files ...
+        // all within one database transaction. Our atomic unit at this stage is a package.
         self.listener
             .log_write_activity(format!("Installing package {}...", package_id.package));
         let mut db = self.open_temp_reapack_db().await?;
         let transaction = db.with_transaction(|mut transaction| async {
             if let Some(p) = replace_package {
-                // TODO Don't yet remove file. Just check if it's possible.
+                // Dry remove installed package files
                 for file in &p.files {
                     let path = self.final_reaper_resource_dir.get().join(&file.path);
-                    std::fs::remove_file(path)
-                        .context("couldn't remove file of package to be replaced")?;
+                    dry_remove_file(&path)?;
                 }
-                // Remove package
+                // Remove package from DB
                 transaction.remove_package(package_id).await?;
             }
-            // Add
+            // Add package to DB
             transaction.add_package(installed_package).await?;
-            // Copy/move
-            // TODO Don't actually copy/move. Just check if it's possible.
+            // Dry copy/move
             for download in downloads {
-                let src_file = download.download.file;
+                let src_file = &download.download.file;
                 let dest_file = self
                     .final_reaper_resource_dir
-                    .get()
-                    .join(download.payload.relative_path);
-                if let Some(dest_dir) = dest_file.parent() {
-                    std::fs::create_dir_all(dest_dir)?;
-                }
-                if std::fs::rename(&src_file, &dest_file).is_err() {
-                    // Simple move/rename was not possible, REAPER resource dir seems to be on
-                    // other mount than the temp dir. Need to copy.
-                    std::fs::copy(&src_file, &dest_file)
-                        .context("couldn't copy file from package to REAPER resource directory")?;
-                }
+                    .join(&download.payload.relative_path);
+                dry_move_file(src_file, dest_file)?;
             }
             Ok(transaction)
         });
@@ -337,22 +373,64 @@ impl<L: InstallerListener> Installer<L> {
         Ok(())
     }
 
-    async fn apply_packages<'a>(&self, plan: PackageApplicationPlan) -> anyhow::Result<()> {
-        todo!()
+    fn apply_reapack_state<'a>(
+        &self,
+        downloaded_indexes: &HashMap<Url, DownloadedIndex>,
+    ) -> anyhow::Result<()> {
+        self.listener
+            .emit_installation_status(InstallationStatus::ApplyingReaPackState);
+        self.move_file(
+            self.temp_reaper_resource_dir.reapack_ini_file(),
+            self.final_reaper_resource_dir.reapack_ini_file(),
+            0,
+            2,
+            true,
+        )
+        .context("moving ReaPack INI file failed")?;
+        // TODO We must make sure that the DB file was written, otherwise we end up with an empty one
+        self.move_file(
+            self.temp_reaper_resource_dir.reapack_registry_db_file(),
+            self.final_reaper_resource_dir.reapack_registry_db_file(),
+            1,
+            2,
+            true,
+        )
+        .context("moving ReaPack registry DB file failed")?;
+        let dest_cache_dir = self.final_reaper_resource_dir.reapack_cache_dir();
+        let total_count = downloaded_indexes.len();
+        for (i, index) in downloaded_indexes.values().enumerate() {
+            let src_index_file_name = index
+                .temp_download_file
+                .file_name()
+                .context("ReaPack index file should have a name at this point")?;
+            let dest_index_file = dest_cache_dir.join(src_index_file_name);
+            self.move_file(
+                &index.temp_download_file,
+                dest_index_file,
+                i,
+                total_count,
+                true,
+            )
+            .context("moving cached ReaPack repository index failed")?;
+        }
+        Ok(())
     }
 
-    async fn apply_package<'a>(
-        &self,
-        package_id: LightPackageId<'a>,
-        downloads: Vec<DownloadWithPayload<QualifiedSource<'a>>>,
-        replace_package: Option<&InstalledPackage>,
-    ) -> anyhow::Result<()> {
-        // TODO
-        // Remove files, remove package, add package and move/copy files ... all within one database
-        // transaction. Our atomic unit at this stage is a package.
+    fn apply_packages<'a>(&self, plan: PackageApplicationPlan) -> anyhow::Result<()> {
+        for package_application in plan.package_applications {
+            self.apply_package(package_application)?;
+        }
+        Ok(())
+    }
+
+    fn apply_package(&self, package_application: PackageApplication) -> anyhow::Result<()> {
         self.listener
-            .log_write_activity(format!("Installing package {}...", package_id.package));
-        if let Some(p) = replace_package {
+            .emit_installation_status(InstallationStatus::ApplyingPackage {
+                package: PackageInfo {
+                    name: package_application.package_id.package.to_string(),
+                },
+            });
+        if let Some(p) = package_application.to_be_removed {
             // Remove files
             for file in &p.files {
                 let path = self.final_reaper_resource_dir.get().join(&file.path);
@@ -361,21 +439,14 @@ impl<L: InstallerListener> Installer<L> {
             }
         }
         // Copy/move
-        for download in downloads {
+        let total_file_count = package_application.to_be_moved.len();
+        for (i, download) in package_application.to_be_moved.into_iter().enumerate() {
             let src_file = download.download.file;
             let dest_file = self
                 .final_reaper_resource_dir
                 .get()
                 .join(download.payload.relative_path);
-            if let Some(dest_dir) = dest_file.parent() {
-                std::fs::create_dir_all(dest_dir)?;
-            }
-            if std::fs::rename(&src_file, &dest_file).is_err() {
-                // Simple move/rename was not possible, REAPER resource dir seems to be on
-                // other mount than the temp dir. Need to copy.
-                std::fs::copy(&src_file, &dest_file)
-                    .context("couldn't copy file from package to REAPER resource directory")?;
-            }
+            self.move_file(&src_file, &dest_file, i, total_file_count, false)?;
         }
         Ok(())
     }
@@ -522,12 +593,14 @@ impl<L: InstallerListener> Installer<L> {
                 |progress| self.listener.emit_progress(progress),
             )
             .await;
-        // TODO Emit new installation status
+        // Parse
+        self.listener
+            .emit_installation_status(InstallationStatus::ParsingRepositoryIndexes);
         let mut index_names_so_far = HashSet::new();
         let repos = download_results
             .into_iter()
             .flatten()
-            .filter_map(|download| {
+            .filter_map(|mut download| {
                 let temp_file = std::fs::File::open(&download.download.file).ok()?;
                 let index = Index::parse(BufReader::new(temp_file))
                     .inspect_err(|e| {
@@ -546,7 +619,8 @@ impl<L: InstallerListener> Installer<L> {
                 }
                 let final_cache_file_name = format!("{index_name}.xml");
                 let final_cache_file = download.download.file.with_file_name(final_cache_file_name);
-                std::fs::rename(&download.download.file, final_cache_file).ok()?;
+                std::fs::rename(&download.download.file, &final_cache_file).ok()?;
+                download.download.file = final_cache_file;
                 let repo = DownloadedIndex {
                     url: download.download.url.clone(),
                     name: index_name.clone(),
@@ -584,6 +658,48 @@ impl<L: InstallerListener> Installer<L> {
                 |progress| self.listener.emit_progress(progress),
             )
             .await
+    }
+
+    fn copy_file_from_final_to_temp_dir_if_exists(
+        &self,
+        rel_path: impl AsRef<Path>,
+    ) -> anyhow::Result<()> {
+        let file_in_final_dir = self.final_reaper_resource_dir.join(&rel_path);
+        if file_in_final_dir.exists() {
+            let file_in_temp_dir = self.temp_reaper_resource_dir.join(&rel_path);
+            create_parent_dirs(&file_in_temp_dir)?;
+            fs::copy(&file_in_final_dir, &file_in_temp_dir)?;
+        }
+        Ok(())
+    }
+
+    fn move_file(
+        &self,
+        src_file: impl AsRef<Path>,
+        dest_file: impl AsRef<Path>,
+        index: usize,
+        count: usize,
+        overwrite: bool,
+    ) -> anyhow::Result<()> {
+        create_parent_dirs(&dest_file)?;
+        let options = fs_extra::file::CopyOptions {
+            overwrite,
+            skip_exist: false,
+            buffer_size: 0,
+        };
+        let result =
+            fs_extra::file::move_file_with_progress(src_file, &dest_file, &options, |transit| {
+                let file_total_bytes = transit.total_bytes as f64;
+                let file_progress = if file_total_bytes == 0.0 {
+                    1.0
+                } else {
+                    transit.copied_bytes as f64 / file_total_bytes
+                };
+                let total_progress = (index as f64 / count as f64) * file_progress;
+                self.listener.emit_progress(total_progress);
+            });
+        result.map_err(|e| anyhow!("Error when moving file: {:?} - {}", e.kind, e))?;
+        Ok(())
     }
 }
 
@@ -681,4 +797,31 @@ enum ReaperInstallationOutcome {
 struct PackageStatusQuo {
     installed_packages_to_be_replaced: Vec<InstalledPackage>,
     installed_packages_to_keep: Vec<InstalledPackage>,
+}
+
+fn dry_remove_file(path: &Path) -> anyhow::Result<()> {
+    if path.exists() {
+        if fs::metadata(&path)?.permissions().readonly() {
+            bail!("Removing the file would not work");
+        }
+    }
+    Ok(())
+}
+
+fn dry_move_file(src: &Path, dest: PathBuf) -> anyhow::Result<()> {
+    ensure!(src.exists(), "Source file doesn't exist");
+    ensure!(!dest.exists(), "Destination file exists already");
+    let first_existing_parent = get_first_existing_parent_dir(dest.clone())?;
+    let readonly = fs::metadata(first_existing_parent)?
+        .permissions()
+        .readonly();
+    ensure!(!readonly, "Parent of destination file is not writable");
+    Ok(())
+}
+
+fn create_parent_dirs(path: impl AsRef<Path>) -> anyhow::Result<()> {
+    if let Some(parent) = path.as_ref().parent() {
+        fs::create_dir_all(parent)?;
+    }
+    Ok(())
 }

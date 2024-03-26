@@ -183,7 +183,7 @@ fn get_os_specific_reaper_installer_file_name(
 ) -> String {
     let version = version.to_string().replace(".", "");
     match reaper_target {
-        // TODO What about the "macOS 10.5-10.14" download ("reaper711_x86_64.dmg")?
+        // TODO-medium What about the "macOS 10.5-10.14" download ("reaper711_x86_64.dmg")?
         ReaperTarget::MacOsAarch64 | ReaperTarget::MacOsX86_64 => {
             format!("reaper{version}_universal.dmg")
         }

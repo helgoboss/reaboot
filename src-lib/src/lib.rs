@@ -1,5 +1,6 @@
 pub mod api;
 pub mod downloader;
+mod file_util;
 pub mod installer;
 pub mod multi_downloader;
 pub mod package_application_plan;

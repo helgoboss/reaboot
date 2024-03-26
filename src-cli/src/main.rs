@@ -11,6 +11,7 @@ use url::Url;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    tracing_subscriber::fmt::init();
     let app = App::parse();
     match app.command {
         Command::Install(args) => install(args).await,
@@ -37,14 +38,14 @@ struct InstallArgs {
     /// If not provided, ReaBoot uses the main REAPER installation.
     #[arg(long)]
     portable: Option<String>,
-    /// Increases logging output.
-    #[arg(short, long, default_value_t = false)]
-    // TODO
-    verbose: bool,
-    /// Prints a detailed report at the end.
-    // TODO
-    #[arg(long, default_value_t = false)]
-    report: bool,
+    // TODO-medium
+    // /// Increases logging output.
+    // #[arg(short, long, default_value_t = false)]
+    // verbose: bool,
+    // /// Prints a detailed report at the end.
+    // // TODO-medium
+    // #[arg(long, default_value_t = false)]
+    // report: bool,
     /// Creates the temporary directory for downloads within the given custom directory.
     ///
     /// If provided, ReaBoot doesn't clean up the downloaded files, so you can freely inspect
@@ -75,7 +76,7 @@ async fn install(args: InstallArgs) -> anyhow::Result<()> {
     let config = ReabootConfig {
         custom_reaper_resource_dir: args.portable.map(PathBuf::from),
         package_urls: args.package_url.unwrap_or_default(),
-        // TODO
+        // TODO-low
         custom_reaper_target: None,
     };
     let resolved_config = resolve_config(&config)?;
@@ -107,8 +108,8 @@ async fn install(args: InstallArgs) -> anyhow::Result<()> {
         listener: CliInstallerListener::new(),
         reaper_version,
     };
-    let installer = Installer::new(config).await?;
-    installer.install().await?;
+    let installer = Installer::new(config)?;
+    installer.install().await.context("installation failed")?;
     Ok(())
 }
 

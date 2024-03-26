@@ -145,7 +145,7 @@ pub enum InstallationStatus {
     // ===========================================================
     /// Moving ReaPack INI file, registry database and cached indexes to the final destination.
     #[strum(serialize = "Applying ReaPack state")]
-    ApplyingReaPackState { package: PackageInfo },
+    ApplyingReaPackState,
     /// Moving the files of each package to its final destination and updating the database.
     #[strum(serialize = "Applying package")]
     ApplyingPackage { package: PackageInfo },
@@ -180,9 +180,6 @@ pub struct DownloadInfo {
 #[ts(export)]
 pub struct PackageInfo {
     pub name: String,
-    pub desc: String,
-    pub version: String,
-    pub author: String,
 }
 
 impl Display for InstallationStatus {
@@ -202,7 +199,9 @@ impl Display for InstallationStatus {
                     write!(f, " ({error_count} errors)")?;
                 }
             }
-            InstallationStatus::ApplyingPackage { .. } => {}
+            InstallationStatus::ApplyingPackage { package } => {
+                write!(f, "{simple_name}: {}", &package.name)?;
+            }
             _ => {
                 simple_name.fmt(f)?;
             }

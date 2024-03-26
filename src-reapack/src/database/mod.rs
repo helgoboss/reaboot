@@ -13,11 +13,13 @@ use sqlx::Transaction;
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::fs;
-use std::future::Future;
+use std::future::{poll_fn, Future};
 use std::ops::DerefMut;
 use std::path::Path;
 use std::str::FromStr;
 use thiserror::Error;
+use tokio::runtime::Handle;
+use tracing::instrument;
 
 /// This is the currently supported ReaPack database user version.
 ///
@@ -49,9 +51,17 @@ use thiserror::Error;
 /// See https://github.com/cfillion/reapack/blob/master/src/registry.cpp (method `migrate`).
 pub const REAPACK_DB_USER_VERSION: DbUserVersion = DbUserVersion { major: 0, minor: 6 };
 
+#[derive(Debug)]
 pub struct Database {
-    connection: SqliteConnection,
+    connection: Option<SqliteConnection>,
 }
+
+// impl Drop for Database {
+//     fn drop(&mut self) {
+//         let connection = self.connection.take();
+//         let _ = Handle::current().block_on(connection.close());
+//     }
+// }
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct DbUserVersion {
@@ -111,7 +121,9 @@ impl Database {
             .pragma("foreign_keys", "1")
             .create_if_missing(create_if_missing);
         let connection = SqliteConnection::connect_with(&options).await?;
-        let db = Self { connection };
+        let db = Self {
+            connection: Some(connection),
+        };
         Ok(db)
     }
 
@@ -179,6 +191,7 @@ impl Database {
     }
 
     /// Creates tables and sets the initial user version.
+    #[instrument]
     async fn init(&mut self) -> anyhow::Result<()> {
         let transaction = self.with_transaction(|mut t| async {
             t.init().await?;
@@ -189,6 +202,7 @@ impl Database {
     }
 
     /// Migrates from an older DB version if necessary.
+    #[instrument]
     pub async fn migrate(&mut self) -> anyhow::Result<()> {
         let v = self.user_version().await?;
         if v > REAPACK_DB_USER_VERSION {
@@ -235,8 +249,7 @@ pub struct DatabaseTransaction<'a>(Transaction<'a, Sqlite>);
 
 impl<'a> DatabaseTransaction<'a> {
     pub async fn set_user_version(&mut self, version: DbUserVersion) -> anyhow::Result<()> {
-        ormlite::query("PRAGMA user_version = ?")
-            .bind(version.to_raw())
+        ormlite::query(&format!("PRAGMA user_version = {}", version.to_raw()))
             .execute(self.0.deref_mut())
             .await?;
         Ok(())
