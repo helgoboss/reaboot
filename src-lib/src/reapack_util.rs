@@ -10,18 +10,15 @@ use std::path::{Path, PathBuf};
 
 /// Returns the expected OS/architecture-specific location of the ReaPack shared library file.
 pub fn get_default_reapack_shared_lib_file(
-    reaper_resource_dir: impl AsRef<Path>,
+    reaper_resource_dir: &ReaperResourceDir,
     reaper_target: ReaperTarget,
 ) -> PathBuf {
     let file_name = get_os_specific_reapack_file_name(reaper_target);
-    ReaperResourceDir::new(reaper_resource_dir)
-        .user_plugins_dir()
-        .join(file_name)
+    reaper_resource_dir.user_plugins_dir().join(file_name)
 }
 
 /// Returns the location of the first existing ReaPack shared library, no matter OS or architecture.
-pub fn find_reapack_shared_lib_file(reaper_resource_dir: impl AsRef<Path>) -> Option<PathBuf> {
-    let reaper_resource_dir = ReaperResourceDir::new(reaper_resource_dir);
+pub fn find_reapack_shared_lib_file(reaper_resource_dir: &ReaperResourceDir) -> Option<PathBuf> {
     let user_plugins_dir = reaper_resource_dir.user_plugins_dir();
     if !user_plugins_dir.exists() {
         return None;

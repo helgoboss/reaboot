@@ -14,7 +14,7 @@ use std::path::PathBuf;
 use thiserror::Error;
 use url::Url;
 
-pub struct PackageInstallationPlan<'a> {
+pub struct PackageDownloadPlan<'a> {
     /// Packages that were mentioned in the recipes but are not in the repository index.
     pub package_descriptors_with_failures: Vec<PackageDescFailure<'a>>,
     /// Packages for which it's unclear which version to install.
@@ -50,11 +50,11 @@ pub enum PackageDescError {
     PackageVersionNotFound,
 }
 
-impl<'a> PackageInstallationPlan<'a> {
+impl<'a> PackageDownloadPlan<'a> {
     pub fn make(
         package_urls: &'a [PackageUrl],
         indexes: &'a HashMap<Url, DownloadedIndex>,
-        already_installed_non_replaced_packages: &[InstalledPackage],
+        installed_packages_to_keep: &[InstalledPackage],
         reaper_target: ReaperTarget,
     ) -> Self {
         let deduplicated_package_urls = HashSet::from_iter(package_urls);
@@ -70,7 +70,7 @@ impl<'a> PackageInstallationPlan<'a> {
         let (mut files, files_conflicting_with_already_installed_files) =
             weed_out_conflicting_files_with_already_installed_packages(
                 sources,
-                already_installed_non_replaced_packages,
+                installed_packages_to_keep,
             );
         remove_incomplete_versions(&mut files, &recipe_file_conflicts);
         Self {

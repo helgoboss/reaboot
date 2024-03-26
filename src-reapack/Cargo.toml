@@ -6,19 +6,38 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+# Mainly for reading ReaPack index XML files, but also for making some ReaPack files serializable, which can
+# be very useful for consumers
 serde = { workspace = true, features = ["derive"] }
+# For reading ReaPack index XML files
 serde-xml-rs = { workspace = true }
+# For parsing the ISO-formatted time attribute of version tags in a ReaPack index XML file
 time = { workspace = true, features = ["serde", "parsing"] }
+# For easy creation of clean library-level error types
 thiserror = { workspace = true }
+# For parsing version names exactly like the original ReaPack
 regex = { workspace = true }
+# For efficient/heapless representation of version names (which tend to be small enough to fit on the stack)
 tinyvec = { workspace = true, features = ["alloc", "rustc_1_57"] }
-ormlite = { workspace = true, features = ["sqlite"] }
+# Async runtime. Necessary for ormlite/sqlx.
 tokio = { workspace = true }
+# For easy application-level error handling
 anyhow = { workspace = true }
+# For easy reading and modification of ReaPack's registry database
+ormlite = { workspace = true, features = ["sqlite"] }
+# For easy reading and modification of ReaPack's registry database
 sqlx = { workspace = true }
+# For supporting generation of TypeScript type definitions from some ReaPack types
 ts-rs = { workspace = true }
+# For parsing repository and package URLs
 url = { workspace = true, features = ["serde"] }
+# In its database, ReaPack represents enum variants as numbers, so we have to convert back and forth
 num_enum = { workspace = true }
+# For having a nice API for sections instead of having to deal with raw bit flags
 enumset = { workspace = true }
+# For reading and writing the reapack.ini file
+rust-ini = { workspace = true }
 # For parsing a version descriptor via serde
 serde_plain = { workspace = true }
+# For being able to treat ReaPack categories as UTF-8 paths
+camino = { workspace = true }

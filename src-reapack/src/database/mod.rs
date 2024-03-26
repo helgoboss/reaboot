@@ -10,41 +10,106 @@ use ormlite::sqlite::{Sqlite, SqliteConnectOptions, SqliteConnection, SqliteType
 use ormlite::{Connection, Model};
 use serde::Deserialize;
 use sqlx::Transaction;
+use std::cmp::Ordering;
 use std::collections::HashMap;
+use std::fs;
 use std::future::Future;
 use std::ops::DerefMut;
 use std::path::Path;
 use std::str::FromStr;
 use thiserror::Error;
-use tokio::fs;
+
+/// This is the currently supported ReaPack database user version.
+///
+/// For ReaBoot, this version number has the following meaning:
+///
+/// - If the database doesn't exist yet, it will create a new database with that user version and
+///   a database schema corresponding to that version. If the latest ReaPack version is
+///   made for a newer DB user version, it's still okay. ReaPack will carry out the necessary
+///   migration. If ReaPack raises the **major** DB user version in the process, ReaBoot will not be
+///   usable *after* that initial installation (see below).
+/// - If the database exists already and its **major** user version is *greater* than the one
+///   defined here, ReaBoot will refuse to continue because the database schema turned incompatible.
+///   In that case, it's a good idea to prompt the user to check if a new ReaBoot version
+///   is available.
+/// - If the database exists already and its user version is *lower* than the one defined here,
+///   ReaBoot will apply the same DB migrations that ReaPack would do and raise the DB user version
+///   to the one defined here.
+///
+/// This version number and a few other things should be adjusted whenever ReaPack raises it. If
+/// it happens a bit later, no problem. The only issue with an out-of-date ReaBoot is that it
+/// refuses operation if the user has a ReaPack database with a higher major version.
+///
+/// Whenever ReaPack raises the version, update the following things:
+///
+/// - [`REAPACK_DB_USER_VERSION`]
+/// - [`DatabaseTransaction::init`] (`sql/create-tables.sql`)
+/// - [`DatabaseTransaction::migrate_from`]
+///
+/// See https://github.com/cfillion/reapack/blob/master/src/registry.cpp (method `migrate`).
+pub const REAPACK_DB_USER_VERSION: DbUserVersion = DbUserVersion { major: 0, minor: 6 };
 
 pub struct Database {
     connection: SqliteConnection,
 }
 
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+pub struct DbUserVersion {
+    // MUST COME FIRST (influences derived ordering)
+    pub major: i16,
+    // MUST COME SECOND (influences derived ordering)
+    pub minor: i16,
+}
+
+impl DbUserVersion {
+    pub const UNINITIALIZED: Self = Self { major: 0, minor: 0 };
+
+    pub fn from_raw(raw: i32) -> Self {
+        Self {
+            major: (raw >> 16) as i16,
+            minor: raw as i16,
+        }
+    }
+
+    pub fn to_raw(&self) -> i32 {
+        self.minor as i32 | ((self.major as i32) << 16)
+    }
+}
+
 impl Database {
+    /// Creates the database file, creates tables and sets the initial user version.
+    ///
+    /// It's important that we do the same here as the original ReaPack
+    /// does in the ReaPack version corresponding to the [`REAPACK_DB_USER_VERSION`].
+    ///
+    /// https://github.com/cfillion/reapack/blob/master/src/registry.cpp
     pub async fn create(db_file: impl AsRef<Path>) -> anyhow::Result<Self> {
         // Create parent folders
         let db_file = db_file.as_ref();
         if let Some(parent) = db_file.parent() {
-            fs::create_dir_all(parent).await?;
+            fs::create_dir_all(parent)?;
         }
-        // Open database
-        let options = SqliteConnectOptions::new()
-            .filename(db_file)
-            .create_if_missing(true);
-        let mut connection = SqliteConnection::connect_with(&options).await?;
-        ormlite::query(include_str!("sql/create-tables.sql"))
-            .execute(&mut connection)
-            .await?;
-        let db = Self { connection };
+        // Open and init DB
+        let mut db = Self::new(db_file, true).await?;
+        db.init().await?;
         Ok(db)
     }
 
+    /// Opens the given database file.
+    ///
+    /// Unlike in the original ReaPack, this doesn't include migration! It's a separate method.
+    /// For ReaBoot, that's better because it's more of a "one shot" application. We potentially
+    /// connect multiple times during the execution of ReaBoot in order to not having to hold
+    /// on to files in an async context.
     pub async fn open(db_file: impl AsRef<Path>) -> anyhow::Result<Self> {
+        Self::new(db_file, false).await
+    }
+
+    async fn new(db_file: impl AsRef<Path>, create_if_missing: bool) -> anyhow::Result<Self> {
         let options = SqliteConnectOptions::new()
             .filename(db_file)
-            .create_if_missing(false);
+            .pragma("foreign_keys", "1")
+            .create_if_missing(create_if_missing);
         let connection = SqliteConnection::connect_with(&options).await?;
         let db = Self { connection };
         Ok(db)
@@ -65,6 +130,13 @@ impl Database {
             })
             .collect();
         Ok(installed_packages)
+    }
+
+    pub async fn user_version(&mut self) -> anyhow::Result<DbUserVersion> {
+        let (raw,): (i32,) = ormlite::query_as("PRAGMA user_version")
+            .fetch_one(&mut self.connection)
+            .await?;
+        Ok(DbUserVersion::from_raw(raw))
     }
 
     pub async fn entries(&mut self) -> anyhow::Result<Vec<DbEntry>> {
@@ -88,11 +160,88 @@ impl Database {
         transaction.0.commit().await?;
         Ok(())
     }
+
+    pub async fn compatibility_info(&mut self) -> anyhow::Result<CompatibilityInfo> {
+        let v = self.user_version().await?;
+        let info = match v.cmp(&REAPACK_DB_USER_VERSION) {
+            Ordering::Less => CompatibilityInfo::CompatibleButNeedsMigration,
+            Ordering::Equal => CompatibilityInfo::PerfectlyCompatible,
+            Ordering::Greater => {
+                if v.major > REAPACK_DB_USER_VERSION.major {
+                    // The major version is higher! Oh no!
+                    CompatibilityInfo::DbTooNew
+                } else {
+                    CompatibilityInfo::DbNewerButCompatible
+                }
+            }
+        };
+        Ok(info)
+    }
+
+    /// Creates tables and sets the initial user version.
+    async fn init(&mut self) -> anyhow::Result<()> {
+        let transaction = self.with_transaction(|mut t| async {
+            t.init().await?;
+            Ok(t)
+        });
+        transaction.await?;
+        Ok(())
+    }
+
+    /// Migrates from an older DB version if necessary.
+    pub async fn migrate(&mut self) -> anyhow::Result<()> {
+        let v = self.user_version().await?;
+        if v > REAPACK_DB_USER_VERSION {
+            // Version of DB is greater than the version this ReaBoot version was made for.
+            return Ok(());
+        }
+        if v == DbUserVersion::UNINITIALIZED {
+            // This shouldn't happen in normal operation. The database exists but was not
+            // initialized yet by ReaBoot or ReaPack. Do a full initialization instead of gradual
+            // migration.
+            self.init().await?;
+            return Ok(());
+        }
+        // Starting from here, we for sure do some migration.
+        let transaction = self.with_transaction(|mut t| async {
+            t.migrate_from(v).await?;
+            Ok(t)
+        });
+        transaction.await?;
+        Ok(())
+    }
+}
+
+/// Compatibility of this ReaBoot version with a given ReaPack registry database.
+pub enum CompatibilityInfo {
+    /// Versions match exactly. Jackpot.
+    PerfectlyCompatible,
+    /// DB version is older than the version this ReaBoot version was made for. No problem, it
+    /// just needs migration.
+    CompatibleButNeedsMigration,
+    /// DB version is greater than the version this ReaBoot version was made for, but it's
+    /// still backward-compatible.
+    ///
+    /// We can still operate, we just might not use all the new features.
+    DbNewerButCompatible,
+    /// DB version is newer than the version this ReaBoot version was made for and not
+    /// backward-compatible anymore.
+    ///
+    /// Operation is not possible.
+    DbTooNew,
 }
 
 pub struct DatabaseTransaction<'a>(Transaction<'a, Sqlite>);
 
 impl<'a> DatabaseTransaction<'a> {
+    pub async fn set_user_version(&mut self, version: DbUserVersion) -> anyhow::Result<()> {
+        ormlite::query("PRAGMA user_version = ?")
+            .bind(version.to_raw())
+            .execute(self.0.deref_mut())
+            .await?;
+        Ok(())
+    }
+
     pub async fn remove_package(&mut self, package_id: LightPackageId<'_>) -> anyhow::Result<()> {
         // ReaPack's database schema has a foreign key defined, but without cascade delete. So
         // we need to manually remove all files and then the entry.
@@ -140,6 +289,66 @@ impl<'a> DatabaseTransaction<'a> {
             };
             file.insert(&mut self.0).await?;
         }
+        Ok(())
+    }
+
+    /// This must conform to ReaPack's initialization.
+    /// See https://github.com/cfillion/reapack/blob/master/src/registry.cpp (method `migrate`)
+    async fn init(&mut self) -> anyhow::Result<()> {
+        ormlite::query(include_str!("sql/create-tables.sql"))
+            .execute(self.0.deref_mut())
+            .await?;
+        self.set_user_version(REAPACK_DB_USER_VERSION).await?;
+        Ok(())
+    }
+
+    /// This must conform to ReaPack's migration.
+    /// See https://github.com/cfillion/reapack/blob/master/src/registry.cpp (method `migrate`)
+    async fn migrate_from(&mut self, v: DbUserVersion) -> anyhow::Result<()> {
+        let t = (v.major, v.minor);
+        if t <= (0, 1) {
+            self.exec("ALTER TABLE entries ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0;")
+                .await?;
+        }
+        if t <= (0, 2) {
+            self.exec("ALTER TABLE files ADD COLUMN type INTEGER NOT NULL DEFAULT 0;")
+                .await?;
+        }
+        if t <= (0, 3) {
+            self.exec("ALTER TABLE entries ADD COLUMN desc TEXT NOT NULL DEFAULT '';")
+                .await?;
+        }
+        if t <= (0, 4) {
+            self.convert_implicit_sections().await?;
+        }
+        if t <= (0, 5) {
+            // This was actually a backward-incompatible change
+            self.exec("ALTER TABLE entries RENAME COLUMN pinned TO flags;")
+                .await?;
+        }
+        self.set_user_version(v).await?;
+        Ok(())
+    }
+
+    async fn convert_implicit_sections(&mut self) -> anyhow::Result<()> {
+        // convert from v1.0 main=true format to v1.1 flag format
+        let entries: Vec<(i32, String)> = ormlite::query_as("SELECT id, category FROM entries")
+            .fetch_all(self.0.deref_mut())
+            .await?;
+        for (id, category) in entries {
+            let section = Section::detect_from_category_legacy(category.as_ref());
+            let section_string = serde_plain::to_string(&section)?;
+            ormlite::query("UPDATE files SET main = ? WHERE entry = ? AND main != 0")
+                .bind(section_string)
+                .bind(id)
+                .execute(self.0.deref_mut())
+                .await?;
+        }
+        Ok(())
+    }
+
+    async fn exec(&mut self, query: &str) -> anyhow::Result<()> {
+        ormlite::query(query).execute(self.0.deref_mut()).await?;
         Ok(())
     }
 }

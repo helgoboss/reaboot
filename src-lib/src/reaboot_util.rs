@@ -1,9 +1,12 @@
+use anyhow::{anyhow, bail};
+use reaboot_reapack::database::{CompatibilityInfo, Database, REAPACK_DB_USER_VERSION};
 use std::path::Path;
 use thiserror::Error;
 
 use crate::api::{InstallationStatus, ReabootConfig, ResolvedReabootConfig};
+use crate::reaper_resource_dir::ReaperResourceDir;
 use crate::reaper_target::ReaperTarget;
-use crate::{reapack_util, reaper_util};
+use crate::{reapack_util, reaper_resource_dir, reaper_util};
 
 pub fn resolve_config(config: &ReabootConfig) -> Result<ResolvedReabootConfig, ResolveConfigError> {
     let main_reaper_resource_dir = reaper_util::get_default_main_reaper_resource_dir()
@@ -27,23 +30,42 @@ pub fn resolve_config(config: &ReabootConfig) -> Result<ResolvedReabootConfig, R
     Ok(resolved_config)
 }
 
-pub fn determine_initial_installation_status(
-    reaper_resource_dir: impl AsRef<Path>,
+pub async fn determine_initial_installation_status(
+    reaper_resource_dir: &ReaperResourceDir,
     reaper_target: ReaperTarget,
-) -> InstallationStatus {
-    // TODO Maybe change the few sync fs usages to async
-    let reaper_resource_dir = reaper_resource_dir.as_ref();
-    let reaper_installed = reaper_util::is_valid_reaper_resource_dir(reaper_resource_dir);
+) -> anyhow::Result<InstallationStatus> {
+    let reaper_installed = reaper_resource_dir.is_valid();
     if !reaper_installed {
-        return InstallationStatus::Initial;
+        return Ok(InstallationStatus::Initial);
     };
-    let reapack_installed =
-        reapack_util::get_default_reapack_shared_lib_file(reaper_resource_dir, reaper_target)
-            .exists();
-    if !reapack_installed {
-        return InstallationStatus::InstalledReaper;
+    let reapack_lib_file =
+        reapack_util::get_default_reapack_shared_lib_file(reaper_resource_dir, reaper_target);
+    if !reapack_lib_file.exists() {
+        return Ok(InstallationStatus::InstalledReaper);
     }
-    InstallationStatus::InstalledReaPack
+    let reapack_db_file = reaper_resource_dir.reapack_registry_db_file();
+    if !reapack_db_file.exists() {
+        // ReaPack library is installed but the DB file doesn't exist. There's no easy way to
+        // find out if the ReaPack installation is up-to-date, so we better download the latest
+        // version of ReaPack.
+        return Ok(InstallationStatus::InstalledReaper);
+    }
+    let Ok(mut reapack_db) = Database::open(reapack_db_file).await else {
+        return Ok(InstallationStatus::InstalledReaper);
+    };
+    match reapack_db.compatibility_info().await? {
+        CompatibilityInfo::PerfectlyCompatible | CompatibilityInfo::DbNewerButCompatible => {
+            Ok(InstallationStatus::InstalledReaPack)
+        }
+        CompatibilityInfo::CompatibleButNeedsMigration => {
+            // This is a good indicator that the installed ReaPack version is too old, so we should
+            // install the latest (and do a migration later!).
+            Ok(InstallationStatus::InstalledReaper)
+        }
+        CompatibilityInfo::DbTooNew => {
+            bail!("This ReaBoot version is too old to handle your installed ReaPack database. Please download the latest ReaBoot version! If this already is the latest ReaBoot version, please send a quick message to info@helgoboss.org!");
+        }
+    }
 }
 
 #[derive(Error, Debug)]

@@ -88,6 +88,9 @@ pub enum InstallationStatus {
     /// Downloading REAPER.
     #[strum(serialize = "Downloading REAPER")]
     DownloadingReaper { download: DownloadInfo },
+    /// Installing REAPER (to a temporary directory at first).
+    #[strum(serialize = "Extracting REAPER")]
+    ExtractingReaper,
     /// REAPER is already installed.
     ///
     /// This means that the desired REAPER resource directory already exists.
@@ -99,12 +102,20 @@ pub enum InstallationStatus {
     /// Downloading ReaPack.
     #[strum(to_string = "Download ReaPack")]
     DownloadingReaPack { download: DownloadInfo },
-    /// ReaPack is already installed.
+    /// ReaPack is already installed in the minimum supported version.
     ///
     /// This means that the ReaPack shared library already exists in the desired REAPER resource
-    /// directory.
+    /// directory and that its version is high enough (verified by checking that the major pragma
+    /// user version of the ReaPack database is high enough)
     #[strum(to_string = "REAPER and ReaPack are installed")]
     InstalledReaPack,
+
+    // =================================================================================
+    // === Everything above is only done if REAPER/ReaPack was not already available ===
+    // =================================================================================
+    /// Copying any existing ReaPack INI and registry DB file to the temporary directory.
+    #[strum(serialize = "Preparing temporary directory")]
+    PreparingTempDirectory,
     /// Downloading all repository indexes in parallel.
     #[strum(serialize = "Downloading repository indexes")]
     DownloadingRepositoryIndexes { download: MultiDownloadInfo },
@@ -125,9 +136,19 @@ pub enum InstallationStatus {
     /// Downloading all package files in parallel.
     #[strum(serialize = "Downloading package files")]
     DownloadingPackageFiles { download: MultiDownloadInfo },
-    /// Moving the files of each package to its correct location and updating the database.
-    #[strum(serialize = "Installing package")]
-    InstallingPackage { package: PackageInfo },
+    /// Creating/updating ReaPack INI file and registry database.
+    #[strum(serialize = "Updating ReaPack state")]
+    UpdatingReaPackState,
+
+    // ===========================================================
+    // === Everything below is not done if it's just a dry run ===
+    // ===========================================================
+    /// Moving ReaPack INI file, registry database and cached indexes to the final destination.
+    #[strum(serialize = "Applying ReaPack state")]
+    ApplyingReaPackState { package: PackageInfo },
+    /// Moving the files of each package to its final destination and updating the database.
+    #[strum(serialize = "Applying package")]
+    ApplyingPackage { package: PackageInfo },
     #[strum(serialize = "Done")]
     Done,
 }
@@ -181,7 +202,7 @@ impl Display for InstallationStatus {
                     write!(f, " ({error_count} errors)")?;
                 }
             }
-            InstallationStatus::InstallingPackage { .. } => {}
+            InstallationStatus::ApplyingPackage { .. } => {}
             _ => {
                 simple_name.fmt(f)?;
             }

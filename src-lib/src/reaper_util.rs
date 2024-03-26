@@ -1,23 +1,26 @@
 use crate::reaper_target::ReaperTarget;
-use anyhow::Context;
+use anyhow::{anyhow, bail, ensure, Context};
+use dmgwiz::{DmgWiz, Verbosity};
+use fs_extra::dir::CopyOptions;
 use octocrab::models::repos::{Asset, Release};
 use octocrab::Octocrab;
 use reaboot_reapack::model::{VersionName, VersionRef};
 use serde::Deserialize;
+use std::env::args;
+use std::fs::File;
+use std::io::BufWriter;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use url::Url;
+
+const LATEST_STABLE_VERSION_URL: &str = "https://www.cockos.com/reaper/latestversion/";
+const LATEST_UNSTABLE_VERSION_URL: &str = "https://www.landoleet.org/whatsnew.txt";
 
 /// Returns the expected location of the REAPER main resource directory, even if it doesn't exist.
 ///
 /// Returns `None` if the home directory couldn't be identified.
 pub fn get_default_main_reaper_resource_dir() -> Option<PathBuf> {
     Some(dirs::config_dir()?.join("REAPER"))
-}
-
-/// Returns whether the given directory is a valid REAPER resource directory.
-pub fn is_valid_reaper_resource_dir(dir: &Path) -> bool {
-    dir.join("reaper.ini").exists()
 }
 
 pub struct ReaperInstallerAsset {
@@ -44,6 +47,88 @@ pub async fn get_latest_reaper_installer_asset(
         file_name,
     };
     Ok(asset)
+}
+
+pub async fn unpack_reaper_to_portable_dir(
+    installer_asset: &Path,
+    dest_dir: &Path,
+    temp_dir: &Path,
+) -> anyhow::Result<()> {
+    let extension = installer_asset
+        .extension()
+        .context("REAPER installer asset doesn't have extension")?
+        .to_str()
+        .context("REAPER installer asset extension not UTF-8 compatible")?;
+    match extension {
+        "dmg" => install_reaper_for_macos_to_dir(installer_asset, dest_dir, temp_dir).await,
+        "exe" => install_reaper_for_windows_to_dir(installer_asset, dest_dir).await,
+        "xz" => install_reaper_for_linux_to_dir(installer_asset, dest_dir),
+        e => bail!("REAPER installer asset has unsupported file extension {e}"),
+    }
+}
+
+async fn install_reaper_for_macos_to_dir(
+    dmg_path: &Path,
+    dest_dir: &Path,
+    temp_dir: &Path,
+) -> anyhow::Result<()> {
+    ensure!(
+        cfg!(target_os = "macos"),
+        "It's not possible on a non-macOS system to install REAPER for macOS"
+    );
+    // Simply attaching the DMG file won't work (maybe because of the license?), so we need
+    // to convert it to IMG first.
+    let img_path = dmg_path.with_extension("img");
+    convert_dmg_to_img(dmg_path, &img_path)?;
+    // Now we attach the IMG file
+    let mount_dir = temp_dir.join("extracted-dmg");
+    let _info = dmg::Attach::new(img_path)
+        .mount_root(&mount_dir)
+        .hidden()
+        .with()
+        .context("could not attach REAPER img file")?;
+    // And copy all files out of it
+    let reaper_app_dir = mount_dir.join("REAPER_INSTALL_UNIVERSAL/REAPER.app");
+    std::fs::create_dir_all(dest_dir)?;
+    fs_extra::copy_items(
+        &[reaper_app_dir],
+        dest_dir,
+        &CopyOptions {
+            overwrite: false,
+            skip_exist: false,
+            buffer_size: 0,
+            copy_inside: true,
+            content_only: false,
+            depth: 0,
+        },
+    )?;
+    Ok(())
+}
+
+fn convert_dmg_to_img(dmg_path: &Path, img_path: &PathBuf) -> anyhow::Result<()> {
+    let dmg_file = File::open(dmg_path).context("couldn't open REAPER DMG file")?;
+    let mut dmg_wiz = DmgWiz::from_reader(dmg_file, Verbosity::None)
+        .map_err(|e| anyhow!("could not read REAPER dmg file: {e}"))?;
+    let img_file = File::create(img_path).context("could not create REAPER img file")?;
+    dmg_wiz
+        .extract_all(BufWriter::new(img_file))
+        .map_err(|e| anyhow!("could not extract files from REAPER dmg file: {e}"))?;
+    Ok(())
+}
+
+async fn install_reaper_for_windows_to_dir(
+    reaper_installer_exe: &Path,
+    dest_dir: &Path,
+) -> anyhow::Result<()> {
+    ensure!(
+        cfg!(target_os = "windows"),
+        "It's not possible on a non-Windows system to install REAPER for Windows"
+    );
+    todo!("conduct silent NSIS install")
+}
+
+fn install_reaper_for_linux_to_dir(reaper_tar_xz: &Path, dest_dir: &Path) -> anyhow::Result<()> {
+    todo!()
 }
 
 /// REAPER versions seem to be similar to ReaPack versions in nature.
@@ -111,6 +196,3 @@ fn get_os_specific_reaper_installer_file_name(
         ReaperTarget::LinuxX86_64 => format!("reaper{version}_linux_x86_64.tar.xz"),
     }
 }
-
-const LATEST_STABLE_VERSION_URL: &str = "https://www.cockos.com/reaper/latestversion/";
-const LATEST_UNSTABLE_VERSION_URL: &str = "https://www.landoleet.org/whatsnew.txt";

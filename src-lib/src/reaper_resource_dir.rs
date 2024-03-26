@@ -1,14 +1,28 @@
+use crate::reapack_util::get_os_specific_reapack_file_name;
+use crate::reaper_target::ReaperTarget;
+use ref_cast::RefCast;
 use std::path::{Path, PathBuf};
 
-pub struct ReaperResourceDir<P>(P);
+#[derive(RefCast)]
+#[repr(transparent)]
+pub struct ReaperResourceDir(PathBuf);
 
-impl<P: AsRef<Path>> ReaperResourceDir<P> {
-    pub fn new(dir: P) -> Self {
+impl ReaperResourceDir {
+    pub fn new(dir: PathBuf) -> Self {
         Self(dir)
     }
 
+    /// Returns whether the given directory is a valid REAPER resource directory.
+    pub fn is_valid(&self) -> bool {
+        self.reaper_ini_file().exists()
+    }
+
     pub fn get(&self) -> &Path {
-        self.0.as_ref()
+        &self.0
+    }
+
+    pub fn reaper_ini_file(&self) -> PathBuf {
+        self.get().join("reaper.ini")
     }
 
     pub fn user_plugins_dir(&self) -> PathBuf {
@@ -32,7 +46,7 @@ impl<P: AsRef<Path>> ReaperResourceDir<P> {
     }
 }
 
-impl<P: AsRef<Path>> AsRef<Path> for ReaperResourceDir<P> {
+impl AsRef<Path> for ReaperResourceDir {
     fn as_ref(&self) -> &Path {
         self.0.as_ref()
     }
