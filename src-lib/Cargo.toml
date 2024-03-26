@@ -43,9 +43,6 @@ url = { workspace = true }
 enumset = { workspace = true }
 # For all kinds of enum conveniences such as automatically deriving Display
 strum = { workspace = true, features = ["derive"] }
-# For easily copying/moving whole directory trees, which we do e.g. for moving stuff to the final destination
-# after everything has been downloaded and prepared
-fs_extra = { workspace = true }
 # For easily casting from &PathBuf to &ReaperResourceDir and back
 ref-cast = { workspace = true }
 

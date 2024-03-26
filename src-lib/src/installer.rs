@@ -19,8 +19,6 @@ use crate::task_tracker::{Summary, TaskTracker};
 use crate::{reaboot_util, reapack_util, reaper_util};
 use anyhow::{anyhow, bail, ensure, Context};
 use enumset::EnumSet;
-use fs_extra::dir::{CopyOptions, TransitProcessResult, TransitState};
-use fs_extra::error::ErrorKind;
 use futures::{stream, StreamExt};
 use reaboot_reapack::database::Database;
 use reaboot_reapack::index::{Index, IndexSection, NormalIndexSection};
@@ -379,21 +377,18 @@ impl<L: InstallerListener> Installer<L> {
         &self,
         downloaded_indexes: &HashMap<Url, DownloadedIndex>,
     ) -> anyhow::Result<()> {
+        tracing::debug!("Applying ReaPack state");
         self.listener
             .emit_installation_status(InstallationStatus::ApplyingReaPackState);
         self.move_file(
             self.temp_reaper_resource_dir.reapack_ini_file(),
             self.final_reaper_resource_dir.reapack_ini_file(),
-            0,
-            2,
             true,
         )
         .context("moving ReaPack INI file failed")?;
         self.move_file(
             self.temp_reaper_resource_dir.reapack_registry_db_file(),
             self.final_reaper_resource_dir.reapack_registry_db_file(),
-            1,
-            2,
             true,
         )
         .context("moving ReaPack registry DB file failed")?;
@@ -405,14 +400,8 @@ impl<L: InstallerListener> Installer<L> {
                 .file_name()
                 .context("ReaPack index file should have a name at this point")?;
             let dest_index_file = dest_cache_dir.join(src_index_file_name);
-            self.move_file(
-                &index.temp_download_file,
-                dest_index_file,
-                i,
-                total_count,
-                true,
-            )
-            .context("moving cached ReaPack repository index failed")?;
+            self.move_file(&index.temp_download_file, dest_index_file, true)
+                .context("moving cached ReaPack repository index failed")?;
         }
         Ok(())
     }
@@ -447,7 +436,7 @@ impl<L: InstallerListener> Installer<L> {
                 .final_reaper_resource_dir
                 .get()
                 .join(download.payload.relative_path);
-            self.move_file(&src_file, &dest_file, i, total_file_count, false)?;
+            self.move_file(&src_file, &dest_file, false)?;
         }
         Ok(())
     }
@@ -678,28 +667,28 @@ impl<L: InstallerListener> Installer<L> {
         &self,
         src_file: impl AsRef<Path>,
         dest_file: impl AsRef<Path>,
-        index: usize,
-        count: usize,
         overwrite: bool,
     ) -> anyhow::Result<()> {
-        create_parent_dirs(&dest_file)?;
-        let options = fs_extra::file::CopyOptions {
-            overwrite,
-            skip_exist: false,
-            buffer_size: 0,
-        };
-        let result =
-            fs_extra::file::move_file_with_progress(src_file, &dest_file, &options, |transit| {
-                let file_total_bytes = transit.total_bytes as f64;
-                let file_progress = if file_total_bytes == 0.0 {
-                    1.0
-                } else {
-                    transit.copied_bytes as f64 / file_total_bytes
-                };
-                let total_progress = (index as f64 / count as f64) * file_progress;
-                self.listener.emit_progress(total_progress);
-            });
-        result.map_err(|e| anyhow!("Error when moving file: {:?} - {}", e.kind, e))?;
+        let dest_file = dest_file.as_ref();
+        if dest_file.exists() {
+            if overwrite {
+                // Better create a backup of the existing file
+                let dest_file_name = dest_file
+                    .file_name()
+                    .context("destination path has no file name")?
+                    .to_str()
+                    .context("destination file name is not valid UTF-8")?;
+                let backup_file = dest_file.with_file_name(format!("{dest_file_name}.bak"));
+                fs::rename(&dest_file, &backup_file)?;
+            } else {
+                bail!("Destination file {dest_file:?} already exists");
+            }
+        } else {
+            create_parent_dirs(&dest_file)?;
+        }
+        if fs::rename(&src_file, &dest_file).is_err() {
+            fs::copy(src_file, dest_file).context("Copying file to destination failed")?;
+        }
         Ok(())
     }
 }
@@ -810,13 +799,16 @@ fn dry_remove_file(path: &Path) -> anyhow::Result<()> {
 }
 
 fn dry_move_file(src: &Path, dest: PathBuf) -> anyhow::Result<()> {
-    ensure!(src.exists(), "Source file doesn't exist");
-    ensure!(!dest.exists(), "Destination file exists already");
+    ensure!(src.exists(), "Source file {src:?} doesn't exist");
+    ensure!(!dest.exists(), "Destination file {dest:?} exists already");
     let first_existing_parent = get_first_existing_parent_dir(dest.clone())?;
     let readonly = fs::metadata(first_existing_parent)?
         .permissions()
         .readonly();
-    ensure!(!readonly, "Parent of destination file is not writable");
+    ensure!(
+        !readonly,
+        "Parent of destination file {dest:?} is not writable"
+    );
     Ok(())
 }
 

@@ -1,7 +1,7 @@
+use crate::file_util::copy_dir_all;
 use crate::reaper_target::ReaperTarget;
 use anyhow::{anyhow, bail, ensure, Context};
 use dmgwiz::{DmgWiz, Verbosity};
-use fs_extra::dir::CopyOptions;
 use octocrab::models::repos::{Asset, Release};
 use octocrab::Octocrab;
 use reaboot_reapack::model::{VersionName, VersionRef};
@@ -90,18 +90,7 @@ async fn install_reaper_for_macos_to_dir(
     // And copy all files out of it
     let reaper_app_dir = mount_dir.join("REAPER_INSTALL_UNIVERSAL/REAPER.app");
     std::fs::create_dir_all(dest_dir)?;
-    fs_extra::copy_items(
-        &[reaper_app_dir],
-        dest_dir,
-        &CopyOptions {
-            overwrite: false,
-            skip_exist: false,
-            buffer_size: 0,
-            copy_inside: true,
-            content_only: false,
-            depth: 0,
-        },
-    )?;
+    copy_dir_all(reaper_app_dir, dest_dir.join("REAPER.app"))?;
     Ok(())
 }
 
