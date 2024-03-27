@@ -1,5 +1,5 @@
 use crate::api::{
-    DownloadInfo, InstallationStatus, MultiDownloadInfo, PackageInfo, ReabootConfig,
+    DownloadInfo, InstallationStage, MultiDownloadInfo, PackageInfo, ReabootConfig,
     ResolvedReabootConfig,
 };
 use crate::downloader::{Download, DownloadProgress, Downloader};
@@ -15,7 +15,7 @@ use crate::reaper_resource_dir::{
 };
 use crate::reaper_target::ReaperTarget;
 use crate::reaper_util::unpack_reaper_to_portable_dir;
-use crate::task_tracker::{Summary, TaskTracker};
+use crate::task_tracker::{Task, TaskSummary, TaskTrackerListener};
 use crate::{reaboot_util, reapack_util, reaper_util};
 use anyhow::{anyhow, bail, ensure, Context};
 use enumset::EnumSet;
@@ -27,9 +27,11 @@ use reaboot_reapack::model::{
     LightPackageId, PackageUrl, ParsePackageUrlError, Remote, Section, VersionRef,
 };
 use std::collections::{HashMap, HashSet};
+use std::fmt::Display;
 use std::fs;
 use std::fs::File;
 use std::io::BufReader;
+use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 use url::Url;
@@ -109,7 +111,7 @@ impl<L: InstallerListener> Installer<L> {
         .await?;
         // Download and extract REAPER if necessary
         let reaper_installation_outcome =
-            if initial_installation_status < InstallationStatus::InstalledReaper {
+            if initial_installation_status < InstallationStage::InstalledReaper {
                 let download = self.download_reaper().await?;
                 let outcome = self.extract_reaper(download).await;
                 Some(outcome)
@@ -117,7 +119,7 @@ impl<L: InstallerListener> Installer<L> {
                 None
             };
         // Download ReaPack if necessary
-        let reapack_download = if initial_installation_status < InstallationStatus::InstalledReaPack
+        let reapack_download = if initial_installation_status < InstallationStage::InstalledReaPack
         {
             Some(self.download_reapack().await?)
         } else {
@@ -184,7 +186,7 @@ impl<L: InstallerListener> Installer<L> {
 
     fn prepare_temp_dir(&self) -> anyhow::Result<()> {
         self.listener
-            .emit_installation_status(InstallationStatus::PreparingTempDirectory);
+            .installation_stage_changed(InstallationStage::PreparingTempDirectory);
         self.copy_file_from_final_to_temp_dir_if_exists(REAPACK_INI_FILE_PATH)?;
         self.copy_file_from_final_to_temp_dir_if_exists(REAPACK_REGISTRY_DB_FILE_PATH)?;
         Ok(())
@@ -197,7 +199,7 @@ impl<L: InstallerListener> Installer<L> {
         installed_packages_to_be_replaced: &'a [InstalledPackage],
     ) -> anyhow::Result<PackageApplicationPlan> {
         self.listener
-            .emit_installation_status(InstallationStatus::UpdatingReaPackState);
+            .installation_stage_changed(InstallationStage::UpdatingReaPackState);
         self.create_or_update_reapack_ini_file(downloaded_indexes)?;
         let plan = self
             .create_or_update_reapack_db(successful_downloads, installed_packages_to_be_replaced)
@@ -346,7 +348,7 @@ impl<L: InstallerListener> Installer<L> {
         // Dry-remove files, dry-remove package, add package to DB and dry-move/copy files ...
         // all within one database transaction. Our atomic unit at this stage is a package.
         self.listener
-            .log_write_activity(format!("Installing package {}...", package_id.package));
+            .info(format!("Installing package {}...", package_id.package));
         let transaction = db.with_transaction(|mut transaction| async {
             if let Some(p) = replace_package {
                 // Dry remove installed package files
@@ -379,7 +381,7 @@ impl<L: InstallerListener> Installer<L> {
     ) -> anyhow::Result<()> {
         tracing::debug!("Applying ReaPack state");
         self.listener
-            .emit_installation_status(InstallationStatus::ApplyingReaPackState);
+            .installation_stage_changed(InstallationStage::ApplyingReaPackState);
         self.move_file(
             self.temp_reaper_resource_dir.reapack_ini_file(),
             self.final_reaper_resource_dir.reapack_ini_file(),
@@ -415,7 +417,7 @@ impl<L: InstallerListener> Installer<L> {
 
     fn apply_package(&self, package_application: PackageApplication) -> anyhow::Result<()> {
         self.listener
-            .emit_installation_status(InstallationStatus::ApplyingPackage {
+            .installation_stage_changed(InstallationStage::ApplyingPackage {
                 package: PackageInfo {
                     name: package_application.package_id.package.to_string(),
                 },
@@ -479,7 +481,7 @@ impl<L: InstallerListener> Installer<L> {
 
     async fn download_reaper(&self) -> anyhow::Result<Download> {
         self.listener
-            .emit_installation_status(InstallationStatus::CheckingLatestReaperVersion);
+            .installation_stage_changed(InstallationStage::CheckingLatestReaperVersion);
         let installer_asset = reaper_util::get_latest_reaper_installer_asset(
             self.reaper_target,
             &self.reaper_version,
@@ -487,7 +489,7 @@ impl<L: InstallerListener> Installer<L> {
         .await?;
         let file = self.temp_download_dir.join(installer_asset.file_name);
         self.listener
-            .emit_installation_status(InstallationStatus::DownloadingReaper {
+            .installation_stage_changed(InstallationStage::DownloadingReaper {
                 download: DownloadInfo {
                     label: installer_asset.version.to_string(),
                     url: installer_asset.url.clone(),
@@ -497,7 +499,8 @@ impl<L: InstallerListener> Installer<L> {
         let download = Download::new(installer_asset.url, file.clone());
         self.downloader
             .download(download.clone(), |s| {
-                self.listener.emit_progress(s.to_simple_progress())
+                self.listener
+                    .installation_stage_progressed(s.to_simple_progress())
             })
             .await?;
         Ok(download)
@@ -513,7 +516,7 @@ impl<L: InstallerListener> Installer<L> {
             return Ok(outcome);
         }
         self.listener
-            .emit_installation_status(InstallationStatus::ExtractingReaper);
+            .installation_stage_changed(InstallationStage::ExtractingReaper);
         // Because we support automatic REAPER installation only for portable installs,
         // the REAPER resource dir is at the same time the base directory, that's the one which
         // includes the executable (or bundle on macOS).
@@ -542,7 +545,7 @@ impl<L: InstallerListener> Installer<L> {
             .join(asset.name);
         let download_url = asset.browser_download_url;
         self.listener
-            .emit_installation_status(InstallationStatus::DownloadingReaPack {
+            .installation_stage_changed(InstallationStage::DownloadingReaPack {
                 download: DownloadInfo {
                     label: file.to_string_lossy().to_string(),
                     url: download_url.clone(),
@@ -552,7 +555,8 @@ impl<L: InstallerListener> Installer<L> {
         let download = Download::new(download_url, file.clone());
         self.downloader
             .download(download.clone(), |s| {
-                self.listener.emit_progress(s.to_simple_progress())
+                self.listener
+                    .installation_stage_progressed(s.to_simple_progress())
             })
             .await?;
         Ok(download)
@@ -571,21 +575,16 @@ impl<L: InstallerListener> Installer<L> {
                 (),
             )
         });
+        let multi_download_listener = MultiDownloadListener::new(self, |info| {
+            InstallationStage::DownloadingRepositoryIndexes { download: info }
+        });
         let download_results = self
             .multi_downloader
-            .download_multiple(
-                downloads,
-                |info| {
-                    let installation_status =
-                        InstallationStatus::DownloadingRepositoryIndexes { download: info };
-                    self.listener.emit_installation_status(installation_status)
-                },
-                |progress| self.listener.emit_progress(progress),
-            )
+            .download_multiple(downloads, multi_download_listener)
             .await;
         // Parse
         self.listener
-            .emit_installation_status(InstallationStatus::ParsingRepositoryIndexes);
+            .installation_stage_changed(InstallationStage::ParsingRepositoryIndexes);
         let mut index_names_so_far = HashSet::new();
         let repos = download_results
             .into_iter()
@@ -637,16 +636,11 @@ impl<L: InstallerListener> Installer<L> {
             },
             payload: file,
         });
+        let multi_download_listener = MultiDownloadListener::new(self, |info| {
+            InstallationStage::DownloadingPackageFiles { download: info }
+        });
         self.multi_downloader
-            .download_multiple(
-                downloads,
-                |info| {
-                    let installation_status =
-                        InstallationStatus::DownloadingPackageFiles { download: info };
-                    self.listener.emit_installation_status(installation_status)
-                },
-                |progress| self.listener.emit_progress(progress),
-            )
+            .download_multiple(downloads, multi_download_listener)
             .await
     }
 
@@ -696,15 +690,38 @@ impl<L: InstallerListener> Installer<L> {
 async fn simulate_download(millis: u64, listener: &impl InstallerListener) {
     for i in (0..millis).step_by(2) {
         let download_progress = DownloadProgress::Downloading(i as f64 / millis as f64);
-        listener.emit_progress(download_progress.to_simple_progress());
+        listener.installation_stage_progressed(download_progress.to_simple_progress());
         sleep(1).await;
     }
 }
 
 pub trait InstallerListener {
-    fn emit_installation_status(&self, event: InstallationStatus);
-    fn emit_progress(&self, progress: f64);
-    fn log_write_activity(&self, activity: String);
+    /// Called when the current stage of the installation process has changed.
+    fn installation_stage_changed(&self, event: InstallationStage);
+
+    /// Called when progress has been made within the installation stage.
+    ///
+    /// `progress` is a number between 0 and 1, representing 0% to 100%.
+    fn installation_stage_progressed(&self, progress: f64);
+
+    /// Called when a concurrent task within the installation stage has started.
+    fn task_started(&self, task_id: u32, task: InstallerTask);
+
+    /// Just like [`Self::installation_stage_progressed`] but for a specific task.
+    fn task_progressed(&self, task_id: u32, progress: f64);
+
+    /// Called when a concurrent task within the installation stage has finished.
+    fn task_finished(&self, task_id: u32);
+
+    fn warn(&self, message: impl Display);
+
+    fn info(&self, message: impl Display);
+
+    fn debug(&self, message: impl Display);
+}
+
+pub struct InstallerTask {
+    pub label: String,
 }
 
 async fn sleep(millis: u64) {
@@ -817,4 +834,66 @@ fn create_parent_dirs(path: impl AsRef<Path>) -> anyhow::Result<()> {
         fs::create_dir_all(parent)?;
     }
     Ok(())
+}
+
+struct MultiDownloadListener<'a, P, L, C> {
+    installer: &'a Installer<L>,
+    create_installation_stage: C,
+    _p: PhantomData<P>,
+}
+
+impl<'a, P, L, C> MultiDownloadListener<'a, P, L, C> {
+    pub fn new(installer: &'a Installer<L>, create_installation_stage: C) -> Self {
+        Self {
+            installer,
+            create_installation_stage,
+            _p: Default::default(),
+        }
+    }
+}
+
+impl<'a, P, L, C> TaskTrackerListener for MultiDownloadListener<'a, P, L, C>
+where
+    C: Fn(MultiDownloadInfo) -> InstallationStage,
+    L: InstallerListener,
+{
+    type Payload = DownloadWithPayload<P>;
+
+    fn summary_changed(&self, summary: TaskSummary) {
+        let multi_download_info = MultiDownloadInfo {
+            in_progress_count: summary.in_progress_count,
+            success_count: summary.success_count,
+            error_count: summary.error_count,
+            total_count: summary.total_count,
+        };
+        let installation_stage = (self.create_installation_stage)(multi_download_info);
+        self.installer
+            .listener
+            .installation_stage_changed(installation_stage);
+    }
+
+    fn total_progressed(&self, progress: f64) {
+        self.installer
+            .listener
+            .installation_stage_progressed(progress);
+    }
+
+    fn task_started(&self, task_index: usize, payload: &Self::Payload) {
+        self.installer.listener.task_started(
+            task_index as u32,
+            InstallerTask {
+                label: payload.download.url.to_string(),
+            },
+        );
+    }
+
+    fn task_progressed(&self, task_index: usize, progress: f64) {
+        self.installer
+            .listener
+            .task_progressed(task_index as u32, progress);
+    }
+
+    fn task_finished(&self, task_index: usize) {
+        self.installer.listener.task_finished(task_index as u32);
+    }
 }

@@ -47,7 +47,7 @@ pub struct ReabootConfig {
 pub enum ReabootEvent {
     Error { error: ReabootError },
     ConfigResolved { state: ResolvedReabootConfig },
-    InstallationStatusChanged { status: InstallationStatus },
+    InstallationStatusChanged { status: InstallationStage },
 }
 
 /// Error.
@@ -64,7 +64,7 @@ pub struct ReabootError {
 pub struct ResolvedReabootConfig {
     /// The resolved REAPER resource directory which is going to be used for the installation.
     ///
-    /// [`InstallationStatus`] indicates, whether this directory exists and is a valid
+    /// [`InstallationStage`] indicates, whether this directory exists and is a valid
     /// REAPER resource directory.
     pub reaper_resource_dir: PathBuf,
     /// `true` if the resource directory is part of a portable REAPER installation (not the one of
@@ -78,7 +78,7 @@ pub struct ResolvedReabootConfig {
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, AsRefStr, Serialize, TS)]
 #[ts(export)]
 #[serde(tag = "kind")]
-pub enum InstallationStatus {
+pub enum InstallationStage {
     /// Initial status.
     #[strum(serialize = "Nothing is installed yet")]
     Initial,
@@ -182,12 +182,12 @@ pub struct PackageInfo {
     pub name: String,
 }
 
-impl Display for InstallationStatus {
+impl Display for InstallationStage {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let simple_name: &str = self.as_ref();
         match self {
-            InstallationStatus::DownloadingRepositoryIndexes { download }
-            | InstallationStatus::DownloadingPackageFiles { download } => {
+            InstallationStage::DownloadingRepositoryIndexes { download }
+            | InstallationStage::DownloadingPackageFiles { download } => {
                 let error_count = download.error_count;
                 let actual_count = download.success_count + error_count;
                 let total_count = download.total_count;
@@ -199,7 +199,7 @@ impl Display for InstallationStatus {
                     write!(f, " ({error_count} errors)")?;
                 }
             }
-            InstallationStatus::ApplyingPackage { package } => {
+            InstallationStage::ApplyingPackage { package } => {
                 write!(f, "{simple_name}: {}", &package.name)?;
             }
             _ => {
