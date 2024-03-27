@@ -217,7 +217,7 @@ fn create_main_progress_bar() -> ProgressBar {
     main_progress_bar
 }
 
-fn create_task_progress_bar(task_id: u32, mut task: InstallerTask) -> ProgressBar {
+fn create_task_progress_bar(task_id: u32, task: InstallerTask) -> ProgressBar {
     let pb = ProgressBar::new(100);
     pb.set_draw_target(ProgressDrawTarget::hidden());
     pb.set_style(
@@ -227,7 +227,6 @@ fn create_task_progress_bar(task_id: u32, mut task: InstallerTask) -> ProgressBa
         .unwrap()
         .progress_chars("##-"),
     );
-    task.label.truncate(32);
     pb.set_message(format!("{}. {}", task_id + 1, task.label));
     pb
 }
