@@ -142,7 +142,6 @@ impl CliInstallerListener {
     pub fn new() -> Self {
         let multi_progress = MultiProgress::new();
         let main_progress_bar = multi_progress.add(create_main_progress_bar());
-        main_progress_bar.tick();
         Self {
             multi_progress,
             main_progress_bar,
@@ -151,17 +150,14 @@ impl CliInstallerListener {
     }
 
     fn log(&self, msg: impl Display) {
-        // let _ = self.multi_progress.println(msg.to_string());
+        let _ = self.multi_progress.println(msg.to_string());
     }
 }
 
 impl InstallerListener for CliInstallerListener {
     fn installation_stage_changed(&self, event: InstallationStage) {
-        // self.main_progress_bar.finish();
+        self.main_progress_bar.reset();
         self.main_progress_bar.set_message(event.to_string());
-        // for (_, pb) in self.task_progress_bars.write().unwrap().drain() {
-        //     pb.finish();
-        // }
     }
 
     fn installation_stage_progressed(&self, progress: f64) {
@@ -185,9 +181,10 @@ impl InstallerListener for CliInstallerListener {
     }
 
     fn task_finished(&self, task_id: u32) {
-        if let Some(pb) = self.task_progress_bars.write().unwrap().get(&task_id) {
-            pb.finish();
-            // self.multi_progress.remove(&pb);
+        // If we wanted the bar to stay on screen, we would use `get` instead and
+        // call `finish()` on the progress bar instead of removing it.
+        if let Some(pb) = self.task_progress_bars.write().unwrap().remove(&task_id) {
+            self.multi_progress.remove(&pb);
         }
     }
 
@@ -205,21 +202,22 @@ impl InstallerListener for CliInstallerListener {
 }
 
 fn create_main_progress_bar() -> ProgressBar {
-    let main_progress_bar = ProgressBar::new(100);
-    main_progress_bar.set_draw_target(ProgressDrawTarget::hidden());
-    main_progress_bar.set_style(
+    let pb = ProgressBar::with_draw_target(Some(100), ProgressDrawTarget::hidden());
+    pb.set_draw_target(ProgressDrawTarget::hidden());
+    pb.set_style(
         ProgressStyle::with_template(
             "[{elapsed_precise}] {bar:40.cyan/blue} {pos:>7}/{len:7} {msg}",
         )
         .unwrap()
         .progress_chars("##-"),
     );
-    main_progress_bar
+    pb
 }
 
 fn create_task_progress_bar(task_id: u32, task: InstallerTask) -> ProgressBar {
-    let pb = ProgressBar::new(100);
-    pb.set_draw_target(ProgressDrawTarget::hidden());
+    // When not creating the progress bar in hidden state, we will get many duplicate lines.
+    // I don't know exactly why.
+    let pb = ProgressBar::with_draw_target(Some(100), ProgressDrawTarget::hidden());
     pb.set_style(
         ProgressStyle::with_template(
             "[{elapsed_precise}] {bar:40.red/green} {pos:>7}/{len:7} {msg}",
@@ -227,7 +225,7 @@ fn create_task_progress_bar(task_id: u32, task: InstallerTask) -> ProgressBar {
         .unwrap()
         .progress_chars("##-"),
     );
-    pb.set_message(format!("{}. {}", task_id + 1, task.label));
+    pb.set_message(task.label);
     pb
 }
 

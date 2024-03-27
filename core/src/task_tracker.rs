@@ -109,7 +109,10 @@ where
     L: TaskTrackerListener,
 {
     fn update_summary(&self) {
-        self.listener.summary_changed(self.summary());
+        let summary = self.summary();
+        let progress = summary.total_progress;
+        self.listener.summary_changed(summary);
+        self.listener.total_progressed(progress);
     }
 
     fn summary(&self) -> TaskSummary {
