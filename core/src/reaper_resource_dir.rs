@@ -31,7 +31,7 @@ impl ReaperResourceDir {
     }
 
     /// Returns whether the given directory is a valid REAPER resource directory.
-    pub fn is_valid(&self) -> bool {
+    pub fn contains_reaper_ini(&self) -> bool {
         self.reaper_ini_file().exists()
     }
 
@@ -65,6 +65,10 @@ impl ReaperResourceDir {
 
     pub fn reapack_ini_file(&self) -> PathBuf {
         self.join(REAPACK_INI_FILE_PATH)
+    }
+
+    pub fn temp_reaboot_dir(&self) -> PathBuf {
+        self.join("ReaBoot")
     }
 }
 

@@ -34,7 +34,7 @@ pub async fn determine_initial_installation_status(
     reaper_resource_dir: &ReaperResourceDir,
     reaper_target: ReaperTarget,
 ) -> anyhow::Result<InstallationStage> {
-    let reaper_installed = reaper_resource_dir.is_valid();
+    let reaper_installed = reaper_resource_dir.contains_reaper_ini();
     if !reaper_installed {
         return Ok(InstallationStage::Initial);
     };

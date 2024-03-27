@@ -49,29 +49,29 @@ pub async fn get_latest_reaper_installer_asset(
     Ok(asset)
 }
 
-pub async fn unpack_reaper_to_portable_dir(
+pub fn extract_reaper_to_portable_dir(
     installer_asset: &Path,
     dest_dir: &Path,
     temp_dir: &Path,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<PathBuf> {
     let extension = installer_asset
         .extension()
         .context("REAPER installer asset doesn't have extension")?
         .to_str()
         .context("REAPER installer asset extension not UTF-8 compatible")?;
     match extension {
-        "dmg" => install_reaper_for_macos_to_dir(installer_asset, dest_dir, temp_dir).await,
-        "exe" => install_reaper_for_windows_to_dir(installer_asset, dest_dir).await,
-        "xz" => install_reaper_for_linux_to_dir(installer_asset, dest_dir),
+        "dmg" => extract_reaper_for_macos_to_dir(installer_asset, dest_dir, temp_dir),
+        "exe" => extract_reaper_for_windows_to_dir(installer_asset, dest_dir),
+        "xz" => extract_reaper_for_linux_to_dir(installer_asset, dest_dir),
         e => bail!("REAPER installer asset has unsupported file extension {e}"),
     }
 }
 
-async fn install_reaper_for_macos_to_dir(
+fn extract_reaper_for_macos_to_dir(
     dmg_path: &Path,
     dest_dir: &Path,
     temp_dir: &Path,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<PathBuf> {
     ensure!(
         cfg!(target_os = "macos"),
         "It's not possible on a non-macOS system to install REAPER for macOS"
@@ -88,10 +88,11 @@ async fn install_reaper_for_macos_to_dir(
         .with()
         .context("could not attach REAPER img file")?;
     // And copy all files out of it
-    let reaper_app_dir = mount_dir.join("REAPER_INSTALL_UNIVERSAL/REAPER.app");
+    let mounted_reaper_app_dir = mount_dir.join("REAPER_INSTALL_UNIVERSAL/REAPER.app");
     std::fs::create_dir_all(dest_dir)?;
-    copy_dir_all(reaper_app_dir, dest_dir.join("REAPER.app"))?;
-    Ok(())
+    let dest_reaper_app_dir = dest_dir.join("REAPER.app");
+    copy_dir_all(mounted_reaper_app_dir, &dest_reaper_app_dir)?;
+    Ok(dest_reaper_app_dir)
 }
 
 fn convert_dmg_to_img(dmg_path: &Path, img_path: &PathBuf) -> anyhow::Result<()> {
@@ -105,10 +106,10 @@ fn convert_dmg_to_img(dmg_path: &Path, img_path: &PathBuf) -> anyhow::Result<()>
     Ok(())
 }
 
-async fn install_reaper_for_windows_to_dir(
+fn extract_reaper_for_windows_to_dir(
     reaper_installer_exe: &Path,
     dest_dir: &Path,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<PathBuf> {
     ensure!(
         cfg!(target_os = "windows"),
         "It's not possible on a non-Windows system to install REAPER for Windows"
@@ -116,7 +117,10 @@ async fn install_reaper_for_windows_to_dir(
     todo!("conduct silent NSIS install")
 }
 
-fn install_reaper_for_linux_to_dir(reaper_tar_xz: &Path, dest_dir: &Path) -> anyhow::Result<()> {
+fn extract_reaper_for_linux_to_dir(
+    reaper_tar_xz: &Path,
+    dest_dir: &Path,
+) -> anyhow::Result<PathBuf> {
     todo!()
 }
 
