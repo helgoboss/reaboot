@@ -45,6 +45,8 @@ enumset = { workspace = true }
 strum = { workspace = true, features = ["derive"] }
 # For easily casting from &PathBuf to &ReaperResourceDir and back
 ref-cast = { workspace = true }
+# For getting a correctly removed temporary download directory
+tempdir = { workspace = true }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 # For converting the REAPER DMG file to a hfs+ IMG file. The DMG file itself can't be mounted silently.

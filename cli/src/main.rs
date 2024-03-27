@@ -9,7 +9,6 @@ use std::collections::HashMap;
 use std::fmt::Display;
 use std::path::PathBuf;
 use std::sync::RwLock;
-use tempdir::TempDir;
 use tracing_subscriber::{EnvFilter, FmtSubscriber};
 use url::Url;
 
@@ -52,11 +51,14 @@ enum Command {
 #[derive(Debug, Args)]
 #[command(author, version, about, long_about = None)]
 struct InstallArgs {
-    /// Directory of a portable REAPER installation to be used as destination.
+    /// Custom REAPER resource directory to be used as destination.
+    ///
+    /// When provided, ReaBoot automatically assumes that you intend to create or modify
+    /// a **portable** REAPER installation.
     ///
     /// If not provided, ReaBoot uses the main REAPER installation.
     #[arg(long)]
-    portable: Option<String>,
+    reaper_resource_dir: Option<String>,
     // TODO-medium
     // /// Increases logging output.
     // #[arg(short, long, default_value_t = false)]
@@ -67,18 +69,16 @@ struct InstallArgs {
     // report: bool,
     /// Creates the temporary directory for downloads within the given custom directory.
     ///
-    /// If provided, ReaBoot doesn't clean up the downloaded files, so you can freely inspect
-    /// what it downloaded.
-    ///
-    /// If not provided, ReaBoot uses an operating-system-specific temporary parent directory
-    /// and clean it up right after using it.
+    /// If not provided, ReaBoot creates the temporary directory in `REAPER_RESOURCE_DIR/ReaBoot`.
     #[arg(long)]
-    temp_parent_dir: Option<String>,
+    temp_parent_dir: Option<PathBuf>,
+    /// Doesn't delete the temporary directory when the installation is finished.
+    #[arg(long, default_value_t = false)]
+    keep_temp_dir: bool,
     /// Determines the maximum number of concurrent downloads.
     #[arg(long, default_value_t = 5)]
     concurrent_downloads: u32,
-    /// Doesn't actually install anything to the destination directory, but validates and downloads
-    /// stuff.
+    /// Does everything except actually installing the packages.
     #[arg(long, default_value_t = false)]
     dry_run: bool,
     /// REAPER version to install if REAPER is not yet installed at the destination.
@@ -93,26 +93,13 @@ struct InstallArgs {
 
 async fn install(args: InstallArgs) -> anyhow::Result<()> {
     let config = ReabootConfig {
-        custom_reaper_resource_dir: args.portable.map(PathBuf::from),
+        custom_reaper_resource_dir: args.reaper_resource_dir.map(PathBuf::from),
         package_urls: args.package_url.unwrap_or_default(),
         // TODO-low
         custom_reaper_target: None,
     };
     let resolved_config = resolve_config(&config)?;
     let downloader = Downloader::new(args.concurrent_downloads);
-    let temp_dir_prefix = "reaboot-";
-    let temp_dir = if let Some(p) = &args.temp_parent_dir {
-        tokio::fs::create_dir_all(p).await?;
-        TempDir::new_in(p, temp_dir_prefix)
-    } else {
-        TempDir::new(temp_dir_prefix)
-    };
-    let temp_dir = temp_dir.context("couldn't create temp directory")?;
-    let temp_dir_path = if args.temp_parent_dir.is_some() {
-        temp_dir.into_path()
-    } else {
-        temp_dir.path().to_path_buf()
-    };
     let reaper_version = args
         .reaper_version
         .parse()
@@ -121,10 +108,11 @@ async fn install(args: InstallArgs) -> anyhow::Result<()> {
         resolved_config,
         package_urls: config.package_urls,
         downloader,
-        temp_download_dir: temp_dir_path,
+        temp_parent_dir: args.temp_parent_dir,
         concurrent_downloads: args.concurrent_downloads,
         dry_run: args.dry_run,
         listener: CliInstallerListener::new(),
+        keep_temp_dir: args.keep_temp_dir,
         reaper_version,
     };
     let installer = Installer::new(config)?;

@@ -15,8 +15,6 @@ tokio = { workspace = true }
 anyhow = { workspace = true }
 # For progress bars
 indicatif = { workspace = true }
-# For getting a correctly removed temporary download directory
-tempdir = { workspace = true }
 # For displaying a report table
 comfy-table = { workspace = true }
 # For parsing URLs
