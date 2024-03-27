@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
-use strum::{AsRefStr, Display};
+use strum::{AsRefStr, Display, EnumIs};
 use ts_rs::TS;
 use url::Url;
 
@@ -75,7 +75,7 @@ pub struct ResolvedReabootConfig {
 }
 
 /// Status of the installation process.
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, AsRefStr, Serialize, TS)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, AsRefStr, Serialize, EnumIs, TS)]
 #[ts(export)]
 #[serde(tag = "kind")]
 pub enum InstallationStage {
