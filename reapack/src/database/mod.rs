@@ -289,7 +289,8 @@ impl<'a> DatabaseTransaction<'a> {
             typ: convert_model_package_type_to_db(package.typ),
             version: convert_model_version_name_to_db(package.version),
             author: package.author,
-            flags: None,
+            // We don't care about flags at the moment and use the defaults
+            flags: Some(0),
         };
         let entry = entry.insert(&mut self.0).await?;
         for f in package.files {
@@ -380,6 +381,9 @@ pub struct DbEntry {
     pub typ: i32,
     pub version: String,
     pub author: String,
+    /// Bit flags for "pinned" and "bleeding edge".
+    ///
+    /// Irrelevant for us at the moment.
     pub flags: Option<i32>,
 }
 

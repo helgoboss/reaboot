@@ -1,3 +1,5 @@
+use std::fmt::{Display, Formatter};
+
 /// Borrowed package ID.
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct LightPackageId<'a> {

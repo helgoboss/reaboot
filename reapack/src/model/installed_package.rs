@@ -2,6 +2,7 @@ use crate::model::package_id::LightPackageId;
 use crate::model::{PackageType, Section, VersionName};
 use enumset::EnumSet;
 use serde::Deserialize;
+use std::fmt::{Display, Formatter};
 
 #[derive(Debug)]
 pub struct InstalledPackage {
@@ -52,6 +53,21 @@ impl InstalledPackage {
             remote: &self.remote,
             category: &self.category,
             package: &self.package,
+        }
+    }
+}
+
+impl Display for InstalledPackage {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", &self.package, &self.version)
+    }
+}
+
+impl Display for InstalledVersionName {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            InstalledVersionName::Valid(v) => v.fmt(f),
+            InstalledVersionName::Invalid(v) => v.fmt(f),
         }
     }
 }

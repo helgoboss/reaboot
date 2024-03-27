@@ -27,7 +27,7 @@ use reaboot_reapack::database::Database;
 use reaboot_reapack::index::{Index, IndexSection, NormalIndexSection};
 use reaboot_reapack::model::{
     Config, InstalledFile, InstalledPackage, InstalledPackageType, InstalledVersionName,
-    LightPackageId, PackageUrl, ParsePackageUrlError, Remote, Section, VersionRef,
+    LightPackageId, LightVersionId, PackageUrl, ParsePackageUrlError, Remote, Section, VersionRef,
 };
 use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
@@ -370,31 +370,33 @@ impl<L: InstallerListener> Installer<L> {
             .iter()
             .map(|p| (p.package_id(), p))
             .collect();
-        let mut downloads_by_package: HashMap<LightPackageId, Vec<_>> = HashMap::new();
+        let mut downloads_by_version: HashMap<LightVersionId, Vec<_>> = HashMap::new();
         for download in downloads {
-            downloads_by_package
-                .entry(download.payload.package_id())
+            downloads_by_version
+                .entry(download.payload.version.id())
                 .or_default()
                 .push(download);
         }
         let mut plan = PackageApplicationPlan::default();
         let mut db = self.open_temp_reapack_db().await?;
-        for (package_id, downloads) in downloads_by_package {
-            let replace_package = replace_package_by_id.remove(&package_id);
+        for (version_id, downloads) in downloads_by_version {
+            let replace_package = replace_package_by_id.remove(&version_id.package_id);
             let install_result = self
-                .update_reapack_db_for_one_package(&mut db, package_id, &downloads, replace_package)
+                .update_reapack_db_for_one_package(&mut db, version_id, &downloads, replace_package)
                 .await;
             match install_result {
                 Ok(_) => {
                     let package_move = PackageApplication {
-                        package_id,
+                        version_id,
                         to_be_moved: downloads,
                         to_be_removed: replace_package,
                     };
                     plan.package_applications.push(package_move);
                 }
                 Err(e) => {
-                    tracing::warn!(msg = "Couldn't update ReaPack DB for one package", ?e)
+                    self.listener.warn(format!(
+                        "Couldn't update ReaPack DB for package {version_id} because {e}"
+                    ));
                 }
             }
         }
@@ -405,7 +407,7 @@ impl<L: InstallerListener> Installer<L> {
     async fn update_reapack_db_for_one_package<'a>(
         &self,
         db: &mut Database,
-        package_id: LightPackageId<'a>,
+        version_id: LightVersionId<'a>,
         downloads: &[DownloadWithPayload<QualifiedSource<'a>>],
         replace_package: Option<&InstalledPackage>,
     ) -> anyhow::Result<()> {
@@ -421,6 +423,7 @@ impl<L: InstallerListener> Installer<L> {
             .as_ref()
             .cloned()
             .unwrap_or_default();
+        let package_id = version_id.package_id;
         let installed_package = InstalledPackage {
             remote: package_id.remote.to_string(),
             category: package_id.category.to_string(),
@@ -446,22 +449,31 @@ impl<L: InstallerListener> Installer<L> {
         };
         // Dry-remove files, dry-remove package, add package to DB and dry-move/copy files ...
         // all within one database transaction. Our atomic unit at this stage is a package.
-        self.listener
-            .info(format!("Installing package {}...", package_id.package));
         let transaction = db.with_transaction(|mut transaction| async {
+            let mut relative_paths_to_be_replaced = HashSet::new();
             if let Some(p) = replace_package {
                 // Dry remove installed package files
                 for file in &p.files {
-                    let path = self.dest_reaper_resource_dir.get().join(&file.path);
-                    dry_remove_file(&path)?;
+                    relative_paths_to_be_replaced.insert(&file.path);
+                    let absolute_path = self.dest_reaper_resource_dir.get().join(&file.path);
+                    dry_remove_file(&absolute_path)?;
                 }
                 // Remove package from DB
+                self.listener.info(format!("Remove package {p} from DB..."));
                 transaction.remove_package(package_id).await?;
             }
             // Add package to DB
+            self.listener
+                .info(format!("Add package {} to DB...", version_id));
             transaction.add_package(installed_package).await?;
             // Dry copy/move
             for download in downloads {
+                if relative_paths_to_be_replaced.contains(&download.payload.relative_path) {
+                    // Dry-moving this file would fail because there's still another ReaPack
+                    // managed file at this location belonging to this package. We are going to
+                    // remove it eventually when applying the package, so that's fine.
+                    continue;
+                }
                 let src_file = &download.download.file;
                 let dest_file = self
                     .dest_reaper_resource_dir
@@ -516,11 +528,17 @@ impl<L: InstallerListener> Installer<L> {
         self.listener
             .installation_stage_changed(InstallationStage::ApplyingPackage {
                 package: PackageInfo {
-                    name: package_application.package_id.package.to_string(),
+                    name: package_application
+                        .version_id
+                        .package_id
+                        .package
+                        .to_string(),
                 },
             });
         if let Some(p) = package_application.to_be_removed {
             // Remove files
+            self.listener
+                .info(format!("Deleting files of existing package {p}"));
             for file in &p.files {
                 let path = self.dest_reaper_resource_dir.get().join(&file.path);
                 std::fs::remove_file(path)
@@ -528,6 +546,10 @@ impl<L: InstallerListener> Installer<L> {
             }
         }
         // Copy/move
+        self.listener.info(format!(
+            "Moving files of new package {}",
+            &package_application.version_id
+        ));
         let total_file_count = package_application.to_be_moved.len();
         for (i, download) in package_application.to_be_moved.into_iter().enumerate() {
             let src_file = download.download.file;
