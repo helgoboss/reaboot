@@ -1,4 +1,5 @@
 use anyhow::{bail, ensure, Context};
+use std::fs::OpenOptions;
 use std::path::{Path, PathBuf};
 use std::{fs, io};
 
@@ -29,7 +30,8 @@ pub fn find_first_existing_parent(mut path: PathBuf) -> Option<PathBuf> {
 
 /// Doesn't overwrite
 pub fn move_file_or_dir_all(src: impl AsRef<Path>, dest: impl AsRef<Path>) -> anyhow::Result<()> {
-    if fs::metadata(&src)?.is_file() {
+    let src = src.as_ref();
+    if src.is_file() {
         move_file(src, &dest, false)?;
     } else {
         move_dir_all(src, dest)?;
@@ -103,4 +105,46 @@ pub fn create_parent_dirs(path: impl AsRef<Path>) -> anyhow::Result<()> {
         fs::create_dir_all(parent)?;
     }
     Ok(())
+}
+
+/// Returns whether the file or directory path is writable or at least creatable.
+///
+/// This is for early return purposes. Of course, it can happen that a path that was reported
+/// as writable now is not writable later.
+pub fn file_or_dir_is_writable_or_creatable(path: &Path) -> bool {
+    match path.try_exists() {
+        Ok(true) => existing_file_or_dir_is_writable(path),
+        Ok(false) => match get_first_existing_parent_dir(path.to_path_buf()) {
+            Ok(d) => existing_file_or_dir_is_writable(&d),
+            Err(_) => false,
+        },
+        Err(_) => false,
+    }
+}
+
+/// Returns whether the file or directory path is writable or at least creatable.
+///
+/// This is for early return purposes. Of course, it can happen that a path that was reported
+/// as writable now is not writable later.
+pub fn existing_file_or_dir_is_writable(path: &Path) -> bool {
+    match fs::metadata(path) {
+        Ok(md) => {
+            // If the path is marked as read-only, we can know early.
+            if md.permissions().readonly() {
+                return false;
+            }
+            // Not read-only, but we can still have a permission issues.
+            if md.is_dir() {
+                // It's a directory. Attempt to write a temporary dir.
+                tempdir::TempDir::new_in(path, "reaboot-check-").is_ok()
+            } else {
+                // It's a file. Attempt to open the file in write mode
+                OpenOptions::new().write(true).open(path).is_ok()
+            }
+        }
+        Err(_) => {
+            // Permission issues
+            false
+        }
+    }
 }

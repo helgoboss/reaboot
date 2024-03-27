@@ -4,8 +4,9 @@ use crate::api::{
 };
 use crate::downloader::{Download, DownloadProgress, Downloader};
 use crate::file_util::{
-    create_parent_dirs, find_first_existing_parent, get_first_existing_parent_dir, move_dir_all,
-    move_file, move_file_or_dir_all, move_file_overwriting_with_backup,
+    create_parent_dirs, existing_file_or_dir_is_writable, file_or_dir_is_writable_or_creatable,
+    find_first_existing_parent, get_first_existing_parent_dir, move_dir_all, move_file,
+    move_file_or_dir_all, move_file_overwriting_with_backup,
 };
 use crate::multi_downloader::{
     DownloadError, DownloadResult, DownloadWithPayload, MultiDownloader,
@@ -31,13 +32,13 @@ use reaboot_reapack::model::{
 };
 use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
-use std::fs;
 use std::fs::File;
 use std::io::BufReader;
 use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::time::Duration;
+use std::{env, fs};
 use tempdir::TempDir;
 use url::Url;
 
@@ -81,18 +82,40 @@ impl<L: InstallerListener> Installer<L> {
     /// installation process.
     ///
     /// Creates a temporary directly already.
-    pub fn new(config: InstallerConfig<L>) -> anyhow::Result<Self> {
+    pub async fn new(config: InstallerConfig<L>) -> anyhow::Result<Self> {
         let dest_reaper_resource_dir =
             ReaperResourceDir::new(config.resolved_config.reaper_resource_dir)?;
-        // Use a sub dir of the destination REAPER resource dir as location for all temporary
+        // Prefer a sub dir of the destination REAPER resource dir as location for all temporary
         // files, e.g. downloads. Rationale: Eventually, all downloaded files need to be moved
         // to their final destination. This move is very fast if it's just a rename, not a copy
         // operation. A rename is only possible if source file and destination directory are on
         // the same mount ... and this is much more likely using this approach than to choose
         // a random OS temp directory.
-        let temp_parent_dir = config
-            .temp_parent_dir
-            .unwrap_or_else(|| dest_reaper_resource_dir.temp_reaboot_dir());
+        let temp_parent_dir = if let Some(d) = config.temp_parent_dir {
+            if file_or_dir_is_writable_or_creatable(&d) {
+                d
+            } else {
+                bail!("The custom temp parent dir you have provided is not writable");
+            }
+        } else {
+            let temp_reaboot_dir = dest_reaper_resource_dir.temp_reaboot_dir();
+            if file_or_dir_is_writable_or_creatable(&temp_reaboot_dir) {
+                temp_reaboot_dir
+            } else {
+                // Fall back to OS temp dir as parent. This can be useful in dry mode.
+                env::temp_dir()
+            }
+        };
+        // Do some early sanity checks
+        let dest_reapack_db_file = dest_reaper_resource_dir.reapack_registry_db_file();
+        if dest_reapack_db_file.exists() {
+            Database::open(dest_reapack_db_file).await.context("ReaPack database is currently busy. Please close REAPER and/or stop existing ReaBoot processes and try again!")?;
+        }
+        if !config.dry_run {
+            let resource_dir = dest_reaper_resource_dir.get();
+            ensure!(file_or_dir_is_writable_or_creatable(resource_dir), "REAPER resource directory {resource_dir:?} is read-only. Are you trying to write into a system directory? REAPER resource directories are usually accessible without root/admin privileges.");
+        }
+        // Create some directories
         fs::create_dir_all(&temp_parent_dir)?;
         let temp_dir_guard = TempDir::new_in(&temp_parent_dir, "reaboot-")
             .context("couldn't create temp directory")?;
@@ -898,7 +921,7 @@ struct PackageStatusQuo {
 
 fn dry_remove_file(path: &Path) -> anyhow::Result<()> {
     if path.exists() {
-        if fs::metadata(&path)?.permissions().readonly() {
+        if !existing_file_or_dir_is_writable(path) {
             bail!("Removing the file would not work");
         }
     }
@@ -909,11 +932,9 @@ fn dry_move_file(src: &Path, dest: PathBuf) -> anyhow::Result<()> {
     ensure!(src.exists(), "Source file {src:?} doesn't exist");
     ensure!(!dest.exists(), "Destination file {dest:?} exists already");
     let first_existing_parent = get_first_existing_parent_dir(dest.clone())?;
-    let readonly = fs::metadata(first_existing_parent)?
-        .permissions()
-        .readonly();
+    let writable = existing_file_or_dir_is_writable(&first_existing_parent);
     ensure!(
-        !readonly,
+        !writable,
         "Parent of destination file {dest:?} is not writable"
     );
     Ok(())

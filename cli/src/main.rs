@@ -115,8 +115,8 @@ async fn install(args: InstallArgs) -> anyhow::Result<()> {
         keep_temp_dir: args.keep_temp_dir,
         reaper_version,
     };
-    let installer = Installer::new(config)?;
-    installer.install().await.context("installation failed")?;
+    let installer = Installer::new(config).await?;
+    installer.install().await.context("Installation failed")?;
     Ok(())
 }
 
