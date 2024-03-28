@@ -55,10 +55,6 @@ multihash-codetable = { workspace = true, features = ["sha2"] }
 hex.workspace = true
 # For verifying hashes in a streaming way
 sha2.workspace = true
-# For uncompressing the Linux REAPER archive
-zstd.workspace = true
-# For extracting the uncompressed Linux REAPER archive
-tar.workspace = true
 
 [target.'cfg(target_os = "macos")'.dependencies]
 # For converting the REAPER DMG file to a hfs+ IMG file. The DMG file itself can't be mounted silently.

@@ -3,7 +3,7 @@ use anyhow::Context;
 use clap::{Args, Parser, Subcommand};
 use indicatif::TermLike;
 use reaboot_core::installer::InstallerListener;
-use std::fmt::Display;
+use std::{fmt::Display, process};
 use tracing_subscriber::{EnvFilter, FmtSubscriber};
 
 mod commands;

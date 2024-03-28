@@ -1,4 +1,4 @@
-use crate::file_util::copy_dir_recursively;
+use crate::file_util::{copy_dir_recursively, move_dir_contents};
 use crate::reaper_target::ReaperTarget;
 use anyhow::{anyhow, bail, ensure, Context};
 use octocrab::models::repos::{Asset, Release};
@@ -72,7 +72,7 @@ pub fn extract_reaper_to_portable_dir(
     match extension {
         "dmg" => extract_reaper_for_macos_to_dir(installer_asset, dest_dir, temp_dir)?,
         "exe" => extract_reaper_for_windows_to_dir(installer_asset, dest_dir)?,
-        "xz" => extract_reaper_for_linux_to_dir(installer_asset, dest_dir)?,
+        "xz" => extract_reaper_for_linux_to_dir(installer_asset, dest_dir, temp_dir)?,
         e => bail!("REAPER installer asset has unsupported file extension {e}"),
     };
     Ok(())
@@ -145,14 +145,22 @@ fn extract_reaper_for_windows_to_dir(
     Ok(())
 }
 
-fn extract_reaper_for_linux_to_dir(reaper_tar_xz: &Path, dest_dir: &Path) -> anyhow::Result<()> {
-    let archive_file = File::open(reaper_tar_xz)?;
-    let tar = zstd::Decoder::new(&archive_file)
-        .context("couldn't decode REAPER for Linux archive file")?;
-    let mut archive = tar::Archive::new(tar);
-    archive
-        .unpack(dest_dir)
-        .context("couldn't unpack REAPER for Linux archive")?;
+fn extract_reaper_for_linux_to_dir(reaper_tar_xz: &Path, dest_dir: &Path, tmp_dir: &Path) -> anyhow::Result<()> {
+    fs::create_dir_all(tmp_dir)?;
+    let exit_status = Command::new("tar")
+        .arg("-xf")
+        .arg(reaper_tar_xz)
+        .arg("-C")
+        .arg(tmp_dir)
+        .output()
+        .context("Error while unpacking the REAPER archive via tar")?
+        .status;
+    ensure!(
+        exit_status.success(),
+        "tar returned a non-zero exit code"
+    );
+    let relevant_sub_dir = tmp_dir.join("reaper_linux_x86_64/REAPER");
+    move_dir_contents(relevant_sub_dir, dest_dir)?;
     Ok(())
 }
 

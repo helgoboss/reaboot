@@ -285,7 +285,7 @@ impl<L: InstallerListener> Installer<L> {
                 }
                 ReaperInstallationOutcome::InstallManuallyBecauseError(download, error) => {
                     self.keep_temp_directory();
-                    self.listener.warn(format!("ReaBoot tried to install REAPER for you, but there was an error. Please install it manually. The installer is located here: {:?}\n\nError: {}", &download.file, &error));
+                    self.listener.warn(format!("ReaBoot tried to install REAPER for you, but there was an error. Please install it manually. The installer is located here: {:?}\n\nError: {:#}", &download.file, &error));
                 }
                 ReaperInstallationOutcome::ExtractedSuccessfully(dir_containing_reaper) => {
                     move_dir_contents(dir_containing_reaper, self.dest_reaper_resource_dir.get())?;

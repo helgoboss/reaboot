@@ -23,7 +23,7 @@ impl CliInstallerListener {
     }
 
     fn log(&self, msg: impl Display) {
-        // let _ = self.multi_progress.println(msg.to_string());
+        let _ = self.multi_progress.println(msg.to_string());
     }
 }
 
@@ -66,11 +66,11 @@ impl InstallerListener for CliInstallerListener {
     }
 
     fn info(&self, message: impl Display) {
-        self.log(message);
+        // self.log(message);
     }
 
     fn debug(&self, message: impl Display) {
-        self.log(message);
+        // self.log(message);
     }
 }
 
