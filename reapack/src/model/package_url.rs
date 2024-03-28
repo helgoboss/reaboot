@@ -191,14 +191,6 @@ impl FromStr for PackagePath {
     }
 }
 
-impl FromStr for VersionRef {
-    type Err = ParsePackageUrlError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        serde_plain::from_str(s).map_err(|_| ParsePackageUrlError::InvalidVersionRef)
-    }
-}
-
 #[derive(Error, Debug)]
 pub enum ParsePackageUrlError {
     #[error("Fragment identifier is missing")]

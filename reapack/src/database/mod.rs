@@ -348,7 +348,7 @@ impl<'a> DatabaseTransaction<'a> {
             .await?;
         for (id, category) in entries {
             let section = Section::detect_from_category_legacy(category.as_ref());
-            let section_string = serde_plain::to_string(&section)?;
+            let section_string = section.to_string();
             ormlite::query("UPDATE files SET main = ? WHERE entry = ? AND main != 0")
                 .bind(section_string)
                 .bind(id)

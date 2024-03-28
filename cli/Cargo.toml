@@ -19,11 +19,11 @@ indicatif.workspace = true
 dialoguer.workspace = true
 # For things like clearing the screen
 console.workspace = true
-# For displaying a report table
-comfy-table.workspace = true
 # For parsing URLs
 url.workspace = true
 # For emitting log messages
 tracing.workspace = true
 # For printing log messages
 tracing-subscriber = { workspace = true, features = ["env-filter"] }
+# For printing a nice report
+termimad.workspace = true

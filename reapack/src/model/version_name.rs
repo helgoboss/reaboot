@@ -1,4 +1,4 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::cmp;
 use std::cmp::Ordering;
 use std::fmt::{Display, Formatter};
@@ -16,8 +16,9 @@ use ts_rs::TS;
 /// - Individual number segments must fit in an unsigned 16-bit integer (0 to 65535).
 /// - A version is treated as a pre-release if it contains one or more letters.
 /// - Versions are handled as if they end by an infinity of 0 segments (1 = 1.0 = 1.0.0 etc).
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(try_from = "String")]
+#[serde(into = "String")]
 pub struct VersionName {
     string: String,
     segments: TinyVec<[Segment; 3]>,
@@ -71,6 +72,12 @@ impl VersionName {
             Segment::Numeric(i) => *i,
             Segment::String(_) => panic!("versions where the first segment is a string should not exist, this is a bug in VersionName")
         }
+    }
+}
+
+impl Into<String> for VersionName {
+    fn into(self) -> String {
+        self.string
     }
 }
 

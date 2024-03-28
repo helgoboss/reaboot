@@ -17,7 +17,7 @@ use url::Url;
 
 pub struct PreDownloadFailures<'a> {
     /// Packages that were mentioned in the recipes but are not in the repository index.
-    pub package_descriptors_with_failures: Vec<PackageDescFailure<'a>>,
+    pub package_descriptors_with_failures: Vec<PackageUrlFailure<'a>>,
     /// Packages for which it's unclear which version to install.
     pub version_conflicts: Vec<VersionConflict<'a>>,
     /// Package versions that have an unsupported package type override or don't have any files to
@@ -110,7 +110,7 @@ pub struct RecipeFileConflict<'a> {
     pub conflicting_files: Vec<QualifiedSource<'a>>,
 }
 
-pub struct PackageDescFailure<'a> {
+pub struct PackageUrlFailure<'a> {
     pub remote: Option<&'a str>,
     pub package_url: &'a PackageUrl,
     pub error: PackageDescError,
@@ -159,25 +159,25 @@ impl<'a> QualifiedSource<'a> {
 fn resolve_and_deduplicate_versions<'a>(
     package_urls: HashSet<&'a PackageUrl>,
     indexes: &'a HashMap<Url, DownloadedIndex>,
-) -> (Vec<QualifiedVersion<'a>>, Vec<PackageDescFailure<'a>>) {
+) -> (Vec<QualifiedVersion<'a>>, Vec<PackageUrlFailure<'a>>) {
     let mut failures = vec![];
     let qualified_versions: HashMap<_, _> = package_urls
         .into_iter()
-        .filter_map(|desc| {
-            let Some(index) = indexes.get(desc.repository_url()) else {
-                failures.push(PackageDescFailure {
+        .filter_map(|purl| {
+            let Some(index) = indexes.get(purl.repository_url()) else {
+                failures.push(PackageUrlFailure {
                     remote: None,
-                    package_url: desc,
+                    package_url: purl,
                     error: PackageDescError::RepositoryIndexUnavailable,
                 });
                 return None;
             };
-            match lookup_package_version_in_index(&desc, index) {
+            match lookup_package_version_in_index(&purl, index) {
                 Ok(v) => Some((v.id().package_id, v)),
                 Err(error) => {
-                    failures.push(PackageDescFailure {
+                    failures.push(PackageUrlFailure {
                         remote: Some(&index.name),
-                        package_url: desc,
+                        package_url: purl,
                         error,
                     });
                     None

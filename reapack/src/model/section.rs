@@ -2,6 +2,7 @@ use camino::Utf8Path;
 use enumset::EnumSetType;
 use num_enum::TryFromPrimitive;
 use serde::{Deserialize, Serialize};
+use std::fmt::{Display, Formatter};
 use std::path::Path;
 
 /// Section.
@@ -24,6 +25,13 @@ pub enum Section {
     MidiEventListEditor = 3,
     #[serde(rename = "mediaexplorer")]
     MediaExplorer = 4,
+}
+
+impl Display for Section {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let section_string = serde_plain::to_string(self).map_err(|_| std::fmt::Error)?;
+        section_string.fmt(f)
+    }
 }
 
 impl Section {

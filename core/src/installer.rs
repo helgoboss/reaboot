@@ -226,7 +226,7 @@ impl<L: InstallerListener> Installer<L> {
             self.clean_up();
             return Ok(preparation_report);
         }
-        if self.skip_failed_packages && preparation_report.has_failed_packages() {
+        if !self.skip_failed_packages && preparation_report.summary().failures > 0 {
             self.clean_up();
             return Err(InstallError::SomePackagesFailed(preparation_report));
         }
@@ -961,7 +961,7 @@ fn dry_move_file(src: &Path, dest: PathBuf) -> anyhow::Result<()> {
     let first_existing_parent = get_first_existing_parent_dir(dest.clone())?;
     let writable = existing_file_or_dir_is_writable(&first_existing_parent);
     ensure!(
-        !writable,
+        writable,
         "Parent of destination file {dest:?} is not writable"
     );
     Ok(())
