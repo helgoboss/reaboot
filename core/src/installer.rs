@@ -8,13 +8,13 @@ use crate::file_util::{
     find_first_existing_parent, get_first_existing_parent_dir, move_dir_all, move_file,
     move_file_or_dir_all, move_file_overwriting_with_backup,
 };
+use crate::installation_model::{
+    determine_files_to_be_downloaded, PackageInstallationPlan, PreDownloadFailures,
+    QualifiedSource, TempInstallFailure,
+};
 use crate::multi_downloader::{
     DownloadError, DownloadResult, DownloadWithPayload, MultiDownloader,
 };
-use crate::package_application_plan::{
-    PackageApplication, PackageApplicationPlan, TempInstallFailure,
-};
-use crate::package_download_plan::{PackageDownloadPlan, QualifiedSource};
 use crate::preparation_report::PreparationReport;
 use crate::reaboot_util::resolve_config;
 use crate::reaper_resource_dir::{
@@ -189,28 +189,26 @@ impl<L: InstallerListener> Installer<L> {
         };
         // Prepare temporary directory
         self.prepare_temp_dir()?;
-        // Download repositories
+        // Download repository indexes
         let downloaded_indexes = self.download_repository_indexes().await?;
         // Check which packages are installed already
         let package_status_quo = self
             .gather_already_installed_packages(&downloaded_indexes)
             .await?;
-        // Make package download plan
-        // TODO Rename. This is a collection of failures, not a plan.
-        let (final_files, download_plan) = PackageDownloadPlan::make(
+        // Determine files to be downloaded, weeding out pre-download failures
+        let (files_to_be_downloaded, pre_download_failures) = determine_files_to_be_downloaded(
             &self.package_urls,
             &downloaded_indexes,
             &package_status_quo.installed_packages_to_keep,
             self.reaper_target,
         );
         // Download packages
-        let package_download_results = self.download_packages(final_files).await;
+        let package_download_results = self.download_packages(files_to_be_downloaded).await;
         // Weed out incomplete downloads
         let (successful_downloads, download_errors) =
             weed_out_download_errors(package_download_results);
         // Update ReaPack state
-        // TODO Rename. This is a collection of failures, not a plan.
-        let package_application_plan = self
+        let (package_installation_plans, temp_install_failures) = self
             .update_reapack_state(
                 &downloaded_indexes,
                 successful_downloads,
@@ -219,10 +217,10 @@ impl<L: InstallerListener> Installer<L> {
             .await?;
         // Create preparation report
         let preparation_report = PreparationReport::new(
-            download_plan,
+            pre_download_failures,
             download_errors,
-            package_application_plan.package_failures,
-            &package_application_plan.package_applications,
+            temp_install_failures,
+            &package_installation_plans,
         );
         if self.dry_run {
             self.clean_up();
@@ -246,7 +244,7 @@ impl<L: InstallerListener> Installer<L> {
         self.apply_reapack_state(&downloaded_indexes)
             .context("updating ReaPack state failed")?;
         // Apply packages
-        self.apply_packages(package_application_plan.package_applications)
+        self.apply_packages(package_installation_plans)
             .context("moving packages failed")?;
         self.clean_up();
         Ok(preparation_report)
@@ -348,21 +346,24 @@ impl<L: InstallerListener> Installer<L> {
         downloaded_indexes: &'a HashMap<Url, DownloadedIndex>,
         successful_downloads: Vec<DownloadWithPayload<QualifiedSource<'a>>>,
         installed_packages_to_be_replaced: &'a [InstalledPackage],
-    ) -> anyhow::Result<PackageApplicationPlan> {
+    ) -> anyhow::Result<(
+        Vec<PackageInstallationPlan<'a>>,
+        Vec<TempInstallFailure<'a>>,
+    )> {
         self.listener
             .installation_stage_changed(InstallationStage::UpdatingReaPackState);
         self.create_or_update_reapack_ini_file(downloaded_indexes)?;
-        let plan = self
+        let outcome = self
             .create_or_update_reapack_db(successful_downloads, installed_packages_to_be_replaced)
             .await?;
-        Ok(plan)
+        Ok((outcome.package_installation_plans, outcome.package_failures))
     }
 
     async fn create_or_update_reapack_db<'a>(
         &'a self,
         successful_downloads: Vec<DownloadWithPayload<QualifiedSource<'a>>>,
         installed_packages_to_be_replaced: &'a [InstalledPackage],
-    ) -> anyhow::Result<PackageApplicationPlan> {
+    ) -> anyhow::Result<TempInstallOutcome> {
         // Create/migrate ReaPack database
         let reapack_db_file = self.temp_reaper_resource_dir.reapack_registry_db_file();
         if reapack_db_file.exists() {
@@ -417,7 +418,7 @@ impl<L: InstallerListener> Installer<L> {
         &'a self,
         downloads: Vec<DownloadWithPayload<QualifiedSource<'a>>>,
         installed_packages_to_be_replaced: &'a [InstalledPackage],
-    ) -> anyhow::Result<PackageApplicationPlan> {
+    ) -> anyhow::Result<TempInstallOutcome> {
         let mut replace_package_by_id: HashMap<_, _> = installed_packages_to_be_replaced
             .iter()
             .map(|p| (p.package_id(), p))
@@ -429,7 +430,7 @@ impl<L: InstallerListener> Installer<L> {
                 .or_default()
                 .push(download);
         }
-        let mut plan = PackageApplicationPlan::default();
+        let mut outcome = TempInstallOutcome::default();
         let mut db = self.open_temp_reapack_db().await?;
         for (version_id, downloads) in downloads_by_version {
             let replace_package = replace_package_by_id.remove(&version_id.package_id);
@@ -438,24 +439,24 @@ impl<L: InstallerListener> Installer<L> {
                 .await;
             match install_result {
                 Ok(_) => {
-                    let package_move = PackageApplication {
+                    let plan = PackageInstallationPlan {
                         version_id,
                         to_be_moved: downloads,
                         to_be_removed: replace_package,
                     };
-                    plan.package_applications.push(package_move);
+                    outcome.package_installation_plans.push(plan);
                 }
                 Err(error) => {
                     self.listener.warn(format!(
                         "Couldn't update ReaPack DB for package {version_id} because {error}"
                     ));
                     let failure = TempInstallFailure { version_id, error };
-                    plan.package_failures.push(failure);
+                    outcome.package_failures.push(failure);
                 }
             }
         }
         db.close().await?;
-        Ok(plan)
+        Ok(outcome)
     }
 
     async fn update_reapack_db_for_one_package<'a>(
@@ -571,28 +572,21 @@ impl<L: InstallerListener> Installer<L> {
         Ok(())
     }
 
-    fn apply_packages<'a>(
-        &self,
-        package_applications: Vec<PackageApplication>,
-    ) -> anyhow::Result<()> {
-        for package_application in package_applications {
-            self.apply_package(package_application)?;
+    fn apply_packages<'a>(&self, plans: Vec<PackageInstallationPlan>) -> anyhow::Result<()> {
+        for plan in plans {
+            self.apply_package(plan)?;
         }
         Ok(())
     }
 
-    fn apply_package(&self, package_application: PackageApplication) -> anyhow::Result<()> {
+    fn apply_package(&self, plan: PackageInstallationPlan) -> anyhow::Result<()> {
         self.listener
             .installation_stage_changed(InstallationStage::ApplyingPackage {
                 package: PackageInfo {
-                    name: package_application
-                        .version_id
-                        .package_id
-                        .package
-                        .to_string(),
+                    name: plan.version_id.package_id.package.to_string(),
                 },
             });
-        if let Some(p) = package_application.to_be_removed {
+        if let Some(p) = plan.to_be_removed {
             // Remove files
             self.listener
                 .info(format!("Deleting files of existing package {p}"));
@@ -603,12 +597,10 @@ impl<L: InstallerListener> Installer<L> {
             }
         }
         // Copy/move
-        self.listener.info(format!(
-            "Moving files of new package {}",
-            &package_application.version_id
-        ));
-        let total_file_count = package_application.to_be_moved.len();
-        for (i, download) in package_application.to_be_moved.into_iter().enumerate() {
+        self.listener
+            .info(format!("Moving files of new package {}", &plan.version_id));
+        let total_file_count = plan.to_be_moved.len();
+        for (i, download) in plan.to_be_moved.into_iter().enumerate() {
             let src_file = download.download.file;
             let dest_file = self
                 .dest_reaper_resource_dir
@@ -1049,4 +1041,10 @@ pub enum InstallError {
     SomePackagesFailed(PreparationReport),
     #[error(transparent)]
     Other(#[from] anyhow::Error),
+}
+
+#[derive(Default)]
+struct TempInstallOutcome<'a> {
+    package_failures: Vec<TempInstallFailure<'a>>,
+    package_installation_plans: Vec<PackageInstallationPlan<'a>>,
 }

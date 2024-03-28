@@ -1,10 +1,8 @@
+use crate::installation_model::{
+    PackageDescError, PackageInstallationPlan, PreDownloadFailures, QualifiedSource,
+    QualifiedVersion, TempInstallFailure,
+};
 use crate::multi_downloader::DownloadError;
-use crate::package_application_plan::{
-    PackageApplication, PackageApplicationPlan, TempInstallFailure,
-};
-use crate::package_download_plan::{
-    PackageDescError, PackageDownloadPlan, QualifiedSource, QualifiedVersion,
-};
 use reaboot_reapack::model::{PackageId, VersionName};
 
 #[derive(Debug)]
@@ -46,10 +44,10 @@ pub enum PackagePreparationStatus {
 
 impl PreparationReport {
     pub fn new(
-        download_plan: PackageDownloadPlan,
+        download_plan: PreDownloadFailures,
         download_errors: Vec<DownloadError<QualifiedSource>>,
         temp_install_failures: Vec<TempInstallFailure>,
-        package_applications: &[PackageApplication],
+        package_installation_plans: &[PackageInstallationPlan],
     ) -> Self {
         let not_found = download_plan
             .package_descriptors_with_failures
@@ -130,7 +128,7 @@ impl PreparationReport {
                     version_name: Some(failure.version_id.version.clone()),
                     status: PackagePreparationStatus::TempInstallFailed(failure.error),
                 });
-        let ready = package_applications
+        let ready = package_installation_plans
             .iter()
             .map(|a| PackagePreparationOutcome {
                 package_id: a.version_id.package_id.to_owned(),

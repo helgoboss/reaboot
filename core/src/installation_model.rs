@@ -1,4 +1,5 @@
 use crate::installer::DownloadedIndex;
+use crate::multi_downloader::DownloadWithPayload;
 use crate::reaper_target::ReaperTarget;
 use anyhow::{Context, Error};
 use reaboot_reapack::index::{
@@ -14,7 +15,7 @@ use std::path::PathBuf;
 use thiserror::Error;
 use url::Url;
 
-pub struct PackageDownloadPlan<'a> {
+pub struct PreDownloadFailures<'a> {
     /// Packages that were mentioned in the recipes but are not in the repository index.
     pub package_descriptors_with_failures: Vec<PackageDescFailure<'a>>,
     /// Packages for which it's unclear which version to install.
@@ -28,6 +29,17 @@ pub struct PackageDownloadPlan<'a> {
     /// Package files that clash with other package files of already installed packages,
     /// because they would be installed to exactly the same destination (directory and name).
     pub files_conflicting_with_already_installed_files: Vec<QualifiedSource<'a>>,
+}
+
+pub struct TempInstallFailure<'a> {
+    pub version_id: LightVersionId<'a>,
+    pub error: anyhow::Error,
+}
+
+pub struct PackageInstallationPlan<'a> {
+    pub version_id: LightVersionId<'a>,
+    pub to_be_moved: Vec<DownloadWithPayload<QualifiedSource<'a>>>,
+    pub to_be_removed: Option<&'a InstalledPackage>,
 }
 
 #[derive(Copy, Clone, Error, Debug)]
@@ -48,40 +60,35 @@ pub enum PackageDescError {
     PackageVersionNotFound,
 }
 
-impl<'a> PackageDownloadPlan<'a> {
-    /// Returns all remaining files to be installed, with files belonging to incomplete packages
-    /// removed.
-    pub fn make(
-        package_urls: &'a [PackageUrl],
-        indexes: &'a HashMap<Url, DownloadedIndex>,
-        installed_packages_to_keep: &[InstalledPackage],
-        reaper_target: ReaperTarget,
-    ) -> (Vec<QualifiedSource<'a>>, Self) {
-        let deduplicated_package_urls = HashSet::from_iter(package_urls);
-        let (versions, package_descriptors_with_failures) =
-            resolve_and_deduplicate_versions(deduplicated_package_urls, indexes);
-        let (versions, version_conflicts) = weed_out_packages_with_version_conflicts(versions);
-        let (sources, incompatible_versions) =
-            resolve_package_sources_weeding_out_platform_incompatible_versions(
-                versions,
-                reaper_target,
-            );
-        let (sources, recipe_file_conflicts) = weed_out_conflicting_files_within_recipes(sources);
-        let (mut files, files_conflicting_with_already_installed_files) =
-            weed_out_conflicting_files_with_already_installed_packages(
-                sources,
-                installed_packages_to_keep,
-            );
-        remove_incomplete_versions(&mut files, &recipe_file_conflicts);
-        let plan = Self {
-            package_descriptors_with_failures,
-            version_conflicts,
-            incompatible_versions,
-            recipe_file_conflicts,
-            files_conflicting_with_already_installed_files,
-        };
-        (files, plan)
-    }
+/// Returns all remaining files to be installed, with files belonging to incomplete packages
+/// removed.
+pub fn determine_files_to_be_downloaded<'a>(
+    package_urls: &'a [PackageUrl],
+    indexes: &'a HashMap<Url, DownloadedIndex>,
+    installed_packages_to_keep: &[InstalledPackage],
+    reaper_target: ReaperTarget,
+) -> (Vec<QualifiedSource<'a>>, PreDownloadFailures<'a>) {
+    let deduplicated_package_urls = HashSet::from_iter(package_urls);
+    let (versions, package_descriptors_with_failures) =
+        resolve_and_deduplicate_versions(deduplicated_package_urls, indexes);
+    let (versions, version_conflicts) = weed_out_packages_with_version_conflicts(versions);
+    let (sources, incompatible_versions) =
+        resolve_package_sources_weeding_out_platform_incompatible_versions(versions, reaper_target);
+    let (sources, recipe_file_conflicts) = weed_out_conflicting_files_within_recipes(sources);
+    let (mut files, files_conflicting_with_already_installed_files) =
+        weed_out_conflicting_files_with_already_installed_packages(
+            sources,
+            installed_packages_to_keep,
+        );
+    remove_incomplete_versions(&mut files, &recipe_file_conflicts);
+    let failures = PreDownloadFailures {
+        package_descriptors_with_failures,
+        version_conflicts,
+        incompatible_versions,
+        recipe_file_conflicts,
+        files_conflicting_with_already_installed_files,
+    };
+    (files, failures)
 }
 
 pub struct QualifiedSource<'a> {
