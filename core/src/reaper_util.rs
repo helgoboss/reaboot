@@ -6,6 +6,7 @@ use octocrab::Octocrab;
 use reaboot_reapack::model::{VersionName, VersionRef};
 use serde::Deserialize;
 use std::env::args;
+use std::fs;
 use std::fs::File;
 use std::io::BufWriter;
 use std::path::{Path, PathBuf};
@@ -145,7 +146,14 @@ fn extract_reaper_for_windows_to_dir(
 }
 
 fn extract_reaper_for_linux_to_dir(reaper_tar_xz: &Path, dest_dir: &Path) -> anyhow::Result<()> {
-    todo!()
+    let archive_file = File::open(reaper_tar_xz)?;
+    let tar = zstd::Decoder::new(&archive_file)
+        .context("couldn't decode REAPER for Linux archive file")?;
+    let mut archive = tar::Archive::new(tar);
+    archive
+        .unpack(dest_dir)
+        .context("couldn't unpack REAPER for Linux archive")?;
+    Ok(())
 }
 
 /// REAPER versions seem to be similar to ReaPack versions in nature.
