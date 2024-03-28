@@ -1,35 +1,83 @@
+use multihash::Multihash;
 use multihash_codetable::MultihashDigest;
+use sha2::{Digest, Sha256, Sha512};
 use thiserror::Error;
 
-pub fn verify_source_hash<'a>(
-    provided_hash: &'a str,
-    file_content: &[u8],
-) -> Result<(), VerifySourceHashError<'a>> {
+pub struct ReabootHashVerifier<'a> {
+    expected_hash: &'a str,
+    expected_multihash: Multihash<64>,
+    hasher: ReabootHasher,
+}
+
+impl<'a> ReabootHashVerifier<'a> {
+    pub fn try_from_hash(expected_hash: &'a str) -> Result<Self, BuildHashVerifierError> {
+        let expected_multihash =
+            parse_hash(&expected_hash).map_err(BuildHashVerifierError::Parse)?;
+        let hasher = ReabootHasher::try_from_multihash(&expected_multihash)?;
+        let verifier = Self {
+            expected_hash,
+            expected_multihash,
+            hasher,
+        };
+        Ok(verifier)
+    }
+
+    pub fn update(&mut self, data: &[u8]) {
+        self.hasher.update(data);
+    }
+
+    pub fn verify(self) -> Result<(), HashVerificationError> {
+        let actual_digest = self.hasher.finalize();
+        if actual_digest != self.expected_multihash.digest() {
+            let actual_hash = hex::encode(actual_digest);
+            return Err(HashVerificationError::HashesNotMatching {
+                expected_hash: self.expected_hash.to_string(),
+                actual_hash,
+            });
+        }
+        Ok(())
+    }
+}
+
+struct ReabootHasher {
+    inner: sha2::Sha256,
+}
+
+impl ReabootHasher {
+    pub fn try_from_multihash(multihash: &Multihash<64>) -> Result<Self, BuildHashVerifierError> {
+        let multihash_code = multihash.code();
+        if multihash_code != SHA256_CODE {
+            return Err(BuildHashVerifierError::UnsupportedHashAlgorithm {
+                code: multihash_code,
+            });
+        }
+        let hasher = Self {
+            inner: sha2::Sha256::new(),
+        };
+        Ok(hasher)
+    }
+
+    pub fn update(&mut self, data: &[u8]) {
+        self.inner.update(data);
+    }
+
+    pub fn finalize(self) -> Vec<u8> {
+        self.inner.finalize().to_vec()
+    }
+}
+
+pub fn parse_hash(provided_hash: &str) -> Result<Multihash<64>, ParseHashError> {
     let provided_hash_bytes =
-        hex::decode(provided_hash).map_err(|source| VerifySourceHashError::HashNotHexEncoded {
-            provided_hash,
+        hex::decode(provided_hash).map_err(|source| ParseHashError::HashNotHexEncoded {
+            provided_hash: provided_hash.to_string(),
             source,
         })?;
     let provided_multihash = multihash_codetable::Multihash::from_bytes(&provided_hash_bytes)
-        .map_err(|source| VerifySourceHashError::InvalidMultiHash {
-            provided_hash,
+        .map_err(|source| ParseHashError::InvalidMultiHash {
+            provided_hash: provided_hash.to_string(),
             source,
         })?;
-    let provided_multihash_code = provided_multihash.code();
-    if provided_multihash_code != SHA256_CODE {
-        return Err(VerifySourceHashError::UnsupportedHashAlgorithm {
-            code: provided_multihash_code,
-        });
-    }
-    let actual_multihash = multihash_codetable::Code::Sha2_256.digest(file_content);
-    if actual_multihash.digest() != provided_multihash.digest() {
-        let actual_hash = hex::encode(actual_multihash.to_bytes());
-        return Err(VerifySourceHashError::HashesNotMatching {
-            provided_hash,
-            actual_hash,
-        });
-    }
-    Ok(())
+    Ok(provided_multihash)
 }
 
 pub fn build_sha256_source_hash(bytes: impl AsRef<[u8]>) -> String {
@@ -38,23 +86,33 @@ pub fn build_sha256_source_hash(bytes: impl AsRef<[u8]>) -> String {
 }
 
 #[derive(Error, Debug)]
-pub enum VerifySourceHashError<'a> {
+pub enum HashVerificationError {
+    #[error("hashes not matching (expected = '{expected_hash}`, actual = '{actual_hash}')")]
+    HashesNotMatching {
+        expected_hash: String,
+        actual_hash: String,
+    },
+}
+
+#[derive(Error, Debug)]
+pub enum BuildHashVerifierError {
+    #[error("parsing hash failed")]
+    Parse(ParseHashError),
+    #[error("provided hash has unsupported multihash algorithm '{code}'")]
+    UnsupportedHashAlgorithm { code: u64 },
+}
+
+#[derive(Error, Debug)]
+pub enum ParseHashError {
     #[error("provided hash is not properly hex-encoded ('{provided_hash}')")]
     HashNotHexEncoded {
-        provided_hash: &'a str,
+        provided_hash: String,
         source: hex::FromHexError,
     },
     #[error("provided hash is not a valid multi hash ('{provided_hash}')")]
     InvalidMultiHash {
-        provided_hash: &'a str,
+        provided_hash: String,
         source: multihash::Error,
-    },
-    #[error("provided hash has unsupported multihash algorithm '{code}'")]
-    UnsupportedHashAlgorithm { code: u64 },
-    #[error("hashes not matching (provided = '{provided_hash}`, actual = '{actual_hash}')")]
-    HashesNotMatching {
-        provided_hash: &'a str,
-        actual_hash: String,
     },
 }
 
@@ -86,19 +144,22 @@ mod tests {
     }
 
     #[test]
-    fn verify() {
-        let success = verify_source_hash(
+    fn verify_ok() {
+        let mut verifier = ReabootHashVerifier::try_from_hash(
             "1220b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9",
-            "hello world".as_bytes(),
-        );
-        success.unwrap();
-        let wrong_code = verify_source_hash(
-            "0220b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9",
-            "hello world".as_bytes(),
-        );
-        assert!(matches!(
-            wrong_code.unwrap_err(),
-            VerifySourceHashError::UnsupportedHashAlgorithm { code: 02, .. }
-        ));
+        )
+            .unwrap();
+        verifier.update("hello world".as_bytes());
+        verifier.verify().unwrap();
+    }
+
+    #[test]
+    fn verify_err() {
+        let mut verifier = ReabootHashVerifier::try_from_hash(
+            "1220b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9",
+        )
+            .unwrap();
+        verifier.update("hello world oh no".as_bytes());
+        verifier.verify().unwrap_err();
     }
 }

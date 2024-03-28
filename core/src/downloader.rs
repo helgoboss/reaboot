@@ -1,4 +1,6 @@
 use crate::hash_util;
+use crate::hash_util::ReabootHashVerifier;
+use anyhow::Context;
 use futures::stream::StreamExt;
 use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest_middleware::ClientWithMiddleware;
@@ -69,6 +71,14 @@ impl Downloader {
         let mut stream = res.bytes_stream();
         let mut bytes_already_downloaded = 0;
         progress_listener(DownloadProgress::Downloading(0.0));
+        let mut verifier = if let Some(m) = download.expected_multihash.as_ref() {
+            Some(
+                ReabootHashVerifier::try_from_hash(m)
+                    .context("Download came with a checksum but we have no way to verify it. Discarding download.")?,
+            )
+        } else {
+            None
+        };
         while let Some(item) = stream.next().await {
             let mut chunk = item?;
             let chunk_size = chunk.len() as u64;
@@ -80,10 +90,14 @@ impl Downloader {
             }
             bytes_already_downloaded += chunk_size;
             dest_file.write_all_buf(&mut chunk).await?;
+            if let Some(verifier) = &mut verifier {
+                verifier.update(&chunk);
+            }
         }
-        // if let Some(hash) = download.expected_multihash {
-        //     hash_util::verify_source_hash(&hash)
-        // }
+        if let Some(verifier) = verifier {
+            verifier.verify()
+                .context("Download came with a checksum but downloaded file has another checksum. Discarding download.")?;
+        }
         progress_listener(DownloadProgress::Finished);
         Ok(())
     }
