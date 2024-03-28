@@ -62,7 +62,7 @@ tar.workspace = true
 
 [target.'cfg(target_os = "macos")'.dependencies]
 # For converting the REAPER DMG file to a hfs+ IMG file. The DMG file itself can't be mounted silently.
-dmgwiz = { workspace = true, default-features = false }
+dmgwiz.workspace = true
 # For easily mounting the REAPER IMG file. Internally, this uses hdiutil, so this one could be easily replaced.
 # But the code in the crate looks good, so why not use it.
 dmg.workspace = true
