@@ -28,44 +28,59 @@ pub fn find_first_existing_parent(mut path: PathBuf) -> Option<PathBuf> {
     }
 }
 
-/// Doesn't overwrite
-pub fn move_file_or_dir_all(src: impl AsRef<Path>, dest: impl AsRef<Path>) -> anyhow::Result<()> {
-    let src = src.as_ref();
-    if src.is_file() {
-        move_file(src, &dest, false)?;
-    } else {
-        move_dir_all(src, dest)?;
-    }
-    Ok(())
-}
-
-/// Doesn't overwrite
-pub fn move_dir_all(src: impl AsRef<Path>, dest: impl AsRef<Path>) -> anyhow::Result<()> {
-    let dest = dest.as_ref();
-    if dest.exists() {
-        bail!("Destination {dest:?} already exists");
-    }
-    if fs::rename(&src, &dest).is_err() {
-        copy_dir_all(src, dest)?;
-    }
-    Ok(())
-}
-
-/// Overwrites!
-pub fn copy_dir_all(src: impl AsRef<Path>, dest: impl AsRef<Path>) -> io::Result<()> {
-    fs::create_dir_all(&dest)?;
-    for entry in fs::read_dir(src)? {
-        let entry = entry?;
-        let ty = entry.file_type()?;
-        if ty.is_dir() {
-            copy_dir_all(entry.path(), dest.as_ref().join(entry.file_name()))?;
-        } else {
-            fs::copy(entry.path(), dest.as_ref().join(entry.file_name()))?;
+/// Moves the contents of `src_dir` into `dest_dir`, creating latter if it doesn't exist yet.
+///
+/// - Attempts to do it via cheap renaming and falls back to recursive copying.
+/// - Overwrites contents within `dest_dir`!
+pub fn move_dir_contents(
+    src_dir: impl AsRef<Path>,
+    dest_dir: impl AsRef<Path>,
+) -> anyhow::Result<()> {
+    let src_dir = src_dir.as_ref();
+    let dest_dir = dest_dir.as_ref();
+    fs::create_dir_all(dest_dir)?;
+    for src_entry in fs::read_dir(src_dir)? {
+        let src_entry = src_entry?;
+        let src_entry_path = src_entry.path();
+        let dest_entry_path = dest_dir.join(src_entry.file_name());
+        if fs::rename(&src_entry_path, &dest_entry_path).is_err() {
+            // Renaming didn't work. Fall back to copying.
+            let ty = src_entry.file_type()?;
+            if ty.is_dir() {
+                copy_dir_recursively(&src_entry_path, &dest_entry_path)?;
+            } else {
+                fs::copy(&src_entry_path, &dest_entry_path)?;
+            }
         }
     }
     Ok(())
 }
 
+/// Copies the contents of directory `src_dir` into directory `dest_dir`, creating latter if it doesn't exist yet.
+///
+/// Overwrites!
+pub fn copy_dir_recursively(
+    src_dir: impl AsRef<Path>,
+    dest_dir: impl AsRef<Path>,
+) -> io::Result<()> {
+    let src_dir = src_dir.as_ref();
+    let dest_dir = dest_dir.as_ref();
+    fs::create_dir_all(dest_dir)?;
+    for src_entry in fs::read_dir(src_dir)? {
+        let src_entry = src_entry?;
+        let src_entry_path = src_entry.path();
+        let dest_entry_path = dest_dir.join(src_entry.file_name());
+        let ty = src_entry.file_type()?;
+        if ty.is_dir() {
+            copy_dir_recursively(src_entry_path, dest_entry_path)?;
+        } else {
+            fs::copy(src_entry_path, dest_entry_path)?;
+        }
+    }
+    Ok(())
+}
+
+/// Moves `src_file` to `dest_file`, creating a backup file of `dest_file` if it already exists, before overwriting it.
 pub fn move_file_overwriting_with_backup(
     src_file: impl AsRef<Path>,
     dest_file: impl AsRef<Path>,
@@ -83,6 +98,9 @@ pub fn move_file_overwriting_with_backup(
     move_file(src_file, dest_file, true)
 }
 
+/// Moves `src_file` to `dest_file`.
+///
+/// Tries to use cheap renaming and falls back to copying.
 pub fn move_file(
     src_file: impl AsRef<Path>,
     dest_file: impl AsRef<Path>,
@@ -100,6 +118,7 @@ pub fn move_file(
     Ok(())
 }
 
+/// Creates all parent directories of `path` if they don't exist already.
 pub fn create_parent_dirs(path: impl AsRef<Path>) -> anyhow::Result<()> {
     if let Some(parent) = path.as_ref().parent() {
         fs::create_dir_all(parent)?;

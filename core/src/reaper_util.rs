@@ -1,4 +1,4 @@
-use crate::file_util::copy_dir_all;
+use crate::file_util::copy_dir_recursively;
 use crate::reaper_target::ReaperTarget;
 use anyhow::{anyhow, bail, ensure, Context};
 use octocrab::models::repos::{Asset, Release};
@@ -9,6 +9,7 @@ use std::env::args;
 use std::fs::File;
 use std::io::BufWriter;
 use std::path::{Path, PathBuf};
+use std::process::Command;
 use std::str::FromStr;
 use url::Url;
 
@@ -49,29 +50,38 @@ pub async fn get_latest_reaper_installer_asset(
     Ok(asset)
 }
 
+/// This extracts REAPER into `dest_dir`.
+///
+/// For the final (portable) installation step, the **contents** of this directory need to be copied to the REAPER
+/// resource directory.
+///
+/// - On macOS, `dest_dir` will contain just one entry: The `REAPER.app` application bundle directory.
+/// - On Windows, `dest_dir` will contain `reaper.exe` and other files and directories.
+/// - On Linux, `dest_dir` will contain `reaper.so` and other files and directories.
 pub fn extract_reaper_to_portable_dir(
     installer_asset: &Path,
     dest_dir: &Path,
     temp_dir: &Path,
-) -> anyhow::Result<PathBuf> {
+) -> anyhow::Result<()> {
     let extension = installer_asset
         .extension()
         .context("REAPER installer asset doesn't have extension")?
         .to_str()
         .context("REAPER installer asset extension not UTF-8 compatible")?;
     match extension {
-        "dmg" => extract_reaper_for_macos_to_dir(installer_asset, dest_dir, temp_dir),
-        "exe" => extract_reaper_for_windows_to_dir(installer_asset, dest_dir),
-        "xz" => extract_reaper_for_linux_to_dir(installer_asset, dest_dir),
+        "dmg" => extract_reaper_for_macos_to_dir(installer_asset, dest_dir, temp_dir)?,
+        "exe" => extract_reaper_for_windows_to_dir(installer_asset, dest_dir)?,
+        "xz" => extract_reaper_for_linux_to_dir(installer_asset, dest_dir)?,
         e => bail!("REAPER installer asset has unsupported file extension {e}"),
-    }
+    };
+    Ok(())
 }
 
 fn extract_reaper_for_macos_to_dir(
     dmg_path: &Path,
     dest_dir: &Path,
     temp_dir: &Path,
-) -> anyhow::Result<PathBuf> {
+) -> anyhow::Result<()> {
     #[cfg(not(target_os = "macos"))]
     {
         bail!("It's not possible on a non-macOS system to extract REAPER for macOS");
@@ -104,26 +114,37 @@ fn extract_reaper_for_macos_to_dir(
         let mounted_reaper_app_dir = mount_dir.join("REAPER_INSTALL_UNIVERSAL/REAPER.app");
         std::fs::create_dir_all(dest_dir)?;
         let dest_reaper_app_dir = dest_dir.join("REAPER.app");
-        crate::file_util::copy_dir_all(mounted_reaper_app_dir, &dest_reaper_app_dir)?;
-        Ok(dest_reaper_app_dir)
+        crate::file_util::copy_dir_recursively(mounted_reaper_app_dir, &dest_reaper_app_dir)?;
+        Ok(())
     }
 }
 
 fn extract_reaper_for_windows_to_dir(
     reaper_installer_exe: &Path,
     dest_dir: &Path,
-) -> anyhow::Result<PathBuf> {
+) -> anyhow::Result<()> {
     ensure!(
         cfg!(target_os = "windows"),
-        "It's not possible on a non-Windows system to install REAPER for Windows"
+        "It's not possible on a non-Windows system to extract REAPER for Windows"
     );
-    todo!("conduct silent NSIS install")
+    let dest_dir_string = dest_dir
+        .to_str()
+        .context("destination directory for extracting REAPER is not valid UTF-8")?;
+    let exit_status = Command::new(reaper_installer_exe)
+        .arg("/S")
+        .arg("/PORTABLE")
+        .arg(format!("/D={dest_dir_string}"))
+        .output()
+        .context("Error while executing the REAPER installer")?
+        .status;
+    ensure!(
+        exit_status.success(),
+        "REAPER installer returned with a non-zero exit code"
+    );
+    Ok(())
 }
 
-fn extract_reaper_for_linux_to_dir(
-    reaper_tar_xz: &Path,
-    dest_dir: &Path,
-) -> anyhow::Result<PathBuf> {
+fn extract_reaper_for_linux_to_dir(reaper_tar_xz: &Path, dest_dir: &Path) -> anyhow::Result<()> {
     todo!()
 }
 

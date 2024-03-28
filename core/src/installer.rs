@@ -5,8 +5,8 @@ use crate::api::{
 use crate::downloader::{Download, DownloadProgress, Downloader};
 use crate::file_util::{
     create_parent_dirs, existing_file_or_dir_is_writable, file_or_dir_is_writable_or_creatable,
-    find_first_existing_parent, get_first_existing_parent_dir, move_dir_all, move_file,
-    move_file_or_dir_all, move_file_overwriting_with_backup,
+    find_first_existing_parent, get_first_existing_parent_dir, move_dir_contents, move_file,
+    move_file_overwriting_with_backup,
 };
 use crate::installation_model::{
     determine_files_to_be_downloaded, PackageInstallationPlan, PreDownloadFailures,
@@ -287,16 +287,15 @@ impl<L: InstallerListener> Installer<L> {
                     self.keep_temp_directory();
                     self.listener.warn(format!("ReaBoot tried to install REAPER for you, but there was an error. Please install it manually. The installer is located here: {:?}\n\nError: {}", &download.file, &error));
                 }
-                ReaperInstallationOutcome::ExtractedSuccessfully(path) => {
-                    let file_name = path
-                        .file_name()
-                        .context("extracted REAPER file/dir must have a name")?;
-                    let dest_path = self.dest_reaper_resource_dir.join(file_name);
-                    move_file_or_dir_all(path, dest_path)?;
-                    move_file_overwriting_with_backup(
+                ReaperInstallationOutcome::ExtractedSuccessfully(dir_containing_reaper) => {
+                    move_dir_contents(dir_containing_reaper, self.dest_reaper_resource_dir.get())?;
+                    // Copy reaper.ini file, but only if it doesn't exist already. E.g. the silent Windows installation
+                    // already contains such a file with some minimal content.
+                    let _ = move_file(
                         self.temp_reaper_resource_dir.reaper_ini_file(),
                         self.dest_reaper_resource_dir.reaper_ini_file(),
-                    )?;
+                        false,
+                    );
                 }
             }
         }
@@ -685,20 +684,16 @@ impl<L: InstallerListener> Installer<L> {
         }
         self.listener
             .installation_stage_changed(InstallationStage::ExtractingReaper);
-        // Because we support automatic REAPER installation only for portable installs ATM,
-        // the REAPER resource dir is at the same time the base directory, that's the one which
-        // includes the executable (or bundle on macOS).
-        let reaper_base_dir = self.temp_reaper_resource_dir.get();
-        fs::File::create(reaper_base_dir.join("reaper.ini"))?;
+        fs::File::create(self.temp_reaper_resource_dir.reaper_ini_file())?;
+        let reaper_dest_dir = self.temp_dir.join("reaper-binaries");
         let result =
-            extract_reaper_to_portable_dir(&reaper_download.file, reaper_base_dir, &self.temp_dir);
-        match result {
-            Ok(location) => Ok(ReaperInstallationOutcome::ExtractedSuccessfully(location)),
-            Err(error) => Ok(ReaperInstallationOutcome::InstallManuallyBecauseError(
-                reaper_download,
-                error,
-            )),
-        }
+            extract_reaper_to_portable_dir(&reaper_download.file, &reaper_dest_dir, &self.temp_dir);
+        let outcome = if let Err(error) = result {
+            ReaperInstallationOutcome::InstallManuallyBecauseError(reaper_download, error)
+        } else {
+            ReaperInstallationOutcome::ExtractedSuccessfully(reaper_dest_dir)
+        };
+        Ok(outcome)
     }
 
     /// Downloads the ReaPack shared library to the temporary directory and returns the path to the
@@ -935,8 +930,8 @@ enum ReaperInstallationOutcome {
     InstallManuallyBecauseNoPortableInstall(Download),
     /// It's a portable REAPER install but there was an error extracting the executables.
     InstallManuallyBecauseError(Download, anyhow::Error),
-    /// It's a portable install and the REAPER executable (or bundle dir on macOS) has
-    /// been placed in the temporary REAPER resource directory.
+    /// It's a portable install and the REAPER executable along with other files (Windows & Linux) or the bundle dir
+    /// (macOS) has been placed **into** the given directory.
     ExtractedSuccessfully(PathBuf),
 }
 
@@ -949,7 +944,12 @@ struct PackageStatusQuo {
 fn dry_remove_file(path: &Path) -> anyhow::Result<()> {
     if path.exists() {
         if !existing_file_or_dir_is_writable(path) {
-            bail!("Removing the file would not work");
+            let suffix = if cfg!(windows) {
+                " Is REAPER running already? If yes, exit REAPER and try again."
+            } else {
+                ""
+            };
+            bail!("Removing the file would not work.{suffix}");
         }
     }
     Ok(())
