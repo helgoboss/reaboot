@@ -297,14 +297,11 @@ impl<'a> Display for PreparationReportAsMarkdown<'a> {
         }
         if summary.additions > 0 {
             writeln!(f, "## {} package addition(s){suffix}\n", summary.additions)?;
-            let items = || {
-                self.report
-                    .package_preparation_outcomes
-                    .iter()
-                    .filter(|o| o.status.category() == PackageStatusCategory::Addition)
-                    .map(PackageVersionAsMarkdown)
-            };
-            Separated::new(items, ", ").fmt(f)?;
+            for o in &self.report.package_preparation_outcomes {
+                if o.status.category() == PackageStatusCategory::Addition {
+                    writeln!(f, "- {}", PackageVersionAsMarkdown(o))?;
+                }
+            }
         }
         Ok(())
     }
