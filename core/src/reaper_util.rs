@@ -15,6 +15,7 @@ use url::Url;
 
 const LATEST_STABLE_VERSION_URL: &str = "https://www.cockos.com/reaper/latestversion/";
 const LATEST_UNSTABLE_VERSION_URL: &str = "https://www.landoleet.org/whatsnew.txt";
+const EULA_URL: &str = "https://www.reaper.fm/license.txt";
 
 /// Returns the expected location of the REAPER main resource directory, even if it doesn't exist.
 ///
@@ -168,6 +169,12 @@ async fn get_latest_reaper_version_from_url(
         .parse()
         .with_context(|| format!("{url} has not returned a valid REAPER version"))?;
     Ok(version)
+}
+
+pub async fn get_reaper_eula() -> anyhow::Result<String> {
+    let response = reqwest::get(EULA_URL).await?;
+    let body = response.text().await?;
+    Ok(body)
 }
 
 fn get_os_specific_reaper_installer_file_name(

@@ -81,7 +81,7 @@ pub struct ResolvedReabootConfig {
 pub enum InstallationStage {
     /// Initial status.
     #[strum(serialize = "Nothing is installed yet")]
-    Initial,
+    NothingInstalled,
     /// Checking which is the latest available REAPER version.
     #[strum(serialize = "Checking latest REAPER version")]
     CheckingLatestReaperVersion,

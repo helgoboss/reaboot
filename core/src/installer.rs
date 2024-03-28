@@ -151,16 +151,25 @@ impl<L: InstallerListener> Installer<L> {
         Ok(installer)
     }
 
-    pub async fn install(self) -> anyhow::Result<InstallationReport> {
-        // Determine initial installation status, so that we know where to start off
-        let initial_installation_status = reaboot_util::determine_initial_installation_status(
+    /// Returns whether ReaBoot is capable of installing REAPER automatically.
+    pub fn reaper_is_installable(&self) -> bool {
+        self.portable
+    }
+
+    pub async fn determine_initial_installation_stage(&self) -> anyhow::Result<InstallationStage> {
+        reaboot_util::determine_initial_installation_stage(
             &self.dest_reaper_resource_dir,
             self.reaper_target,
         )
-        .await?;
+        .await
+    }
+
+    pub async fn install(self) -> anyhow::Result<InstallationReport> {
+        // Determine initial installation status, so that we know where to start off
+        let initial_installation_stage = self.determine_initial_installation_stage().await?;
         // Download and extract REAPER if necessary
         let reaper_installation_outcome =
-            if initial_installation_status < InstallationStage::InstalledReaper {
+            if initial_installation_stage < InstallationStage::InstalledReaper {
                 let download = self.download_reaper().await?;
                 let outcome = self.extract_reaper(download).await?;
                 Some(outcome)
@@ -168,8 +177,7 @@ impl<L: InstallerListener> Installer<L> {
                 None
             };
         // Download ReaPack if necessary
-        let reapack_download = if initial_installation_status < InstallationStage::InstalledReaPack
-        {
+        let reapack_download = if initial_installation_stage < InstallationStage::InstalledReaPack {
             Some(self.download_reapack().await?)
         } else {
             None

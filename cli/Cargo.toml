@@ -15,6 +15,10 @@ tokio = { workspace = true }
 anyhow = { workspace = true }
 # For progress bars
 indicatif = { workspace = true }
+# For confirming EULAs
+dialoguer = { workspace = true }
+# For things like clearing the screen
+console = { workspace = true }
 # For displaying a report table
 comfy-table = { workspace = true }
 # For parsing URLs

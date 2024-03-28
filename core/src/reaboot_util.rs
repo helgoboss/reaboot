@@ -30,13 +30,13 @@ pub fn resolve_config(config: &ReabootConfig) -> Result<ResolvedReabootConfig, R
     Ok(resolved_config)
 }
 
-pub async fn determine_initial_installation_status(
+pub async fn determine_initial_installation_stage(
     reaper_resource_dir: &ReaperResourceDir,
     reaper_target: ReaperTarget,
 ) -> anyhow::Result<InstallationStage> {
     let reaper_installed = reaper_resource_dir.contains_reaper_ini();
     if !reaper_installed {
-        return Ok(InstallationStage::Initial);
+        return Ok(InstallationStage::NothingInstalled);
     };
     let reapack_lib_file =
         reapack_util::get_default_reapack_shared_lib_file(reaper_resource_dir, reaper_target);

@@ -1,14 +1,19 @@
-use anyhow::Context;
+use anyhow::{bail, Context};
 use clap::{Args, Parser, Subcommand};
-use indicatif::{MultiProgress, ProgressBar, ProgressDrawTarget, ProgressStyle};
+use console::Key;
+use dialoguer::{Confirm, Select};
+use indicatif::{MultiProgress, ProgressBar, ProgressDrawTarget, ProgressStyle, TermLike};
 use reaboot_core::api::{InstallationStage, ReabootConfig, ResolvedReabootConfig};
 use reaboot_core::downloader::Downloader;
 use reaboot_core::installer::{Installer, InstallerConfig, InstallerListener, InstallerTask};
-use reaboot_core::reaboot_util::resolve_config;
+use reaboot_core::reaboot_util::{determine_initial_installation_stage, resolve_config};
+use reaboot_core::reaper_util::get_reaper_eula;
 use std::collections::HashMap;
 use std::fmt::Display;
+use std::fs;
 use std::path::PathBuf;
 use std::sync::RwLock;
+use std::time::Duration;
 use tracing_subscriber::{EnvFilter, FmtSubscriber};
 use url::Url;
 
@@ -81,6 +86,11 @@ struct InstallArgs {
     /// Does everything except actually installing the packages.
     #[arg(long, default_value_t = false)]
     dry_run: bool,
+    /// Skips license prompts.
+    accept_licenses: bool,
+    /// Doesn't ask anything. This includes automatically accepting licenses.
+    #[arg(long, default_value_t = false)]
+    non_interactive: bool,
     /// REAPER version to install if REAPER is not yet installed at the destination.
     ///
     /// You can either provide a specific version number (pre-releases are supported as well)
@@ -116,8 +126,47 @@ async fn install(args: InstallArgs) -> anyhow::Result<()> {
         reaper_version,
     };
     let installer = Installer::new(config).await?;
+    // Show REAPER EULA if necessary
+    let skip_license_prompts = args.non_interactive || args.accept_licenses;
+    if !skip_license_prompts && installer.reaper_is_installable() {
+        let initial_stage = installer.determine_initial_installation_stage().await?;
+        if initial_stage.is_nothing_installed() {
+            if !confirm_license().await? {
+                println!("You haven't agreed to the license terms. Exiting.");
+                return Ok(());
+            }
+        }
+    }
+    // Install everything
     installer.install().await.context("Installation failed")?;
     Ok(())
+}
+
+async fn confirm_license() -> anyhow::Result<bool> {
+    let term = console::Term::stdout();
+    loop {
+        term.clear_screen();
+        println!("ReaBoot is going to download and install REAPER because it's not yet installed at the location of your choice.\n\nIn order to continue, you need to accept the REAPER license agreement.\n");
+        println!("Please choose:");
+        println!("- [S]how the REAPER license agreement");
+        println!("- [A]gree");
+        println!("- [D]isagree");
+        match term.read_key().ok() {
+            Some(Key::Char('s')) => {
+                let eula = get_reaper_eula().await.context("Couldn't download REAPER EULA. Consider using command line option `--non-interactive`.")?;
+                fs::write("todo.txt", &eula);
+                let _ = term.clear_screen();
+                for line in eula.lines() {
+                    tokio::time::sleep(Duration::from_millis(50)).await;
+                    println!("{line}");
+                }
+                println!("\n\n<Press any key to go back>");
+                let _ = term.read_key();
+            }
+            Some(Key::Char('a')) => return Ok(true),
+            _ => return Ok(false),
+        }
+    }
 }
 
 struct CliInstallerListener {
