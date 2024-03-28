@@ -9,7 +9,7 @@ export type ResolvedReabootConfig = {
 /**
  * The resolved REAPER resource directory which is going to be used for the installation.
  *
- * [`InstallationStatus`] indicates, whether this directory exists and is a valid
+ * [`InstallationStage`] indicates, whether this directory exists and is a valid
  * REAPER resource directory.
  */
 reaper_resource_dir: string, 

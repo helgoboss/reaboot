@@ -1,7 +1,6 @@
 use crate::file_util::copy_dir_all;
 use crate::reaper_target::ReaperTarget;
 use anyhow::{anyhow, bail, ensure, Context};
-use dmgwiz::{DmgWiz, Verbosity};
 use octocrab::models::repos::{Asset, Release};
 use octocrab::Octocrab;
 use reaboot_reapack::model::{VersionName, VersionRef};
@@ -73,38 +72,41 @@ fn extract_reaper_for_macos_to_dir(
     dest_dir: &Path,
     temp_dir: &Path,
 ) -> anyhow::Result<PathBuf> {
-    ensure!(
-        cfg!(target_os = "macos"),
-        "It's not possible on a non-macOS system to install REAPER for macOS"
-    );
-    // Simply attaching the DMG file won't work (maybe because of the license?), so we need
-    // to convert it to IMG first.
-    let img_path = dmg_path.with_extension("img");
-    convert_dmg_to_img(dmg_path, &img_path)?;
-    // Now we attach the IMG file
-    let mount_dir = temp_dir.join("extracted-dmg");
-    let _info = dmg::Attach::new(img_path)
-        .mount_root(&mount_dir)
-        .hidden()
-        .with()
-        .context("could not attach REAPER img file")?;
-    // And copy all files out of it
-    let mounted_reaper_app_dir = mount_dir.join("REAPER_INSTALL_UNIVERSAL/REAPER.app");
-    std::fs::create_dir_all(dest_dir)?;
-    let dest_reaper_app_dir = dest_dir.join("REAPER.app");
-    copy_dir_all(mounted_reaper_app_dir, &dest_reaper_app_dir)?;
-    Ok(dest_reaper_app_dir)
-}
+    #[cfg(not(target_os = "macos"))]
+    {
+        bail!("It's not possible on a non-macOS system to extract REAPER for macOS");
+    }
+    #[cfg(target_os = "macos")]
+    {
+        fn convert_dmg_to_img(dmg_path: &Path, img_path: &PathBuf) -> anyhow::Result<()> {
+            let dmg_file = File::open(dmg_path).context("couldn't open REAPER DMG file")?;
+            let mut dmg_wiz = DmgWiz::from_reader(dmg_file, Verbosity::None)
+                .map_err(|e| anyhow!("could not read REAPER dmg file: {e}"))?;
+            let img_file = File::create(img_path).context("could not create REAPER img file")?;
+            dmg_wiz
+                .extract_all(BufWriter::new(img_file))
+                .map_err(|e| anyhow!("could not extract files from REAPER dmg file: {e}"))?;
+            Ok(())
+        }
 
-fn convert_dmg_to_img(dmg_path: &Path, img_path: &PathBuf) -> anyhow::Result<()> {
-    let dmg_file = File::open(dmg_path).context("couldn't open REAPER DMG file")?;
-    let mut dmg_wiz = DmgWiz::from_reader(dmg_file, Verbosity::None)
-        .map_err(|e| anyhow!("could not read REAPER dmg file: {e}"))?;
-    let img_file = File::create(img_path).context("could not create REAPER img file")?;
-    dmg_wiz
-        .extract_all(BufWriter::new(img_file))
-        .map_err(|e| anyhow!("could not extract files from REAPER dmg file: {e}"))?;
-    Ok(())
+        // Simply attaching the DMG file won't work (maybe because of the license?), so we need
+        // to convert it to IMG first.
+        let img_path = dmg_path.with_extension("img");
+        crate::reaper_util::convert_dmg_to_img(dmg_path, &img_path)?;
+        // Now we attach the IMG file
+        let mount_dir = temp_dir.join("extracted-dmg");
+        let _info = dmg::Attach::new(img_path)
+            .mount_root(&mount_dir)
+            .hidden()
+            .with()
+            .context("could not attach REAPER img file")?;
+        // And copy all files out of it
+        let mounted_reaper_app_dir = mount_dir.join("REAPER_INSTALL_UNIVERSAL/REAPER.app");
+        std::fs::create_dir_all(dest_dir)?;
+        let dest_reaper_app_dir = dest_dir.join("REAPER.app");
+        crate::file_util::copy_dir_all(mounted_reaper_app_dir, &dest_reaper_app_dir)?;
+        Ok(dest_reaper_app_dir)
+    }
 }
 
 fn extract_reaper_for_windows_to_dir(

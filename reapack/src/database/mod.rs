@@ -491,11 +491,9 @@ mod tests {
 
     #[tokio::test]
     async fn open_db() {
-        let mut db = Database::open(
-            "/Users/helgoboss/Library/Application Support/REAPER/ReaPack/registry.db",
-        )
-        .await
-        .unwrap();
+        let mut db = Database::open("src/database/test/registry.db")
+            .await
+            .unwrap();
         let entries = db.entries().await.unwrap();
         let files = db.files().await.unwrap();
         dbg!(entries, files);
