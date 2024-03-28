@@ -77,20 +77,27 @@ struct InstallArgs {
     /// If not provided, ReaBoot creates the temporary directory in `REAPER_RESOURCE_DIR/ReaBoot`.
     #[arg(long)]
     temp_parent_dir: Option<PathBuf>,
-    /// Doesn't delete the temporary directory when the installation is finished.
+    /// If set, doesn't delete the temporary directory when the installation is finished.
     #[arg(long, default_value_t = false)]
     keep_temp_dir: bool,
     /// Determines the maximum number of concurrent downloads.
     #[arg(long, default_value_t = 5)]
     concurrent_downloads: u32,
-    /// Does everything except actually installing the packages.
+    /// If set, skips the last step of actually moving everything to the destination directory.
     #[arg(long, default_value_t = false)]
     dry_run: bool,
-    /// Skips license prompts.
+    /// If set, skips all license prompts.
     accept_licenses: bool,
-    /// Doesn't ask anything. This includes automatically accepting licenses.
+    /// If set, ReaBoot won't prompt you for anything. This includes automatically accepting licenses.
     #[arg(long, default_value_t = false)]
     non_interactive: bool,
+    /// If set, packages that couldn't be downloaded or are not installable for other reasons will be
+    /// skipped.
+    ///
+    /// By default, a failing package would cause ReaBoot to not install anything and exit with
+    /// a non-zero exit code.
+    #[arg(long, default_value_t = false)]
+    skip_failed_packages: bool,
     /// REAPER version to install if REAPER is not yet installed at the destination.
     ///
     /// You can either provide a specific version number (pre-releases are supported as well)
@@ -123,6 +130,7 @@ async fn install(args: InstallArgs) -> anyhow::Result<()> {
         dry_run: args.dry_run,
         listener: CliInstallerListener::new(),
         keep_temp_dir: args.keep_temp_dir,
+        skip_failed_packages: args.skip_failed_packages,
         reaper_version,
     };
     let installer = Installer::new(config).await?;

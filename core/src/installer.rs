@@ -11,8 +11,11 @@ use crate::file_util::{
 use crate::multi_downloader::{
     DownloadError, DownloadResult, DownloadWithPayload, MultiDownloader,
 };
-use crate::package_application_plan::{PackageApplication, PackageApplicationPlan};
+use crate::package_application_plan::{
+    PackageApplication, PackageApplicationPlan, TempInstallFailure,
+};
 use crate::package_download_plan::{PackageDownloadPlan, QualifiedSource};
+use crate::preparation_report::PreparationReport;
 use crate::reaboot_util::resolve_config;
 use crate::reaper_resource_dir::{
     ReaperResourceDir, REAPACK_INI_FILE_PATH, REAPACK_REGISTRY_DB_FILE_PATH,
@@ -40,6 +43,7 @@ use std::sync::Mutex;
 use std::time::Duration;
 use std::{env, fs};
 use tempdir::TempDir;
+use thiserror::Error;
 use url::Url;
 
 /// Responsible for orchestrating and carrying out the actual installation.
@@ -55,6 +59,7 @@ pub struct Installer<L> {
     listener: L,
     reaper_version: VersionRef,
     portable: bool,
+    skip_failed_packages: bool,
     /// This is set if [`InstallerConfig::keep_temp_dir`] is `false`. It will cause
     /// the temporary directory to be removed latest on drop.
     ///
@@ -73,9 +78,8 @@ pub struct InstallerConfig<L> {
     pub dry_run: bool,
     pub listener: L,
     pub reaper_version: VersionRef,
+    pub skip_failed_packages: bool,
 }
-
-pub struct InstallationReport {}
 
 impl<L: InstallerListener> Installer<L> {
     /// Creates a new installer with all the values that stay the same throughout the complete
@@ -144,6 +148,7 @@ impl<L: InstallerListener> Installer<L> {
             reaper_target: config.resolved_config.reaper_target,
             listener: config.listener,
             dry_run: config.dry_run,
+            skip_failed_packages: config.skip_failed_packages,
             reaper_version: config.reaper_version,
             portable: config.resolved_config.portable,
             temp_dir_guard: Mutex::new(temp_dir_guard),
@@ -161,10 +166,10 @@ impl<L: InstallerListener> Installer<L> {
             &self.dest_reaper_resource_dir,
             self.reaper_target,
         )
-            .await
+        .await
     }
 
-    pub async fn install(self) -> anyhow::Result<InstallationReport> {
+    pub async fn install(self) -> Result<PreparationReport, InstallError> {
         // Determine initial installation status, so that we know where to start off
         let initial_installation_stage = self.determine_initial_installation_stage().await?;
         // Download and extract REAPER if necessary
@@ -191,18 +196,20 @@ impl<L: InstallerListener> Installer<L> {
             .gather_already_installed_packages(&downloaded_indexes)
             .await?;
         // Make package download plan
-        let download_plan = PackageDownloadPlan::make(
+        // TODO Rename. This is a collection of failures, not a plan.
+        let (final_files, download_plan) = PackageDownloadPlan::make(
             &self.package_urls,
             &downloaded_indexes,
             &package_status_quo.installed_packages_to_keep,
             self.reaper_target,
         );
         // Download packages
-        let package_download_results = self.download_packages(download_plan.final_files).await;
+        let package_download_results = self.download_packages(final_files).await;
         // Weed out incomplete downloads
         let (successful_downloads, download_errors) =
             weed_out_download_errors(package_download_results);
         // Update ReaPack state
+        // TODO Rename. This is a collection of failures, not a plan.
         let package_application_plan = self
             .update_reapack_state(
                 &downloaded_indexes,
@@ -210,33 +217,47 @@ impl<L: InstallerListener> Installer<L> {
                 &package_status_quo.installed_packages_to_be_replaced,
             )
             .await?;
-        // Actually apply the changes (by copying/moving all stuff to the destination dir)
-        if !self.dry_run {
-            // Apply REAPER
-            self.apply_reaper(&reaper_installation_outcome)
-                .context("installing REAPER failed")?;
-            // Apply ReaPack lib
-            self.apply_reapack_lib(reapack_download.as_ref())
-                .context("installing ReaPack library failed")?;
-            // Apply ReaPack state
-            // We do that *before* applying the packages. If something fails when
-            // copying/moving the package files, the real ReaPack can still install the
-            // packages via its synchronization feature.
-            self.apply_reapack_state(&downloaded_indexes)
-                .context("updating ReaPack state failed")?;
-            // Apply packages
-            self.apply_packages(package_application_plan)
-                .context("moving packages failed")?;
+        // Create preparation report
+        let preparation_report = PreparationReport::new(
+            download_plan,
+            download_errors,
+            package_application_plan.package_failures,
+            &package_application_plan.package_applications,
+        );
+        if self.dry_run {
+            self.clean_up();
+            return Ok(preparation_report);
         }
-        // Clean up
+        if self.skip_failed_packages && preparation_report.has_failed_packages() {
+            self.clean_up();
+            return Err(InstallError::SomePackagesFailed(preparation_report));
+        }
+        // Actually apply the changes (by copying/moving all stuff to the destination dir)
+        // Apply REAPER
+        self.apply_reaper(&reaper_installation_outcome)
+            .context("installing REAPER failed")?;
+        // Apply ReaPack lib
+        self.apply_reapack_lib(reapack_download.as_ref())
+            .context("installing ReaPack library failed")?;
+        // Apply ReaPack state
+        // We do that *before* applying the packages. If something fails when
+        // copying/moving the package files, the real ReaPack can still install the
+        // packages via its synchronization feature.
+        self.apply_reapack_state(&downloaded_indexes)
+            .context("updating ReaPack state failed")?;
+        // Apply packages
+        self.apply_packages(package_application_plan.package_applications)
+            .context("moving packages failed")?;
+        self.clean_up();
+        Ok(preparation_report)
+    }
+
+    fn clean_up(self) {
         let _ = self.take_temp_dir_guard_if_existing();
         // If the user didn't provide a custom temp parent dir, it's "REAPER_RESOURCE_DIR/ReaBoot".
         // This directory is going to be empty if the user or installer didn't decide to keep it.
         // In this case, we just delete it in order to not leave traces.
         let _ = fs::remove_dir(self.dest_reaper_resource_dir.temp_reaboot_dir());
-        // Create report
-        let report = InstallationReport {};
-        Ok(report)
     }
 
     fn apply_reapack_lib(&self, download: Option<&Download>) -> anyhow::Result<()> {
@@ -424,10 +445,12 @@ impl<L: InstallerListener> Installer<L> {
                     };
                     plan.package_applications.push(package_move);
                 }
-                Err(e) => {
+                Err(error) => {
                     self.listener.warn(format!(
-                        "Couldn't update ReaPack DB for package {version_id} because {e}"
+                        "Couldn't update ReaPack DB for package {version_id} because {error}"
                     ));
+                    let failure = TempInstallFailure { version_id, error };
+                    plan.package_failures.push(failure);
                 }
             }
         }
@@ -528,12 +551,12 @@ impl<L: InstallerListener> Installer<L> {
             self.temp_reaper_resource_dir.reapack_ini_file(),
             self.dest_reaper_resource_dir.reapack_ini_file(),
         )
-            .context("moving ReaPack INI file failed")?;
+        .context("moving ReaPack INI file failed")?;
         move_file_overwriting_with_backup(
             self.temp_reaper_resource_dir.reapack_registry_db_file(),
             self.dest_reaper_resource_dir.reapack_registry_db_file(),
         )
-            .context("moving ReaPack registry DB file failed")?;
+        .context("moving ReaPack registry DB file failed")?;
         let dest_cache_dir = self.dest_reaper_resource_dir.reapack_cache_dir();
         let total_count = downloaded_indexes.len();
         for (i, index) in downloaded_indexes.values().enumerate() {
@@ -548,8 +571,11 @@ impl<L: InstallerListener> Installer<L> {
         Ok(())
     }
 
-    fn apply_packages<'a>(&self, plan: PackageApplicationPlan) -> anyhow::Result<()> {
-        for package_application in plan.package_applications {
+    fn apply_packages<'a>(
+        &self,
+        package_applications: Vec<PackageApplication>,
+    ) -> anyhow::Result<()> {
+        for package_application in package_applications {
             self.apply_package(package_application)?;
         }
         Ok(())
@@ -636,7 +662,7 @@ impl<L: InstallerListener> Installer<L> {
             self.reaper_target,
             &self.reaper_version,
         )
-            .await?;
+        .await?;
         let file = self.temp_dir.join(installer_asset.file_name);
         self.listener
             .installation_stage_changed(InstallationStage::DownloadingReaper {
@@ -966,9 +992,9 @@ impl<'a, P, L, C> MultiDownloadListener<'a, P, L, C> {
 }
 
 impl<'a, P, L, C> TaskTrackerListener for MultiDownloadListener<'a, P, L, C>
-    where
-        C: Fn(MultiDownloadInfo) -> InstallationStage,
-        L: InstallerListener,
+where
+    C: Fn(MultiDownloadInfo) -> InstallationStage,
+    L: InstallerListener,
 {
     type Payload = DownloadWithPayload<P>;
 
@@ -1015,4 +1041,12 @@ impl<'a, P, L, C> TaskTrackerListener for MultiDownloadListener<'a, P, L, C>
     fn task_finished(&self, task_index: usize) {
         self.installer.listener.task_finished(task_index as u32);
     }
+}
+
+#[derive(Error, Debug)]
+pub enum InstallError {
+    #[error("some packages failed")]
+    SomePackagesFailed(PreparationReport),
+    #[error(transparent)]
+    Other(#[from] anyhow::Error),
 }

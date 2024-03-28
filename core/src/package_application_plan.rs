@@ -4,7 +4,13 @@ use reaboot_reapack::model::{InstalledPackage, LightPackageId, LightVersionId};
 
 #[derive(Default)]
 pub struct PackageApplicationPlan<'a> {
+    pub package_failures: Vec<TempInstallFailure<'a>>,
     pub package_applications: Vec<PackageApplication<'a>>,
+}
+
+pub struct TempInstallFailure<'a> {
+    pub version_id: LightVersionId<'a>,
+    pub error: anyhow::Error,
 }
 
 pub struct PackageApplication<'a> {

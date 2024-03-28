@@ -6,6 +6,7 @@ pub mod installer;
 pub mod multi_downloader;
 pub mod package_application_plan;
 pub mod package_download_plan;
+mod preparation_report;
 pub mod reaboot_util;
 pub mod reapack_util;
 pub mod reaper_resource_dir;

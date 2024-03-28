@@ -28,11 +28,9 @@ pub struct PackageDownloadPlan<'a> {
     /// Package files that clash with other package files of already installed packages,
     /// because they would be installed to exactly the same destination (directory and name).
     pub files_conflicting_with_already_installed_files: Vec<QualifiedSource<'a>>,
-    /// All remaining files to be installed, with files belonging to incomplete packages removed.
-    pub final_files: Vec<QualifiedSource<'a>>,
 }
 
-#[derive(Error, Debug)]
+#[derive(Copy, Clone, Error, Debug)]
 pub enum PackageDescError {
     #[error("Repository is unavailable")]
     RepositoryIndexUnavailable,
@@ -51,12 +49,14 @@ pub enum PackageDescError {
 }
 
 impl<'a> PackageDownloadPlan<'a> {
+    /// Returns all remaining files to be installed, with files belonging to incomplete packages
+    /// removed.
     pub fn make(
         package_urls: &'a [PackageUrl],
         indexes: &'a HashMap<Url, DownloadedIndex>,
         installed_packages_to_keep: &[InstalledPackage],
         reaper_target: ReaperTarget,
-    ) -> Self {
+    ) -> (Vec<QualifiedSource<'a>>, Self) {
         let deduplicated_package_urls = HashSet::from_iter(package_urls);
         let (versions, package_descriptors_with_failures) =
             resolve_and_deduplicate_versions(deduplicated_package_urls, indexes);
@@ -73,14 +73,14 @@ impl<'a> PackageDownloadPlan<'a> {
                 installed_packages_to_keep,
             );
         remove_incomplete_versions(&mut files, &recipe_file_conflicts);
-        Self {
+        let plan = Self {
             package_descriptors_with_failures,
             version_conflicts,
             incompatible_versions,
             recipe_file_conflicts,
             files_conflicting_with_already_installed_files,
-            final_files: files,
-        }
+        };
+        (files, plan)
     }
 }
 
@@ -93,24 +93,20 @@ pub struct QualifiedSource<'a> {
     pub relative_path: String,
 }
 
-struct VersionConflict<'a> {
-    package_id: LightPackageId<'a>,
-    conflicting_versions: Vec<QualifiedVersion<'a>>,
+pub struct VersionConflict<'a> {
+    pub package_id: LightPackageId<'a>,
+    pub conflicting_versions: Vec<QualifiedVersion<'a>>,
 }
 
-struct RecipeFileConflict<'a> {
-    relative_path: String,
-    conflicting_files: Vec<QualifiedSource<'a>>,
+pub struct RecipeFileConflict<'a> {
+    pub relative_path: String,
+    pub conflicting_files: Vec<QualifiedSource<'a>>,
 }
 
-struct AlreadyInstalledFileConflict<'a> {
-    relative_path: String,
-    conflicting_files: Vec<QualifiedSource<'a>>,
-}
-
-struct PackageDescFailure<'a> {
-    package_url: &'a PackageUrl,
-    error: PackageDescError,
+pub struct PackageDescFailure<'a> {
+    pub remote: Option<&'a str>,
+    pub package_url: &'a PackageUrl,
+    pub error: PackageDescError,
 }
 
 #[derive(Copy, Clone)]
@@ -160,30 +156,29 @@ fn resolve_and_deduplicate_versions<'a>(
     let mut failures = vec![];
     let qualified_versions: HashMap<_, _> = package_urls
         .into_iter()
-        .filter_map(
-            |desc| match lookup_package_version_in_indexes(&desc, indexes) {
+        .filter_map(|desc| {
+            let Some(index) = indexes.get(desc.repository_url()) else {
+                failures.push(PackageDescFailure {
+                    remote: None,
+                    package_url: desc,
+                    error: PackageDescError::RepositoryIndexUnavailable,
+                });
+                return None;
+            };
+            match lookup_package_version_in_index(&desc, index) {
                 Ok(v) => Some((v.id().package_id, v)),
                 Err(error) => {
                     failures.push(PackageDescFailure {
+                        remote: Some(&index.name),
                         package_url: desc,
                         error,
                     });
                     None
                 }
-            },
-        )
+            }
+        })
         .collect();
     (qualified_versions.into_values().collect(), failures)
-}
-
-fn lookup_package_version_in_indexes<'i>(
-    package_url: &PackageUrl,
-    indexes: &'i HashMap<Url, DownloadedIndex>,
-) -> Result<QualifiedVersion<'i>, PackageDescError> {
-    let index = indexes
-        .get(package_url.repository_url())
-        .ok_or(PackageDescError::RepositoryIndexUnavailable)?;
-    lookup_package_version_in_index(package_url, index)
 }
 
 fn lookup_package_version_in_index<'i>(
