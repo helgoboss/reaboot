@@ -90,7 +90,7 @@ fn extract_reaper_for_macos_to_dir(
     {
         fn convert_dmg_to_img(dmg_path: &Path, img_path: &PathBuf) -> anyhow::Result<()> {
             let dmg_file = File::open(dmg_path).context("couldn't open REAPER DMG file")?;
-            let mut dmg_wiz = DmgWiz::from_reader(dmg_file, Verbosity::None)
+            let mut dmg_wiz = dmgwiz::DmgWiz::from_reader(dmg_file, dmgwiz::Verbosity::None)
                 .map_err(|e| anyhow!("could not read REAPER dmg file: {e}"))?;
             let img_file = File::create(img_path).context("could not create REAPER img file")?;
             dmg_wiz
@@ -102,7 +102,7 @@ fn extract_reaper_for_macos_to_dir(
         // Simply attaching the DMG file won't work (maybe because of the license?), so we need
         // to convert it to IMG first.
         let img_path = dmg_path.with_extension("img");
-        crate::reaper_util::convert_dmg_to_img(dmg_path, &img_path)?;
+        convert_dmg_to_img(dmg_path, &img_path)?;
         // Now we attach the IMG file
         let mount_dir = temp_dir.join("extracted-dmg");
         let _info = dmg::Attach::new(img_path)
