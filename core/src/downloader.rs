@@ -1,3 +1,4 @@
+use crate::hash_util;
 use futures::stream::StreamExt;
 use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest_middleware::ClientWithMiddleware;
@@ -17,11 +18,16 @@ pub struct Downloader {
 pub struct Download {
     pub url: Url,
     pub file: PathBuf,
+    pub expected_multihash: Option<String>,
 }
 
 impl Download {
-    pub fn new(url: Url, file: PathBuf) -> Self {
-        Self { url, file }
+    pub fn new(url: Url, file: PathBuf, expected_multihash: Option<String>) -> Self {
+        Self {
+            url,
+            file,
+            expected_multihash,
+        }
     }
 }
 
@@ -75,6 +81,9 @@ impl Downloader {
             bytes_already_downloaded += chunk_size;
             dest_file.write_all_buf(&mut chunk).await?;
         }
+        // if let Some(hash) = download.expected_multihash {
+        //     hash_util::verify_source_hash(&hash)
+        // }
         progress_listener(DownloadProgress::Finished);
         Ok(())
     }

@@ -161,7 +161,7 @@ impl<L: InstallerListener> Installer<L> {
             &self.dest_reaper_resource_dir,
             self.reaper_target,
         )
-        .await
+            .await
     }
 
     pub async fn install(self) -> anyhow::Result<InstallationReport> {
@@ -528,12 +528,12 @@ impl<L: InstallerListener> Installer<L> {
             self.temp_reaper_resource_dir.reapack_ini_file(),
             self.dest_reaper_resource_dir.reapack_ini_file(),
         )
-        .context("moving ReaPack INI file failed")?;
+            .context("moving ReaPack INI file failed")?;
         move_file_overwriting_with_backup(
             self.temp_reaper_resource_dir.reapack_registry_db_file(),
             self.dest_reaper_resource_dir.reapack_registry_db_file(),
         )
-        .context("moving ReaPack registry DB file failed")?;
+            .context("moving ReaPack registry DB file failed")?;
         let dest_cache_dir = self.dest_reaper_resource_dir.reapack_cache_dir();
         let total_count = downloaded_indexes.len();
         for (i, index) in downloaded_indexes.values().enumerate() {
@@ -636,7 +636,7 @@ impl<L: InstallerListener> Installer<L> {
             self.reaper_target,
             &self.reaper_version,
         )
-        .await?;
+            .await?;
         let file = self.temp_dir.join(installer_asset.file_name);
         self.listener
             .installation_stage_changed(InstallationStage::DownloadingReaper {
@@ -646,7 +646,7 @@ impl<L: InstallerListener> Installer<L> {
                     file: file.clone(),
                 },
             });
-        let download = Download::new(installer_asset.url, file.clone());
+        let download = Download::new(installer_asset.url, file.clone(), None);
         self.downloader
             .download(download.clone(), |s| {
                 self.listener
@@ -702,7 +702,7 @@ impl<L: InstallerListener> Installer<L> {
                     file: file.clone(),
                 },
             });
-        let download = Download::new(download_url, file.clone());
+        let download = Download::new(download_url, file.clone(), None);
         self.downloader
             .download(download.clone(), |s| {
                 self.listener
@@ -721,7 +721,7 @@ impl<L: InstallerListener> Installer<L> {
             .collect();
         let downloads = repository_urls.into_iter().enumerate().map(|(i, url)| {
             DownloadWithPayload::new(
-                Download::new(url.clone(), temp_cache_dir.join(i.to_string())),
+                Download::new(url.clone(), temp_cache_dir.join(i.to_string()), None),
                 (),
             )
         });
@@ -783,6 +783,7 @@ impl<L: InstallerListener> Installer<L> {
                     .temp_reaper_resource_dir
                     .get()
                     .join(&file.relative_path),
+                expected_multihash: file.source.hash.clone(),
             },
             payload: file,
         });
@@ -965,9 +966,9 @@ impl<'a, P, L, C> MultiDownloadListener<'a, P, L, C> {
 }
 
 impl<'a, P, L, C> TaskTrackerListener for MultiDownloadListener<'a, P, L, C>
-where
-    C: Fn(MultiDownloadInfo) -> InstallationStage,
-    L: InstallerListener,
+    where
+        C: Fn(MultiDownloadInfo) -> InstallationStage,
+        L: InstallerListener,
 {
     type Payload = DownloadWithPayload<P>;
 
@@ -994,7 +995,13 @@ where
         self.installer.listener.task_started(
             task_index as u32,
             InstallerTask {
-                label: payload.download.url.to_string(),
+                label: payload
+                    .download
+                    .file
+                    .file_name()
+                    .unwrap_or_default()
+                    .to_string_lossy()
+                    .to_string(),
             },
         );
     }

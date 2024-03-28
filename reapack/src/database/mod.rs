@@ -17,8 +17,6 @@ use std::future::{poll_fn, Future};
 use std::ops::DerefMut;
 use std::path::Path;
 use std::str::FromStr;
-use thiserror::Error;
-use tokio::runtime::Handle;
 use tracing::instrument;
 
 /// This is the currently supported ReaPack database user version.

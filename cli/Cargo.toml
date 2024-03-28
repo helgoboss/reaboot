@@ -6,24 +6,24 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-reaboot-core = { workspace = true }
+reaboot-core.workspace = true
 # For building a command-line interface
 clap = { workspace = true, features = ["derive"] }
 # Async runtime
-tokio = { workspace = true }
+tokio.workspace = true
 # For convenient error handling
-anyhow = { workspace = true }
+anyhow.workspace = true
 # For progress bars
-indicatif = { workspace = true }
+indicatif.workspace = true
 # For confirming EULAs
-dialoguer = { workspace = true }
+dialoguer.workspace = true
 # For things like clearing the screen
-console = { workspace = true }
+console.workspace = true
 # For displaying a report table
-comfy-table = { workspace = true }
+comfy-table.workspace = true
 # For parsing URLs
-url = { workspace = true }
+url.workspace = true
 # For emitting log messages
-tracing = { workspace = true }
+tracing.workspace = true
 # For printing log messages
 tracing-subscriber = { workspace = true, features = ["env-filter"] }

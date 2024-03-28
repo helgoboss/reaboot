@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 # For dealing with ReaPack stuff
-reaboot-reapack = { workspace = true }
+reaboot-reapack.workspace = true
 # For generating TypeScript types (important for the GUI, which is written in TypeScript)
 ts-rs = { workspace = true, features = ["url-impl"] }
 # For serialization and deserialization of API stuff (e.g. important for the GUI, where we interface with the Tauri
@@ -16,41 +16,49 @@ serde = { workspace = true, features = ["derive"] }
 # For downloading all kinds of stuff
 reqwest = { workspace = true, features = ["stream", "socks"] }
 # For easy retry when downloading stuff
-reqwest-middleware = { workspace = true }
+reqwest-middleware.workspace = true
 # For easy retry when downloading stuff
-reqwest-retry = { workspace = true }
+reqwest-retry.workspace = true
 # For convenient general error handling
-anyhow = { workspace = true }
+anyhow.workspace = true
 # Async runtime. We do a lot of downloading, so using async is a natural match.
-tokio = { workspace = true }
+tokio.workspace = true
 # For things like joining or buffering futures, which we do e.g. for multiple parallel downloads
-futures = { workspace = true }
+futures.workspace = true
 # For conveniently finding the latest version of ReaPack
-octocrab = { workspace = true }
+octocrab.workspace = true
 # For convenient access to typical OS dirs
-dirs = { workspace = true }
+dirs.workspace = true
 # For very convenient custom error types
-thiserror = { workspace = true }
+thiserror.workspace = true
 # For logging
-tracing = { workspace = true }
+tracing.workspace = true
 # For being able to have an atomic task status as enum, not just as integer
-atomic = { workspace = true }
+atomic.workspace = true
 # Necessary to make atomic work with custom types
 bytemuck = { workspace = true, features = ["derive"] }
 # For parsing URLs
-url = { workspace = true }
+url.workspace = true
 # For dealing with the bit flag representation of ReaPack's sections array in a nice way
-enumset = { workspace = true }
+enumset.workspace = true
 # For all kinds of enum conveniences such as automatically deriving Display
 strum = { workspace = true, features = ["derive"] }
 # For easily casting from &PathBuf to &ReaperResourceDir and back
-ref-cast = { workspace = true }
+ref-cast.workspace = true
 # For getting a correctly removed temporary download directory
-tempdir = { workspace = true }
+tempdir.workspace = true
+# For producing and verifying source hashes
+multihash.workspace = true
+# For producing and verifying source hashes
+multihash-codetable = { workspace = true, features = ["sha2"] }
+# For producing source hashes
+hex.workspace = true
+# For verifying hashes in a streaming way
+sha2.workspace = true
 
 [target.'cfg(target_os = "macos")'.dependencies]
 # For converting the REAPER DMG file to a hfs+ IMG file. The DMG file itself can't be mounted silently.
 dmgwiz = { workspace = true, default-features = false }
 # For easily mounting the REAPER IMG file. Internally, this uses hdiutil, so this one could be easily replaced.
 # But the code in the crate looks good, so why not use it.
-dmg = { workspace = true }
+dmg.workspace = true
