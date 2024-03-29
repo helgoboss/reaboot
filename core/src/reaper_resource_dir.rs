@@ -5,7 +5,7 @@ use ref_cast::RefCast;
 use std::env;
 use std::path::{Path, PathBuf};
 
-#[derive(RefCast)]
+#[derive(Clone, Debug, RefCast)]
 #[repr(transparent)]
 pub struct ReaperResourceDir(PathBuf);
 
@@ -42,6 +42,10 @@ impl ReaperResourceDir {
         &self.0
     }
 
+    pub fn into_inner(self) -> PathBuf {
+        self.0
+    }
+
     pub fn reaper_ini_file(&self) -> PathBuf {
         self.join(REAPER_INI_FILE_PATH)
     }
@@ -68,6 +72,12 @@ impl ReaperResourceDir {
 
     pub fn temp_reaboot_dir(&self) -> PathBuf {
         self.join("ReaBoot")
+    }
+}
+
+impl From<PathBuf> for ReaperResourceDir {
+    fn from(value: PathBuf) -> Self {
+        Self(value)
     }
 }
 

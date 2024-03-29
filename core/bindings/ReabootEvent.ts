@@ -3,4 +3,4 @@ import type { InstallationStage } from "./InstallationStage";
 import type { ReabootError } from "./ReabootError";
 import type { ResolvedReabootConfig } from "./ResolvedReabootConfig";
 
-export type ReabootEvent = { "kind": "Error", error: ReabootError, } | { "kind": "ConfigResolved", state: ResolvedReabootConfig, } | { "kind": "InstallationStatusChanged", status: InstallationStage, };
+export type ReabootEvent = { "kind": "Error", error: ReabootError, } | { "kind": "ConfigResolved", config: ResolvedReabootConfig, } | { "kind": "InstallationStageChanged", stage: InstallationStage, };

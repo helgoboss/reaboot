@@ -1,0 +1,27 @@
+[package]
+name = "reaboot-gui"
+description = "ReaBoot GUI - A graphical user interface for ReaBoot"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[build-dependencies]
+tauri-build = { version = "1", features = [] }
+
+[dependencies]
+reaboot-core.workspace = true
+reaboot-reapack.workspace = true
+tauri = { workspace = true, features = ["shell-open", "dialog-open"] }
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+tokio = { workspace = true, features = ["time"] }
+anyhow.workspace = true
+tempdir.workspace = true
+tauri-plugin-log.workspace = true
+tracing.workspace = true
+
+[features]
+# This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!
+custom-protocol = ["tauri/custom-protocol"]

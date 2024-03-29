@@ -10,6 +10,7 @@ use std::io::BufWriter;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+use crate::reaper_resource_dir::ReaperResourceDir;
 use url::Url;
 
 const LATEST_STABLE_VERSION_URL: &str = "https://www.cockos.com/reaper/latestversion/";
@@ -19,8 +20,8 @@ const EULA_URL: &str = "https://www.reaper.fm/license.txt";
 /// Returns the expected location of the REAPER main resource directory, even if it doesn't exist.
 ///
 /// Returns `None` if the home directory couldn't be identified.
-pub fn get_default_main_reaper_resource_dir() -> Option<PathBuf> {
-    Some(dirs::config_dir()?.join("REAPER"))
+pub fn get_default_main_reaper_resource_dir() -> Option<ReaperResourceDir> {
+    Some(dirs::config_dir()?.join("REAPER").into())
 }
 
 pub struct ReaperInstallerAsset {

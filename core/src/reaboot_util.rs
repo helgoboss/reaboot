@@ -17,13 +17,13 @@ pub fn resolve_config(config: &ReabootConfig) -> Result<ResolvedReabootConfig, R
         .ok_or(ResolveConfigError::RequireCustomReaperTarget)?;
     let resolved_config = match &config.custom_reaper_resource_dir {
         None => ResolvedReabootConfig {
-            reaper_resource_dir: main_reaper_resource_dir,
+            reaper_resource_dir: main_reaper_resource_dir.into_inner(),
             portable: false,
             reaper_target,
         },
         Some(dir) => ResolvedReabootConfig {
             reaper_resource_dir: dir.clone(),
-            portable: dir != &main_reaper_resource_dir,
+            portable: dir != main_reaper_resource_dir.as_ref(),
             reaper_target,
         },
     };

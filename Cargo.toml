@@ -1,6 +1,12 @@
 [workspace]
 resolver = "2"
-members = ["cli", "core", "reapack"]
+members = ["cli", "core", "gui/src-tauri", "reapack"]
+
+[workspace.package]
+version = "0.0.0"
+description = "ReaBoot"
+edition = "2021"
+authors = ["Benjamin Klum <benjamin.klum@helgoboss.org>"]
 
 [workspace.dependencies]
 reaboot-core = { path = "core" }

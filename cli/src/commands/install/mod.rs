@@ -24,7 +24,7 @@ pub struct InstallArgs {
     ///
     /// If not provided, ReaBoot uses the main REAPER installation.
     #[arg(long)]
-    reaper_resource_dir: Option<String>,
+    reaper_resource_dir: Option<PathBuf>,
     /// Creates the temporary directory for downloads within the given custom directory.
     ///
     /// If not provided, ReaBoot creates the temporary directory in `REAPER_RESOURCE_DIR/ReaBoot`.
@@ -67,7 +67,7 @@ pub struct InstallArgs {
 
 pub async fn install(args: InstallArgs) -> anyhow::Result<()> {
     let config = ReabootConfig {
-        custom_reaper_resource_dir: args.reaper_resource_dir.map(PathBuf::from),
+        custom_reaper_resource_dir: args.reaper_resource_dir,
         package_urls: args.package_url.unwrap_or_default(),
         custom_reaper_target: None,
     };

@@ -46,8 +46,8 @@ pub struct ReabootConfig {
 #[serde(tag = "kind")]
 pub enum ReabootEvent {
     Error { error: ReabootError },
-    ConfigResolved { state: ResolvedReabootConfig },
-    InstallationStatusChanged { status: InstallationStage },
+    ConfigResolved { config: ResolvedReabootConfig },
+    InstallationStageChanged { stage: InstallationStage },
 }
 
 /// Error.
