@@ -29,8 +29,8 @@ export function PickReaperPanel() {
     const installReaperButton = () => {
         return <MainButton>Install REAPER</MainButton>;
     };
-    const installationStatus = mainStore.state.installationStatus;
-    if (installationStatus.kind == "Initial") {
+    const installationStatus = mainStore.state.installationStage;
+    if (installationStatus.kind == "NothingInstalled") {
         // REAPER is not installed according to the current configuration
         if (resolvedConfig.portable) {
             // User must have picked a custom directory already, but it doesn't look like a portable REAPER installation.
@@ -98,13 +98,13 @@ async function pickPortableReaperInstallation() {
     }
     mainService.configure({
         custom_reaper_resource_dir: chosenDir,
-        recipes: mainStore.state.recipes,
+        package_urls: mainStore.state.packageUrls,
     });
 }
 
 function resetCustomReaperResourceDir() {
     mainService.configure({
         custom_reaper_resource_dir: undefined,
-        recipes: mainStore.state.recipes,
+        package_urls: mainStore.state.packageUrls,
     });
 }

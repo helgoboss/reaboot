@@ -7,4 +7,5 @@ export type PageDescriptor = {
     title: string,
     description: string,
     content: Component,
+    showNav?: boolean,
 }

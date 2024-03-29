@@ -6,7 +6,7 @@ export type MainButtonProps = {
 }
 
 export const MainButton: Component<MainButtonProps> = (props) => {
-    return <button class="w-96 text-4xl bg-slate-100"
+    return <button class="btn btn-primary"
                    onClick={props.onClick}>
         {props.children}
     </button>;

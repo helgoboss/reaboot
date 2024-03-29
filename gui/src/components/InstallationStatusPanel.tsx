@@ -1,17 +1,17 @@
-import {InstallationStatus} from "../../src-lib/bindings/InstallationStatus.ts";
+import {InstallationStage} from "../../../core/bindings/InstallationStage.ts";
 
 type Props = {
-    status: InstallationStatus,
+    stage: InstallationStage,
 }
 
 export function InstallationStatusPanel(props: Props) {
     return <div>
-        <div>{props.status.kind}</div>
-        {build(props.status)}
+        <div>{props.stage.kind}</div>
+        {build(props.stage)}
     </div>;
 }
 
-function build(status: InstallationStatus) {
+function build(status: InstallationStage) {
     switch (status.kind) {
         case "DownloadingRepositoryIndexes":
         case "DownloadingPackageFiles":

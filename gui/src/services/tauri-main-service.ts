@@ -2,10 +2,10 @@ import {MainService} from "./main-service.ts";
 import {Observable} from "rxjs";
 import {invoke} from "@tauri-apps/api/tauri";
 import {listen} from "@tauri-apps/api/event";
-import {ReabootEvent} from "../../src-lib/bindings/ReabootEvent.ts";
-import {ReabootCommand} from "../../src-lib/bindings/ReabootCommand.ts";
-import {ReabootConfig} from "../../src-lib/bindings/ReabootConfig.ts";
 import {debug} from "tauri-plugin-log-api";
+import {ReabootEvent} from "../../../core/bindings/ReabootEvent.ts";
+import {ReabootCommand} from "../../../core/bindings/ReabootCommand.ts";
+import {ReabootConfig} from "../../../core/bindings/ReabootConfig.ts";
 
 export class TauriMainService implements MainService {
     private normalEvents: Observable<ReabootEvent> = new Observable((subscriber) => {

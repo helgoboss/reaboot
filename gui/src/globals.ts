@@ -9,8 +9,8 @@ export const mainService = useDummyService ? new DummyMainService() : new TauriM
 export const mainStore = new MainStore({
     currentPageId: "welcome",
     resolvedConfig: undefined,
-    recipes: [],
-    installationStatus: {
-        kind: "Initial",
+    packageUrls: [],
+    installationStage: {
+        kind: "NothingInstalled",
     }
 });

@@ -1,8 +1,7 @@
 import {createStore, SetStoreFunction} from "solid-js/store";
 import {PageId} from "../model/page.ts";
-import {InstallationStatus} from "../../src-lib/bindings/InstallationStatus.ts";
-import {Recipe} from "../../src-lib/bindings/Recipe.ts";
-import {ResolvedReabootConfig} from "../../src-lib/bindings/ResolvedReabootConfig.ts";
+import {ResolvedReabootConfig} from "../../../core/bindings/ResolvedReabootConfig.ts";
+import {InstallationStage} from "../../../core/bindings/InstallationStage.ts";
 
 export type MainStoreState = {
     // ID of the currently displayed page.
@@ -11,10 +10,10 @@ export type MainStoreState = {
     //
     // If undefined, it means the installer has not been configured yet.
     resolvedConfig?: ResolvedReabootConfig,
-    // Current installation status.
-    installationStatus: InstallationStatus,
-    // Additional recipes to be installed.
-    recipes: Recipe[],
+    // Current installation stage.
+    installationStage: InstallationStage,
+    // Additional package URLs to be installed.
+    packageUrls: string[],
 }
 
 export class MainStore {
@@ -35,11 +34,11 @@ export class MainStore {
         this.setState("resolvedConfig", value);
     }
 
-    set installationStatus(value: InstallationStatus) {
-        this.setState("installationStatus", value);
+    set installationStage(value: InstallationStage) {
+        this.setState("installationStage", value);
     }
 
-    set recipes(value: Recipe[]) {
-        this.setState("recipes", value);
+    set packageUrls(value: string[]) {
+        this.setState("packageUrls", value);
     }
 }

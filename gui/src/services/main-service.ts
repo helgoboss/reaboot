@@ -1,6 +1,6 @@
 import {Observable} from "rxjs";
-import {ReabootEvent} from "../../src-lib/bindings/ReabootEvent.ts";
-import {ReabootConfig} from "../../src-lib/bindings/ReabootConfig.ts";
+import {ReabootEvent} from "../../../core/bindings/ReabootEvent.ts";
+import {ReabootConfig} from "../../../core/bindings/ReabootConfig.ts";
 
 // ReaBoot main service.
 export type MainService = {

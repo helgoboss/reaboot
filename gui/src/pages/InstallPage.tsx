@@ -1,61 +1,65 @@
-import {MainButton} from "../components/MainButton.tsx";
-import {StepperTask, TaskStatus, TaskStepper} from "../components/TaskStepper.tsx";
-import {from} from "solid-js";
+import {ButtonRow} from "../components/ButtonRow.tsx";
+import {NavButton} from "../components/nav-button.tsx";
+import {Page} from "../components/Page.tsx";
+import {Phase, PhasePanel, PhaseStatus} from "../components/PhasePanel.tsx";
 import {mainService, mainStore} from "../globals.ts";
-import {InstallationStatusPanel} from "../components/InstallationStatusPanel.tsx";
+import {from, Index} from "solid-js";
 import {InstallationStage} from "../../../core/bindings/InstallationStage.ts";
 
-export function InstallPanel() {
+export function InstallPage() {
     const installationStatus = mainStore.state.installationStage;
     const installationStatusProgress = from(mainService.getProgressEvents());
     const effectiveInstallationStatusProgress = () => installationStatusProgress() ?? 0.0;
-    const stepperTasks = () => deriveStepperTasks(installationStatus);
-    const progressInPercent = () => `${(effectiveInstallationStatusProgress() * 100).toFixed(2)}`
+    const phases = () => derivePhases(installationStatus);
+    const progressInPercent = () => effectiveInstallationStatusProgress() * 100;
     return (
-        <>
-            <div>
-                <div>
-                    REAPER resource directory:
+        <Page>
+            <div class="grow flex flex-row items-stretch gap-8">
+                <div class="grow-2 flex flex-col gap-4">
+                    <Index each={phases()}>
+                        {
+                            (phase) => <PhasePanel {...phase()}/>
+                        }
+                    </Index>
                 </div>
-                <div class="font-mono">{mainStore.state.resolvedConfig?.reaper_resource_dir}</div>
-            </div>
-            <div class="flex flex-row gap-10">
-                <TaskStepper tasks={stepperTasks()}/>
-                <div class="grow flex flex-row items-center gap-5 bg-amber-100">
-                    <div class="flex-1">
-                        <InstallationStatusPanel stage={installationStatus}/>
-                    </div>
-                    <div class="flex-1">
-                        {progressInPercent()}%
+                <div class="grow-3 card bg-base-300">
+                    <div class="card-body text-center">
+                        <h2>{installationStatus.kind}</h2>
+                        <div>
+                            <progress class="progress w-56" value={progressInPercent()} max="100"></progress>
+                        </div>
                     </div>
                 </div>
             </div>
-            <MainButton onClick={() => mainService.startInstallation()}>
-                Start installation
-            </MainButton>
-        </>
+            <ButtonRow>
+                <NavButton class="btn-warning" onClick={() => mainService.startInstallation()}>
+                    Start installation
+                </NavButton>
+            </ButtonRow>
+        </Page>
     );
 }
 
-function deriveStepperTasks(stage: InstallationStage): StepperTask[] {
+
+function derivePhases(stage: InstallationStage): Phase[] {
     const actualTaskPos = getTaskPos(stage);
     return [
         {
+            label: "Install REAPER",
             status: getTaskStatus(actualTaskPos, INSTALL_REAPER_POS),
-            title: "Install REAPER"
         },
         {
+            label: "Install ReaPack",
             status: getTaskStatus(actualTaskPos, INSTALL_REAPACK_POS),
-            title: "Install ReaPack"
         },
         {
+            label: "Install packages",
             status: getTaskStatus(actualTaskPos, INSTALL_PACKAGES_POS),
-            title: "Install packages"
         },
     ];
 }
 
-function getTaskStatus(actualTaskPos: number, expectedTaskPos: number): TaskStatus {
+function getTaskStatus(actualTaskPos: number, expectedTaskPos: number): PhaseStatus {
     if (actualTaskPos < expectedTaskPos) {
         return "todo";
     }

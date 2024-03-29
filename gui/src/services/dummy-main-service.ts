@@ -1,6 +1,6 @@
 import {MainService} from "./main-service.ts";
-import {ReabootEvent} from "../../src-lib/bindings/ReabootEvent.ts";
-import {ReabootConfig} from "../../src-lib/bindings/ReabootConfig.ts";
+import {ReabootEvent} from "../../../core/bindings/ReabootEvent.ts";
+import {ReabootConfig} from "../../../core/bindings/ReabootConfig.ts";
 import {Observable, Subject} from "rxjs";
 
 export class DummyMainService implements MainService {
@@ -11,7 +11,7 @@ export class DummyMainService implements MainService {
     configure(config: ReabootConfig) {
         this.normalEventsSubject.next({
             kind: "ConfigResolved",
-            state: {
+            config: {
                 reaper_resource_dir: config.custom_reaper_resource_dir ?? "main/resource/dir",
                 portable: config.custom_reaper_resource_dir != null,
                 reaper_target: "LinuxAarch64",

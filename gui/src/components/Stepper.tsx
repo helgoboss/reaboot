@@ -13,21 +13,18 @@ export type StepperPage = {
 }
 
 export function Stepper(props: StepperProps) {
+    const currentPageIndex = () => props.pages.findIndex(p => p.id == props.currentPageId);
     return (
-        <ol class="flex w-full text-sm font-medium text-center text-gray-500 dark:text-gray-400 sm:text-base items-stretch">
+        <ol class="steps w-full">
             <Index each={props.pages}>
                 {
                     (page, index) => (
                         <li
-                            class="flex md:w-full items-center after:content-[''] after:w-full after:h-1 after:border-b after:border-gray-200 after:border-1 after:hidden sm:after:inline-block after:mx-6 xl:after:mx-10 dark:after:border-gray-700 cursor-pointer"
-                            classList={{"bg-amber-200": page().id == props.currentPageId}}
+                            class="step cursor-pointer"
+                            classList={{"step-primary": currentPageIndex() >= index}}
                             onClick={() => mainStore.currentPageId = page().id}
                         >
-                            <span
-                                class="flex items-center after:content-['/'] sm:after:hidden after:mx-2 after:text-gray-200 dark:after:text-gray-500">
-                                <span class="me-2">{index + 1}</span>
-                                {page().title}
-                            </span>
+                            {page().title}
                         </li>
                     )
                 }
