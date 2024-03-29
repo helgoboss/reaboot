@@ -18,14 +18,16 @@ pub struct Downloader {
 
 #[derive(Clone, Debug)]
 pub struct Download {
+    pub label: String,
     pub url: Url,
     pub file: PathBuf,
     pub expected_multihash: Option<String>,
 }
 
 impl Download {
-    pub fn new(url: Url, file: PathBuf, expected_multihash: Option<String>) -> Self {
+    pub fn new(label: String, url: Url, file: PathBuf, expected_multihash: Option<String>) -> Self {
         Self {
+            label,
             url,
             file,
             expected_multihash,

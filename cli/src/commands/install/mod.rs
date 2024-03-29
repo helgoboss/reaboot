@@ -102,6 +102,7 @@ pub async fn install(args: InstallArgs) -> anyhow::Result<()> {
         }
     }
     // Install everything
+    println!("\nStarting installation process...\n");
     match installer.install().await {
         Ok(r) => {
             print_report(r, !args.dry_run);
@@ -109,7 +110,7 @@ pub async fn install(args: InstallArgs) -> anyhow::Result<()> {
         Err(e) => match e {
             InstallError::SomePackagesFailed(r) => {
                 print_report(r, false);
-                bail!("Installing nothing because not all desired packages can be installed");
+                bail!("Installed nothing due to package failures!");
             }
             InstallError::Other(e) => {
                 Err(e.context("Installation failed"))?;

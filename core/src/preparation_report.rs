@@ -1,4 +1,5 @@
 use crate::display_util::Separated;
+use crate::downloader::Download;
 use crate::installation_model::{
     PackageDescError, PackageInstallationPlan, PreDownloadFailures, QualifiedSource,
     QualifiedVersion, TempInstallFailure,
@@ -10,6 +11,31 @@ use std::fmt::{Display, Formatter, Write};
 #[derive(Debug)]
 pub struct PreparationReport {
     pub package_preparation_outcomes: Vec<PackagePreparationOutcome>,
+    pub tooling_changes: Vec<ToolingChange>,
+}
+
+#[derive(Clone, Debug)]
+pub struct ToolDownload {
+    pub version: String,
+    pub download: Download,
+}
+
+impl ToolDownload {
+    pub fn new(version: String, download: Download) -> Self {
+        Self { version, download }
+    }
+}
+
+#[derive(Debug)]
+pub struct ToolingChange {
+    pub name: String,
+    pub download: ToolDownload,
+}
+
+impl ToolingChange {
+    pub fn new(name: String, download: ToolDownload) -> Self {
+        Self { name, download }
+    }
 }
 
 #[derive(Debug)]
@@ -49,6 +75,7 @@ pub enum PackagePrepStatus {
 
 impl PreparationReport {
     pub fn new(
+        tooling_changes: Vec<ToolingChange>,
         download_plan: PreDownloadFailures,
         download_errors: Vec<DownloadError<QualifiedSource>>,
         temp_install_failures: Vec<TempInstallFailure>,
@@ -157,6 +184,7 @@ impl PreparationReport {
             .collect();
         Self {
             package_preparation_outcomes,
+            tooling_changes,
         }
     }
 
@@ -262,9 +290,11 @@ impl<'a> PreparationReportAsMarkdown<'a> {
 impl<'a> Display for PreparationReportAsMarkdown<'a> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let summary = self.report.summary();
-        writeln!(f, "# Installation report")?;
+        writeln!(f, "\n# Installation report")?;
+        let mut heading_count = 0;
         if summary.failures > 0 {
-            writeln!(f, "## {} package failure(s)", summary.failures)?;
+            heading_count += 1;
+            write_heading(f, "package failure", summary.failures, "")?;
             write_3col_table_header(f, "Package", "Version", "Error")?;
             for o in &self.report.package_preparation_outcomes {
                 if o.status.category() == PackageStatusCategory::Failure {
@@ -272,16 +302,32 @@ impl<'a> Display for PreparationReportAsMarkdown<'a> {
                 }
             }
         }
-        let suffix = if self.packages_have_been_installed {
+        let skipped_suffix = if self.packages_have_been_installed {
             ""
         } else {
             " **[SKIPPED]**"
         };
-        if summary.replacements > 0 {
-            writeln!(
+        if !self.report.tooling_changes.is_empty() {
+            heading_count += 1;
+            write_heading(
                 f,
-                "## {} package replacement(s){suffix}\n",
-                summary.replacements
+                "tooling change",
+                self.report.tooling_changes.len(),
+                skipped_suffix,
+            )?;
+            for c in &self.report.tooling_changes {
+                f.write_str("- ")?;
+                write_name_and_version(f, &c.name, Some(&c.download.version))?;
+                f.write_char('\n')?;
+            }
+        }
+        if summary.replacements > 0 {
+            heading_count += 1;
+            write_heading(
+                f,
+                "package replacement",
+                summary.replacements,
+                skipped_suffix,
             )?;
             write_3col_table_header(
                 f,
@@ -296,15 +342,40 @@ impl<'a> Display for PreparationReportAsMarkdown<'a> {
             }
         }
         if summary.additions > 0 {
-            writeln!(f, "## {} package addition(s){suffix}\n", summary.additions)?;
+            heading_count += 1;
+            write_heading(f, "package addition", summary.additions, skipped_suffix)?;
             for o in &self.report.package_preparation_outcomes {
                 if o.status.category() == PackageStatusCategory::Addition {
                     writeln!(f, "- {}", PackageVersionAsMarkdown(o))?;
                 }
             }
         }
+        if heading_count == 0 {
+            f.write_str("No changes")?;
+        }
         Ok(())
     }
+}
+
+fn write_heading(f: &mut Formatter, label: &str, count: usize, suffix: &str) -> std::fmt::Result {
+    write!(f, "\n## {count} {label}{suffix}")?;
+    if count > 1 {
+        f.write_str("s")?;
+    }
+    f.write_char('\n')?;
+    Ok(())
+}
+
+fn write_name_and_version(
+    f: &mut Formatter,
+    name: impl Display,
+    version: Option<impl Display>,
+) -> std::fmt::Result {
+    write!(f, "**{name}**")?;
+    if let Some(v) = version {
+        write!(f, " {v}")?;
+    }
+    Ok(())
 }
 
 fn write_3col_table_header(
@@ -353,10 +424,7 @@ struct PackageVersionAsMarkdown<'a>(&'a PackagePreparationOutcome);
 
 impl<'a> Display for PackageVersionAsMarkdown<'a> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "**{}**", &self.0.package_id.package)?;
-        if let Some(v) = self.0.version.as_ref() {
-            write!(f, " {v}")?;
-        }
+        write_name_and_version(f, &self.0.package_id.package, self.0.version.as_ref())?;
         write!(f, " ({})", &self.0.package_id.category)?;
         Ok(())
     }

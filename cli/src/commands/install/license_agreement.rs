@@ -24,7 +24,10 @@ pub async fn confirm_license() -> anyhow::Result<bool> {
                 println!("\n\n<Press any key to go back>");
                 let _ = term.read_key();
             }
-            Some(Key::Char('a')) => return Ok(true),
+            Some(Key::Char('a')) => {
+                let _ = term.clear_screen();
+                return Ok(true);
+            }
             _ => return Ok(false),
         }
     }

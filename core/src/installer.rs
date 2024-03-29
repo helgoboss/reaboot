@@ -23,7 +23,7 @@ use crate::reaper_resource_dir::{
 use crate::reaper_target::ReaperTarget;
 use crate::reaper_util::extract_reaper_to_portable_dir;
 use crate::task_tracker::{Task, TaskSummary, TaskTrackerListener};
-use crate::{reaboot_util, reapack_util, reaper_util};
+use crate::{reaboot_util, reapack_util, reaper_util, ToolDownload, ToolingChange};
 use anyhow::{anyhow, bail, ensure, Context};
 use enumset::EnumSet;
 use futures::{stream, StreamExt};
@@ -216,7 +216,17 @@ impl<L: InstallerListener> Installer<L> {
             )
             .await?;
         // Create preparation report
+        let mut tooling_changes = vec![];
+        if let Some(ReaperInstallationOutcome::ExtractedSuccessfully { download, .. }) =
+            reaper_installation_outcome.as_ref()
+        {
+            tooling_changes.push(ToolingChange::new("REAPER".to_string(), download.clone()));
+        }
+        if let Some(download) = reapack_download.as_ref() {
+            tooling_changes.push(ToolingChange::new("ReaPack".to_string(), download.clone()));
+        }
         let preparation_report = PreparationReport::new(
+            tooling_changes,
             pre_download_failures,
             download_errors,
             temp_install_failures,
@@ -258,9 +268,10 @@ impl<L: InstallerListener> Installer<L> {
         let _ = fs::remove_dir(self.dest_reaper_resource_dir.temp_reaboot_dir());
     }
 
-    fn apply_reapack_lib(&self, download: Option<&Download>) -> anyhow::Result<()> {
+    fn apply_reapack_lib(&self, download: Option<&ToolDownload>) -> anyhow::Result<()> {
         if let Some(download) = download {
             let file_name = download
+                .download
                 .file
                 .file_name()
                 .context("ReaPack lib file should have name")?;
@@ -268,7 +279,7 @@ impl<L: InstallerListener> Installer<L> {
                 .dest_reaper_resource_dir
                 .user_plugins_dir()
                 .join(file_name);
-            move_file(&download.file, dest_file, true)?;
+            move_file(&download.download.file, dest_file, true)?;
         }
         Ok(())
     }
@@ -281,13 +292,16 @@ impl<L: InstallerListener> Installer<L> {
             match outcome {
                 ReaperInstallationOutcome::InstallManuallyBecauseNoPortableInstall(d) => {
                     self.keep_temp_directory();
-                    self.listener.warn(format!("ReaBoot can install REAPER for you, but this currently only works for portable installations. Please install it manually. The installer is located here: {:?}", &d.file));
+                    self.listener.warn(format!("ReaBoot can install REAPER for you, but this currently only works for portable installations. Please install it manually. The installer is located here: {:?}", &d.download.file));
                 }
                 ReaperInstallationOutcome::InstallManuallyBecauseError(download, error) => {
                     self.keep_temp_directory();
-                    self.listener.warn(format!("ReaBoot tried to install REAPER for you, but there was an error. Please install it manually. The installer is located here: {:?}\n\nError: {:#}", &download.file, &error));
+                    self.listener.warn(format!("ReaBoot tried to install REAPER for you, but there was an error. Please install it manually. The installer is located here: {:?}\n\nError: {:#}", &download.download.file, &error));
                 }
-                ReaperInstallationOutcome::ExtractedSuccessfully(dir_containing_reaper) => {
+                ReaperInstallationOutcome::ExtractedSuccessfully {
+                    dir_containing_reaper,
+                    ..
+                } => {
                     move_dir_contents(dir_containing_reaper, self.dest_reaper_resource_dir.get())?;
                     // Copy reaper.ini file, but only if it doesn't exist already. E.g. the silent Windows installation
                     // already contains such a file with some minimal content.
@@ -558,8 +572,7 @@ impl<L: InstallerListener> Installer<L> {
         )
         .context("moving ReaPack registry DB file failed")?;
         let dest_cache_dir = self.dest_reaper_resource_dir.reapack_cache_dir();
-        let total_count = downloaded_indexes.len();
-        for (i, index) in downloaded_indexes.values().enumerate() {
+        for index in downloaded_indexes.values() {
             let src_index_file_name = index
                 .temp_download_file
                 .file_name()
@@ -646,7 +659,7 @@ impl<L: InstallerListener> Installer<L> {
         Database::open(self.temp_reaper_resource_dir.reapack_registry_db_file()).await
     }
 
-    async fn download_reaper(&self) -> anyhow::Result<Download> {
+    async fn download_reaper(&self) -> anyhow::Result<ToolDownload> {
         self.listener
             .installation_stage_changed(InstallationStage::CheckingLatestReaperVersion);
         let installer_asset = reaper_util::get_latest_reaper_installer_asset(
@@ -655,27 +668,37 @@ impl<L: InstallerListener> Installer<L> {
         )
         .await?;
         let file = self.temp_dir.join(installer_asset.file_name);
+        let version = installer_asset.version;
         self.listener
             .installation_stage_changed(InstallationStage::DownloadingReaper {
                 download: DownloadInfo {
-                    label: installer_asset.version.to_string(),
+                    label: version.to_string(),
                     url: installer_asset.url.clone(),
                     file: file.clone(),
                 },
             });
-        let download = Download::new(installer_asset.url, file.clone(), None);
+        let download = Download::new(
+            format!("REAPER {version}"),
+            installer_asset.url,
+            file.clone(),
+            None,
+        );
         self.downloader
             .download(download.clone(), |s| {
                 self.listener
                     .installation_stage_progressed(s.to_simple_progress())
             })
             .await?;
-        Ok(download)
+        let tool_download = ToolDownload {
+            version: version.to_string(),
+            download,
+        };
+        Ok(tool_download)
     }
 
     async fn extract_reaper(
         &self,
-        reaper_download: Download,
+        reaper_download: ToolDownload,
     ) -> anyhow::Result<ReaperInstallationOutcome> {
         if !self.portable {
             let outcome =
@@ -686,20 +709,27 @@ impl<L: InstallerListener> Installer<L> {
             .installation_stage_changed(InstallationStage::ExtractingReaper);
         fs::File::create(self.temp_reaper_resource_dir.reaper_ini_file())?;
         let reaper_dest_dir = self.temp_dir.join("reaper-binaries");
-        let result =
-            extract_reaper_to_portable_dir(&reaper_download.file, &reaper_dest_dir, &self.temp_dir);
+        let result = extract_reaper_to_portable_dir(
+            &reaper_download.download.file,
+            &reaper_dest_dir,
+            &self.temp_dir,
+        );
         let outcome = if let Err(error) = result {
             ReaperInstallationOutcome::InstallManuallyBecauseError(reaper_download, error)
         } else {
-            ReaperInstallationOutcome::ExtractedSuccessfully(reaper_dest_dir)
+            ReaperInstallationOutcome::ExtractedSuccessfully {
+                download: reaper_download,
+                dir_containing_reaper: reaper_dest_dir,
+            }
         };
         Ok(outcome)
     }
 
     /// Downloads the ReaPack shared library to the temporary directory and returns the path to the
     /// downloaded file.
-    async fn download_reapack(&self) -> anyhow::Result<Download> {
+    async fn download_reapack(&self) -> anyhow::Result<ToolDownload> {
         let latest_release = reapack_util::get_latest_reapack_release().await?;
+        let tag_name = latest_release.tag_name.clone();
         let asset =
             reapack_util::get_correct_reapack_asset(latest_release, self.reaper_target).await?;
         let file = self
@@ -710,19 +740,28 @@ impl<L: InstallerListener> Installer<L> {
         self.listener
             .installation_stage_changed(InstallationStage::DownloadingReaPack {
                 download: DownloadInfo {
-                    label: file.to_string_lossy().to_string(),
+                    label: tag_name.clone(),
                     url: download_url.clone(),
                     file: file.clone(),
                 },
             });
-        let download = Download::new(download_url, file.clone(), None);
+        let download = Download::new(
+            format!("ReaPack {tag_name}"),
+            download_url,
+            file.clone(),
+            None,
+        );
         self.downloader
             .download(download.clone(), |s| {
                 self.listener
                     .installation_stage_progressed(s.to_simple_progress())
             })
             .await?;
-        Ok(download)
+        let outcome = ToolDownload {
+            version: tag_name,
+            download,
+        };
+        Ok(outcome)
     }
 
     async fn download_repository_indexes(&self) -> anyhow::Result<HashMap<Url, DownloadedIndex>> {
@@ -734,7 +773,12 @@ impl<L: InstallerListener> Installer<L> {
             .collect();
         let downloads = repository_urls.into_iter().enumerate().map(|(i, url)| {
             DownloadWithPayload::new(
-                Download::new(url.clone(), temp_cache_dir.join(i.to_string()), None),
+                Download::new(
+                    url.to_string(),
+                    url.clone(),
+                    temp_cache_dir.join(i.to_string()),
+                    None,
+                ),
                 (),
             )
         });
@@ -791,6 +835,7 @@ impl<L: InstallerListener> Installer<L> {
     ) -> Vec<DownloadResult<QualifiedSource<'a>>> {
         let downloads = files.into_iter().map(|file| DownloadWithPayload {
             download: Download {
+                label: file.version.id().to_string(),
                 url: file.source.content.clone(),
                 file: self
                     .temp_reaper_resource_dir
@@ -927,12 +972,16 @@ fn convert_index_section_to_model(index_section: &IndexSection) -> Option<EnumSe
 
 enum ReaperInstallationOutcome {
     /// It's a main REAPER install, and we don't support automatic REAPER installation for that.
-    InstallManuallyBecauseNoPortableInstall(Download),
+    InstallManuallyBecauseNoPortableInstall(ToolDownload),
     /// It's a portable REAPER install but there was an error extracting the executables.
-    InstallManuallyBecauseError(Download, anyhow::Error),
-    /// It's a portable install and the REAPER executable along with other files (Windows & Linux) or the bundle dir
-    /// (macOS) has been placed **into** the given directory.
-    ExtractedSuccessfully(PathBuf),
+    InstallManuallyBecauseError(ToolDownload, anyhow::Error),
+    /// REAPER has been extracted successfully.
+    ExtractedSuccessfully {
+        download: ToolDownload,
+        /// It's a portable install and the REAPER executable along with other files (Windows & Linux) or the bundle dir
+        /// (macOS) has been placed **into** the given directory.
+        dir_containing_reaper: PathBuf,
+    },
 }
 
 #[derive(Default)]
@@ -1013,13 +1062,7 @@ where
         self.installer.listener.task_started(
             task_index as u32,
             InstallerTask {
-                label: payload
-                    .download
-                    .file
-                    .file_name()
-                    .unwrap_or_default()
-                    .to_string_lossy()
-                    .to_string(),
+                label: payload.download.label.clone(),
             },
         );
     }

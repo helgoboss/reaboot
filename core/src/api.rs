@@ -186,6 +186,15 @@ impl Display for InstallationStage {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let simple_name: &str = self.as_ref();
         match self {
+            InstallationStage::DownloadingReaper { download }
+            | InstallationStage::DownloadingReaPack { download } => {
+                write!(
+                    f,
+                    "{simple_name} {} ({:?})",
+                    &download.label,
+                    download.file.file_name().unwrap()
+                )?;
+            }
             InstallationStage::DownloadingRepositoryIndexes { download }
             | InstallationStage::DownloadingPackageFiles { download } => {
                 let error_count = download.error_count;
