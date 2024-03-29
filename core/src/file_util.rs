@@ -93,7 +93,7 @@ pub fn move_file_overwriting_with_backup(
             .to_str()
             .context("destination file name is not valid UTF-8")?;
         let backup_file = dest_file.with_file_name(format!("{dest_file_name}.bak"));
-        fs::rename(&dest_file, &backup_file)?;
+        fs::rename(dest_file, backup_file)?;
     }
     move_file(src_file, dest_file, true)
 }
@@ -110,9 +110,9 @@ pub fn move_file(
     if !overwrite && dest_file.exists() {
         bail!("Destination file {dest_file:?} already exists");
     } else {
-        create_parent_dirs(&dest_file)?;
+        create_parent_dirs(dest_file)?;
     }
-    if fs::rename(&src_file, &dest_file).is_err() {
+    if fs::rename(&src_file, dest_file).is_err() {
         fs::copy(src_file, dest_file).context("Copying file to destination failed")?;
     }
     Ok(())

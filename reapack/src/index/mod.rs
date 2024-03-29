@@ -1,13 +1,9 @@
-use crate::model::PackageType::{
-    AutomationItem, Data, Effect, Extension, LangPack, MidiNoteNames, ProjectTemplate, Script,
-    Theme, TrackTemplate, WebInterface,
-};
 use crate::model::{PackageType, Platform, Section, VersionName};
 use serde::de::IntoDeserializer;
 use serde::{Deserialize, Deserializer};
-use std::borrow::Cow;
+
 use std::io::Read;
-use std::path::PathBuf;
+
 use thiserror::Error;
 use time::OffsetDateTime;
 use url::Url;
@@ -358,7 +354,7 @@ mod tests {
     #[test]
     fn simple_example() {
         let src = include_str!("test/Simple Example.xml");
-        let index: Index = serde_xml_rs::from_str(src).unwrap();
+        let _index: Index = serde_xml_rs::from_str(src).unwrap();
     }
 
     #[test]
@@ -367,7 +363,7 @@ mod tests {
         let index: Index = serde_xml_rs::from_str(src).unwrap();
         let extensions = index.find_category("Extensions").unwrap();
         let realearn = extensions.find_package("ReaLearn-x64").unwrap();
-        let stable_versions: Vec<_> = realearn
+        let _stable_versions: Vec<_> = realearn
             .all_versions()
             .map(|v| v.name.to_string())
             .collect();

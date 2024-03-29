@@ -1,9 +1,5 @@
-use reaboot_reapack::index::IndexPlatform;
 use reaboot_reapack::model::Platform;
-use reaboot_reapack::model::Platform::{
-    All, Darwin, Darwin32, Darwin64, DarwinArm64, Linux, Linux32, Linux64, LinuxAarch64,
-    LinuxArmv7l, Win32, Win64, Windows,
-};
+
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use ts_rs::TS;

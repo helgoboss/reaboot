@@ -54,7 +54,7 @@ impl Hash for VersionName {
 }
 
 impl VersionName {
-    pub fn len(&self) -> usize {
+    pub fn segment_count(&self) -> usize {
         self.segments.len()
     }
 
@@ -75,9 +75,9 @@ impl VersionName {
     }
 }
 
-impl Into<String> for VersionName {
-    fn into(self) -> String {
-        self.string
+impl From<VersionName> for String {
+    fn from(value: VersionName) -> Self {
+        value.string
     }
 }
 
@@ -110,7 +110,7 @@ impl PartialOrd for VersionName {
 impl Ord for VersionName {
     fn cmp(&self, other: &Self) -> Ordering {
         use Segment::*;
-        let biggest = cmp::max(self.len(), other.len());
+        let biggest = cmp::max(self.segment_count(), other.segment_count());
         let default = Numeric(0);
         for i in 0..biggest {
             let lseg = self.segments.get(i).unwrap_or(&default);

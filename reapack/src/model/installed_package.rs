@@ -1,7 +1,7 @@
 use crate::model::package_id::LightPackageId;
 use crate::model::{PackageType, Section, VersionName};
 use enumset::EnumSet;
-use serde::Deserialize;
+
 use std::fmt::{Display, Formatter};
 
 #[derive(Debug)]

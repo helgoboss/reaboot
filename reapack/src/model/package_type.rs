@@ -1,6 +1,5 @@
 use num_enum::TryFromPrimitive;
 use serde::Deserialize;
-use std::borrow::Cow;
 
 /// Package type.
 ///

@@ -1,10 +1,9 @@
 use anyhow::Context;
 use indexmap::IndexMap;
 use ini::{EscapePolicy, Ini, LineSeparator, ParseOption, Properties, WriteOption};
-use std::fs::File;
-use std::iter::Map;
+
 use std::path::Path;
-use std::slice::Iter;
+
 use url::Url;
 
 /// This is the currently supported ReaPack config version.

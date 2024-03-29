@@ -3,7 +3,6 @@ use enumset::EnumSetType;
 use num_enum::TryFromPrimitive;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
-use std::path::Path;
 
 /// Section.
 ///

@@ -1,9 +1,7 @@
 use crate::commands::install::{install, InstallArgs};
 use anyhow::Context;
-use clap::{Args, Parser, Subcommand};
-use indicatif::TermLike;
-use reaboot_core::installer::InstallerListener;
-use std::{fmt::Display, process};
+use clap::{Parser, Subcommand};
+
 use tracing_subscriber::{EnvFilter, FmtSubscriber};
 
 mod commands;

@@ -1,32 +1,28 @@
 use crate::api::{
-    DownloadInfo, InstallationStage, MultiDownloadInfo, PackageInfo, ReabootConfig,
-    ResolvedReabootConfig,
+    DownloadInfo, InstallationStage, MultiDownloadInfo, PackageInfo, ResolvedReabootConfig,
 };
-use crate::downloader::{Download, DownloadProgress, Downloader};
+use crate::downloader::{Download, Downloader};
 use crate::file_util::{
     create_parent_dirs, existing_file_or_dir_is_writable, file_or_dir_is_writable_or_creatable,
-    find_first_existing_parent, get_first_existing_parent_dir, move_dir_contents, move_file,
-    move_file_overwriting_with_backup,
+    get_first_existing_parent_dir, move_dir_contents, move_file, move_file_overwriting_with_backup,
 };
 use crate::installation_model::{
-    determine_files_to_be_downloaded, PackageInstallationPlan, PreDownloadFailures,
-    QualifiedSource, TempInstallFailure,
+    determine_files_to_be_downloaded, PackageInstallationPlan, QualifiedSource, TempInstallFailure,
 };
 use crate::multi_downloader::{
     DownloadError, DownloadResult, DownloadWithPayload, MultiDownloader,
 };
 use crate::preparation_report::PreparationReport;
-use crate::reaboot_util::resolve_config;
+
 use crate::reaper_resource_dir::{
     ReaperResourceDir, REAPACK_INI_FILE_PATH, REAPACK_REGISTRY_DB_FILE_PATH,
 };
 use crate::reaper_target::ReaperTarget;
 use crate::reaper_util::extract_reaper_to_portable_dir;
-use crate::task_tracker::{Task, TaskSummary, TaskTrackerListener};
+use crate::task_tracker::{TaskSummary, TaskTrackerListener};
 use crate::{reaboot_util, reapack_util, reaper_util, ToolDownload, ToolingChange};
-use anyhow::{anyhow, bail, ensure, Context};
+use anyhow::{bail, ensure, Context};
 use enumset::EnumSet;
-use futures::{stream, StreamExt};
 use reaboot_reapack::database::Database;
 use reaboot_reapack::index::{Index, IndexSection, NormalIndexSection};
 use reaboot_reapack::model::{
@@ -35,12 +31,11 @@ use reaboot_reapack::model::{
 };
 use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
-use std::fs::File;
+
 use std::io::BufReader;
 use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
-use std::time::Duration;
 use std::{env, fs};
 use tempdir::TempDir;
 use thiserror::Error;
@@ -338,7 +333,7 @@ impl<L: InstallerListener> Installer<L> {
     ) -> anyhow::Result<PackageStatusQuo> {
         let reapack_db_file = self.temp_reaper_resource_dir.reapack_registry_db_file();
         let quo = if reapack_db_file.exists() {
-            self.gather_already_installed_packages_internal(&downloaded_indexes, &reapack_db_file)
+            self.gather_already_installed_packages_internal(downloaded_indexes, &reapack_db_file)
                 .await?
         } else {
             PackageStatusQuo::default()
@@ -411,7 +406,7 @@ impl<L: InstallerListener> Installer<L> {
         Ok(())
     }
 
-    fn update_reapack_ini_file<'a>(
+    fn update_reapack_ini_file(
         &self,
         config: &mut Config,
         downloaded_indexes: &HashMap<Url, DownloadedIndex>,
@@ -554,7 +549,7 @@ impl<L: InstallerListener> Installer<L> {
         Ok(())
     }
 
-    fn apply_reapack_state<'a>(
+    fn apply_reapack_state(
         &self,
         downloaded_indexes: &HashMap<Url, DownloadedIndex>,
     ) -> anyhow::Result<()> {
@@ -584,7 +579,7 @@ impl<L: InstallerListener> Installer<L> {
         Ok(())
     }
 
-    fn apply_packages<'a>(&self, plans: Vec<PackageInstallationPlan>) -> anyhow::Result<()> {
+    fn apply_packages(&self, plans: Vec<PackageInstallationPlan>) -> anyhow::Result<()> {
         for plan in plans {
             self.apply_package(plan)?;
         }
@@ -611,8 +606,7 @@ impl<L: InstallerListener> Installer<L> {
         // Copy/move
         self.listener
             .info(format!("Moving files of new package {}", &plan.version_id));
-        let total_file_count = plan.to_be_moved.len();
-        for (i, download) in plan.to_be_moved.into_iter().enumerate() {
+        for download in plan.to_be_moved.into_iter() {
             let src_file = download.download.file;
             let dest_file = self
                 .dest_reaper_resource_dir
@@ -634,7 +628,7 @@ impl<L: InstallerListener> Installer<L> {
             .package_urls
             .iter()
             .filter_map(|purl| {
-                let downloaded_index = downloaded_indexes.get(&purl.repository_url())?;
+                let downloaded_index = downloaded_indexes.get(purl.repository_url())?;
                 let package_path = purl.package_version_ref().package_path();
                 let package_id = LightPackageId {
                     remote: &downloaded_index.name,
@@ -867,14 +861,6 @@ impl<L: InstallerListener> Installer<L> {
     }
 }
 
-async fn simulate_download(millis: u64, listener: &impl InstallerListener) {
-    for i in (0..millis).step_by(2) {
-        let download_progress = DownloadProgress::Downloading(i as f64 / millis as f64);
-        listener.installation_stage_progressed(download_progress.to_simple_progress());
-        sleep(1).await;
-    }
-}
-
 pub trait InstallerListener {
     /// Called when the current stage of the installation process has changed.
     fn installation_stage_changed(&self, event: InstallationStage);
@@ -902,10 +888,6 @@ pub trait InstallerListener {
 
 pub struct InstallerTask {
     pub label: String,
-}
-
-async fn sleep(millis: u64) {
-    tokio::time::sleep(Duration::from_millis(millis)).await
 }
 
 pub struct DownloadedIndex {
@@ -991,15 +973,13 @@ struct PackageStatusQuo {
 }
 
 fn dry_remove_file(path: &Path) -> anyhow::Result<()> {
-    if path.exists() {
-        if !existing_file_or_dir_is_writable(path) {
-            let suffix = if cfg!(windows) {
-                " Is REAPER running already? If yes, exit REAPER and try again."
-            } else {
-                ""
-            };
-            bail!("Removing the file would not work.{suffix}");
-        }
+    if path.exists() && !existing_file_or_dir_is_writable(path) {
+        let suffix = if cfg!(windows) {
+            " Is REAPER running already? If yes, exit REAPER and try again."
+        } else {
+            ""
+        };
+        bail!("Removing the file would not work.{suffix}");
     }
     Ok(())
 }

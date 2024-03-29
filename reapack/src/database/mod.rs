@@ -2,18 +2,18 @@ use crate::model::{
     InstalledFile, InstalledPackage, InstalledPackageType, InstalledVersionName, LightPackageId,
     PackageType, Section, VersionName,
 };
-use anyhow::{bail, Context};
+
 use enumset::EnumSet;
 use num_enum::TryFromPrimitive;
 use ormlite::model::Insertable;
-use ormlite::sqlite::{Sqlite, SqliteConnectOptions, SqliteConnection, SqliteTypeInfo};
+use ormlite::sqlite::{Sqlite, SqliteConnectOptions, SqliteConnection};
 use ormlite::{Connection, Model};
-use serde::Deserialize;
+
 use sqlx::Transaction;
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::fs;
-use std::future::{poll_fn, Future};
+use std::future::Future;
 use std::ops::DerefMut;
 use std::path::Path;
 use std::str::FromStr;

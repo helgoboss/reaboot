@@ -3,10 +3,8 @@ use crate::reaper_target::ReaperTarget;
 use anyhow::Context;
 use octocrab::models::repos::{Asset, Release};
 use octocrab::Octocrab;
-use reaboot_reapack::index::{IndexPlatform, Source};
-use reaboot_reapack::model::Platform;
-use reqwest::Url;
-use std::path::{Path, PathBuf};
+
+use std::path::PathBuf;
 
 /// Returns the expected OS/architecture-specific location of the ReaPack shared library file.
 pub fn get_default_reapack_shared_lib_file(

@@ -1,13 +1,7 @@
-use crate::api::{InstallationStage, MultiDownloadInfo};
 use crate::downloader::{Download, Downloader};
-use crate::installer::InstallerTask;
+
 use crate::task_tracker::{track_tasks, TaskTrackerListener};
 use futures::{stream, StreamExt};
-use reaboot_reapack::index::Index;
-use std::io::BufReader;
-use std::path::PathBuf;
-use std::sync::Arc;
-use std::time::Duration;
 
 pub struct MultiDownloader {
     downloader: Downloader,
@@ -48,7 +42,7 @@ impl MultiDownloader {
         let tasks = track_tasks(downloads, listener);
         let download_results: Vec<_> = stream::iter(tasks)
             .enumerate()
-            .map(|(i, task)| async move {
+            .map(|(_i, task)| async move {
                 task.start();
                 let download_result = self
                     .downloader

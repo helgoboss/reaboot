@@ -1,9 +1,8 @@
-use crate::model::{VersionName, VersionRef};
-use anyhow::Context;
-use serde::Deserialize;
+use crate::model::VersionRef;
+
 use std::str::FromStr;
 use thiserror::Error;
-use ts_rs::TS;
+
 use url::{form_urlencoded, Url};
 
 /// The Package URL is a URL that points to a specific repository index and uniquely identifies a
@@ -181,7 +180,7 @@ impl FromStr for PackagePath {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let (category, package_name) = s
-            .rsplit_once("/")
+            .rsplit_once('/')
             .ok_or(ParsePackageUrlError::InvalidPackagePath)?;
         let package_path = Self {
             category: category.to_string(),

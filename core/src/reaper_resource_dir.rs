@@ -1,6 +1,5 @@
-use crate::file_util::{find_first_existing_parent, get_first_existing_parent_dir};
-use crate::reapack_util::get_os_specific_reapack_file_name;
-use crate::reaper_target::ReaperTarget;
+use crate::file_util::get_first_existing_parent_dir;
+
 use anyhow::{ensure, Context};
 use ref_cast::RefCast;
 use std::env;
@@ -27,7 +26,7 @@ impl ReaperResourceDir {
             env::current_dir()?.join(dir)
         };
 
-        Ok((Self(absolute_dir)))
+        Ok(Self(absolute_dir))
     }
 
     /// Returns whether the given directory is a valid REAPER resource directory.

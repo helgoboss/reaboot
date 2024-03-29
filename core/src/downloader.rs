@@ -1,4 +1,3 @@
-use crate::hash_util;
 use crate::hash_util::ReabootHashVerifier;
 use anyhow::Context;
 use futures::stream::StreamExt;
@@ -7,7 +6,7 @@ use reqwest_middleware::ClientWithMiddleware;
 use reqwest_retry::policies::ExponentialBackoff;
 use reqwest_retry::RetryTransientMiddleware;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use tokio::{fs::OpenOptions, io::AsyncWriteExt};
 use url::Url;
 
@@ -56,7 +55,7 @@ impl Downloader {
         progress_listener: impl Fn(DownloadProgress),
     ) -> anyhow::Result<()> {
         progress_listener(DownloadProgress::Connecting);
-        let mut req = self.client.get(download.url.clone());
+        let req = self.client.get(download.url.clone());
         let res = req.send().await?;
         progress_listener(DownloadProgress::CreatingDestFile);
         res.error_for_status_ref()?;
@@ -66,6 +65,7 @@ impl Downloader {
         }
         let mut dest_file = OpenOptions::new()
             .create(true)
+            .truncate(true)
             .write(true)
             .append(false)
             .open(&download.file)

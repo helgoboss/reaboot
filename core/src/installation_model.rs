@@ -1,17 +1,14 @@
 use crate::installer::DownloadedIndex;
 use crate::multi_downloader::DownloadWithPayload;
 use crate::reaper_target::ReaperTarget;
-use anyhow::{Context, Error};
-use reaboot_reapack::index::{
-    Category, Index, IndexPackageType, IndexPlatform, Package, Source, Version,
-};
+
+use reaboot_reapack::index::{Category, IndexPackageType, IndexPlatform, Package, Source, Version};
 use reaboot_reapack::model::{
-    InstalledPackage, LightPackageId, LightVersionId, PackageType, PackageUrl, VersionName,
-    VersionRef,
+    InstalledPackage, LightPackageId, LightVersionId, PackageType, PackageUrl, VersionRef,
 };
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
-use std::path::PathBuf;
+
 use thiserror::Error;
 use url::Url;
 
@@ -172,7 +169,7 @@ fn resolve_and_deduplicate_versions<'a>(
                 });
                 return None;
             };
-            match lookup_package_version_in_index(&purl, index) {
+            match lookup_package_version_in_index(purl, index) {
                 Ok(v) => Some((v.id().package_id, v)),
                 Err(error) => {
                     failures.push(PackageUrlFailure {
@@ -194,10 +191,10 @@ fn lookup_package_version_in_index<'i>(
 ) -> Result<QualifiedVersion<'i>, PackageDescError> {
     let category = index
         .index
-        .find_category(&package_url.category())
+        .find_category(package_url.category())
         .ok_or(PackageDescError::PackageCategoryNotFound)?;
     let package = category
-        .find_package(&package_url.package_name())
+        .find_package(package_url.package_name())
         .ok_or(PackageDescError::PackageNotFound)?;
     let IndexPackageType::Known(typ) = &package.typ else {
         return Err(PackageDescError::PackageHasUnknownType);
@@ -216,7 +213,7 @@ fn lookup_package_version_in_index<'i>(
             .latest_version_including_pre_releases()
             .ok_or(PackageDescError::PackageHasNoVersionsAtAll)?,
         VersionRef::Specific(v) => package
-            .find_version(&v)
+            .find_version(v)
             .ok_or(PackageDescError::PackageVersionNotFound)?,
     };
     let qualified_version = QualifiedVersion {
@@ -267,7 +264,7 @@ fn resolve_package_sources_weeding_out_platform_incompatible_versions(
                     let relative_path = source.determine_destination_file(
                         &v.package.index.name,
                         &v.package.category.name,
-                        &v.package.package,
+                        v.package.package,
                         resolved_typ,
                     );
                     let qualified_source = QualifiedSource {
@@ -364,14 +361,14 @@ where
 
 fn remove_incomplete_versions(
     sources: &mut Vec<QualifiedSource>,
-    file_conflicts: &Vec<RecipeFileConflict>,
+    file_conflicts: &[RecipeFileConflict],
 ) {
-    let incomplete_versions = identify_incomplete_versions(&file_conflicts);
+    let incomplete_versions = identify_incomplete_versions(file_conflicts);
     sources.retain(|source| !incomplete_versions.contains(&source.version.id()));
 }
 
 fn identify_incomplete_versions<'a>(
-    file_conflicts: &'a Vec<RecipeFileConflict>,
+    file_conflicts: &'a [RecipeFileConflict],
 ) -> HashSet<LightVersionId<'a>> {
     file_conflicts
         .iter()

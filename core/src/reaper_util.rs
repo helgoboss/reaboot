@@ -1,17 +1,15 @@
-use crate::file_util::{copy_dir_recursively, move_dir_contents};
+use crate::file_util::move_dir_contents;
 use crate::reaper_target::ReaperTarget;
 use anyhow::{anyhow, bail, ensure, Context};
-use octocrab::models::repos::{Asset, Release};
-use octocrab::Octocrab;
+
 use reaboot_reapack::model::{VersionName, VersionRef};
-use serde::Deserialize;
-use std::env::args;
+
 use std::fs;
 use std::fs::File;
 use std::io::BufWriter;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::str::FromStr;
+
 use url::Url;
 
 const LATEST_STABLE_VERSION_URL: &str = "https://www.cockos.com/reaper/latestversion/";
@@ -115,7 +113,7 @@ fn extract_reaper_for_macos_to_dir(
         let mounted_reaper_app_dir = mount_dir.join("REAPER_INSTALL_UNIVERSAL/REAPER.app");
         std::fs::create_dir_all(dest_dir)?;
         let dest_reaper_app_dir = dest_dir.join("REAPER.app");
-        crate::file_util::copy_dir_recursively(mounted_reaper_app_dir, &dest_reaper_app_dir)?;
+        crate::file_util::copy_dir_recursively(mounted_reaper_app_dir, dest_reaper_app_dir)?;
         Ok(())
     }
 }
@@ -145,7 +143,11 @@ fn extract_reaper_for_windows_to_dir(
     Ok(())
 }
 
-fn extract_reaper_for_linux_to_dir(reaper_tar_xz: &Path, dest_dir: &Path, tmp_dir: &Path) -> anyhow::Result<()> {
+fn extract_reaper_for_linux_to_dir(
+    reaper_tar_xz: &Path,
+    dest_dir: &Path,
+    tmp_dir: &Path,
+) -> anyhow::Result<()> {
     fs::create_dir_all(tmp_dir)?;
     let exit_status = Command::new("tar")
         .arg("-xf")
@@ -155,10 +157,7 @@ fn extract_reaper_for_linux_to_dir(reaper_tar_xz: &Path, dest_dir: &Path, tmp_di
         .output()
         .context("Error while unpacking the REAPER archive via tar")?
         .status;
-    ensure!(
-        exit_status.success(),
-        "tar returned a non-zero exit code"
-    );
+    ensure!(exit_status.success(), "tar returned a non-zero exit code");
     let relevant_sub_dir = tmp_dir.join("reaper_linux_x86_64/REAPER");
     move_dir_contents(relevant_sub_dir, dest_dir)?;
     Ok(())
@@ -179,9 +178,9 @@ async fn resolve_reaper_version(version_ref: &VersionRef) -> anyhow::Result<Vers
     let unstable_version =
         get_latest_reaper_version_from_url(LATEST_UNSTABLE_VERSION_URL, |line| {
             let (version, _) = line
-                .strip_prefix("v")
+                .strip_prefix('v')
                 .context("whatsnew.txt should return version starting with letter v")?
-                .split_once(" ")
+                .split_once(' ')
                 .context("whatsnew.txt should contain space after version string")?;
             Ok(version)
         })
@@ -220,7 +219,7 @@ fn get_os_specific_reaper_installer_file_name(
     reaper_target: ReaperTarget,
     version: &VersionName,
 ) -> String {
-    let version = version.to_string().replace(".", "");
+    let version = version.to_string().replace('.', "");
     match reaper_target {
         // TODO-medium What about the "macOS 10.5-10.14" download ("reaper711_x86_64.dmg")?
         ReaperTarget::MacOsAarch64 | ReaperTarget::MacOsX86_64 => {

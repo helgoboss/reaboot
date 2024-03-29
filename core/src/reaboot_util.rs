@@ -1,12 +1,12 @@
-use anyhow::{anyhow, bail};
-use reaboot_reapack::database::{CompatibilityInfo, Database, REAPACK_DB_USER_VERSION};
-use std::path::Path;
+use anyhow::bail;
+use reaboot_reapack::database::{CompatibilityInfo, Database};
+
 use thiserror::Error;
 
 use crate::api::{InstallationStage, ReabootConfig, ResolvedReabootConfig};
 use crate::reaper_resource_dir::ReaperResourceDir;
 use crate::reaper_target::ReaperTarget;
-use crate::{reapack_util, reaper_resource_dir, reaper_util};
+use crate::{reapack_util, reaper_util};
 
 pub fn resolve_config(config: &ReabootConfig) -> Result<ResolvedReabootConfig, ResolveConfigError> {
     let main_reaper_resource_dir = reaper_util::get_default_main_reaper_resource_dir()

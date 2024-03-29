@@ -1,6 +1,3 @@
-use crate::model::{LightVersionId, VersionId};
-use std::fmt::Display;
-
 /// Owned package ID.
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
 pub struct PackageId {

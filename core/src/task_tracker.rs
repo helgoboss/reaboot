@@ -1,5 +1,3 @@
-use crate::api::MultiDownloadInfo;
-use crate::downloader::Download;
 use atomic::Atomic;
 use bytemuck::NoUninit;
 use std::sync::atomic::Ordering;
@@ -72,7 +70,7 @@ pub trait TaskTrackerListener {
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Default, NoUninit)]
 #[repr(u8)]
-enum TaskStatus {
+pub enum TaskStatus {
     #[default]
     Todo,
     InProgress,
@@ -150,14 +148,6 @@ impl<L, P> Task<L, P>
 where
     L: TaskTrackerListener<Payload = P>,
 {
-    pub fn status(&self) -> TaskStatus {
-        self.record.status()
-    }
-
-    pub fn progress(&self) -> f64 {
-        self.record.progress()
-    }
-
     pub fn start(&self) {
         self.record
             .tracker

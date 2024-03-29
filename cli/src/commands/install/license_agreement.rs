@@ -1,13 +1,13 @@
 use anyhow::Context;
 use console::Key;
 use reaboot_core::reaper_util::get_reaper_eula;
-use std::fs;
+
 use std::time::Duration;
 
 pub async fn confirm_license() -> anyhow::Result<bool> {
     let term = console::Term::stdout();
     loop {
-        term.clear_screen();
+        let _ = term.clear_screen();
         println!("ReaBoot is going to download and install REAPER because it's not yet installed at the location of your choice.\n\nIn order to continue, you need to accept the REAPER license agreement.\n");
         println!("Please choose:");
         println!("- [S]how the REAPER license agreement");

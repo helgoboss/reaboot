@@ -2,7 +2,7 @@ use crate::display_util::Separated;
 use crate::downloader::Download;
 use crate::installation_model::{
     PackageDescError, PackageInstallationPlan, PreDownloadFailures, QualifiedSource,
-    QualifiedVersion, TempInstallFailure,
+    TempInstallFailure,
 };
 use crate::multi_downloader::DownloadError;
 use reaboot_reapack::model::{PackageId, VersionName, VersionRef};
@@ -407,16 +407,6 @@ fn outcome_row(
     }
     writeln!(f, " | {label3}")?;
     write_3col_table_divider(f)?;
-    Ok(())
-}
-
-fn write_3col_table_row(
-    f: &mut Formatter,
-    label1: impl Display,
-    label2: impl Display,
-    label3: impl Display,
-) -> std::fmt::Result {
-    writeln!(f, "| {label1} | {label2} | {label3} ")?;
     Ok(())
 }
 

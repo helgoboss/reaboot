@@ -1,6 +1,6 @@
 use multihash::Multihash;
 use multihash_codetable::MultihashDigest;
-use sha2::{Digest, Sha256, Sha512};
+use sha2::Digest;
 use thiserror::Error;
 
 pub struct ReabootHashVerifier<'a> {
@@ -12,7 +12,7 @@ pub struct ReabootHashVerifier<'a> {
 impl<'a> ReabootHashVerifier<'a> {
     pub fn try_from_hash(expected_hash: &'a str) -> Result<Self, BuildHashVerifierError> {
         let expected_multihash =
-            parse_hash(&expected_hash).map_err(BuildHashVerifierError::Parse)?;
+            parse_hash(expected_hash).map_err(BuildHashVerifierError::Parse)?;
         let hasher = ReabootHasher::try_from_multihash(&expected_multihash)?;
         let verifier = Self {
             expected_hash,

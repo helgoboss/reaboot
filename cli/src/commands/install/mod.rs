@@ -94,11 +94,9 @@ pub async fn install(args: InstallArgs) -> anyhow::Result<()> {
     let skip_license_prompts = args.non_interactive || args.accept_licenses;
     if !skip_license_prompts && installer.reaper_is_installable() {
         let initial_stage = installer.determine_initial_installation_stage().await?;
-        if initial_stage.is_nothing_installed() {
-            if !confirm_license().await? {
-                println!("You haven't agreed to the license terms. Exiting.");
-                return Ok(());
-            }
+        if initial_stage.is_nothing_installed() && !confirm_license().await? {
+            println!("You haven't agreed to the license terms. Exiting.");
+            return Ok(());
         }
     }
     // Install everything

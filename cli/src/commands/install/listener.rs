@@ -65,11 +65,11 @@ impl InstallerListener for CliInstallerListener {
         self.log(message);
     }
 
-    fn info(&self, message: impl Display) {
+    fn info(&self, _message: impl Display) {
         // self.log(message);
     }
 
-    fn debug(&self, message: impl Display) {
+    fn debug(&self, _message: impl Display) {
         // self.log(message);
     }
 }
@@ -87,7 +87,7 @@ fn create_main_progress_bar() -> ProgressBar {
     pb
 }
 
-fn create_task_progress_bar(task_id: u32, task: InstallerTask) -> ProgressBar {
+fn create_task_progress_bar(_task_id: u32, task: InstallerTask) -> ProgressBar {
     // When not creating the progress bar in hidden state, we will get many duplicate lines.
     // I don't know exactly why.
     let pb = ProgressBar::with_draw_target(Some(100), ProgressDrawTarget::hidden());
