@@ -1,49 +1,97 @@
-use anyhow::bail;
+use anyhow::{bail, Context};
+use std::env;
+
 use reaboot_reapack::database::{CompatibilityInfo, Database};
 
-use thiserror::Error;
-
-use crate::api::{InstallationStage, ReabootConfig, ResolvedReabootConfig};
+use crate::api::{InstallationStage, InstallerConfig, ReabootBackendInfo, ResolvedInstallerConfig};
+use crate::file_util::file_or_dir_is_writable_or_creatable;
+use crate::reaper_platform::ReaperPlatform;
 use crate::reaper_resource_dir::ReaperResourceDir;
-use crate::reaper_target::ReaperTarget;
 use crate::{reapack_util, reaper_util};
 
-pub fn resolve_config(config: &ReabootConfig) -> Result<ResolvedReabootConfig, ResolveConfigError> {
-    let main_reaper_resource_dir = reaper_util::get_default_main_reaper_resource_dir()
-        .ok_or(ResolveConfigError::UnableToIdentifyHomeDir)?;
-    let reaper_target = config
-        .custom_reaper_target
-        .or(ReaperTarget::BUILD)
-        .ok_or(ResolveConfigError::RequireCustomReaperTarget)?;
-    let resolved_config = match &config.custom_reaper_resource_dir {
-        None => ResolvedReabootConfig {
-            reaper_resource_dir: main_reaper_resource_dir.into_inner(),
-            portable: false,
-            reaper_target,
-        },
-        Some(dir) => ResolvedReabootConfig {
-            reaper_resource_dir: dir.clone(),
-            portable: dir != main_reaper_resource_dir.as_ref(),
-            reaper_target,
-        },
+pub fn collect_backend_info() -> ReabootBackendInfo {
+    let (main_reaper_resource_dir, exists) =
+        if let Ok(dir) = reaper_util::get_default_main_reaper_resource_dir() {
+            let exists = dir.get().exists();
+            (Some(dir.into_inner()), exists)
+        } else {
+            (None, false)
+        };
+    ReabootBackendInfo {
+        main_reaper_resource_dir,
+        main_reaper_resource_dir_exists: exists,
+        inherent_reaper_platform: ReaperPlatform::BUILD,
+    }
+}
+
+pub fn resolve_config(config: InstallerConfig) -> anyhow::Result<ResolvedInstallerConfig> {
+    let main_reaper_resource_dir = reaper_util::get_default_main_reaper_resource_dir()?;
+    let (reaper_resource_dir, portable) = if let Some(d) = config.custom_reaper_resource_dir {
+        let d = ReaperResourceDir::new(d)?;
+        let portable = d != main_reaper_resource_dir;
+        (d, portable)
+    } else {
+        (main_reaper_resource_dir, true)
     };
-    Ok(resolved_config)
+    let exists = reaper_resource_dir.get().exists();
+    // Determine platform
+    let reaper_platform = config
+        .custom_platform
+        .or(ReaperPlatform::BUILD)
+        .context("ReaBoot is running on a platform that's not supported by REAPER. It's still possible do do an install for a supported platform but you need to choose it manually.")?;
+
+    // Prefer a sub dir of the destination REAPER resource dir as location for all temporary
+    // files, e.g. downloads. Rationale: Eventually, all downloaded files need to be moved
+    // to their final destination. This move is very fast if it's just a rename, not a copy
+    // operation. A rename is only possible if source file and destination directory are on
+    // the same mount ... and this is much more likely using this approach than to choose
+    // a random OS temp directory.
+    let temp_parent_dir = if let Some(d) = config.temp_parent_dir {
+        if file_or_dir_is_writable_or_creatable(&d) {
+            d
+        } else {
+            bail!("The custom temp parent dir you have provided is not writable");
+        }
+    } else {
+        let temp_reaboot_dir = reaper_resource_dir.temp_reaboot_dir();
+        if file_or_dir_is_writable_or_creatable(&temp_reaboot_dir) {
+            temp_reaboot_dir
+        } else {
+            // Fall back to OS temp dir as parent. This can be useful in dry mode.
+            env::temp_dir()
+        }
+    };
+    let resolved = ResolvedInstallerConfig {
+        reaper_resource_dir,
+        reaper_resource_dir_exists: exists,
+        reaper_resource_dir_is_portable: portable,
+        platform: reaper_platform,
+        package_urls: config.package_urls,
+        num_download_retries: config.num_download_retries.unwrap_or(3),
+        temp_parent_dir,
+        keep_temp_dir: config.keep_temp_dir,
+        concurrent_downloads: config.concurrent_downloads.unwrap_or(5),
+        dry_run: config.dry_run,
+        reaper_version: config.reaper_version.unwrap_or_default(),
+        skip_failed_packages: config.skip_failed_packages,
+    };
+    Ok(resolved)
 }
 
 pub async fn determine_initial_installation_stage(
-    reaper_resource_dir: &ReaperResourceDir,
-    reaper_target: ReaperTarget,
+    custom_reaper_resource_dir: &ReaperResourceDir,
+    platform: ReaperPlatform,
 ) -> anyhow::Result<InstallationStage> {
-    let reaper_installed = reaper_resource_dir.contains_reaper_ini();
+    let reaper_installed = custom_reaper_resource_dir.contains_reaper_ini();
     if !reaper_installed {
         return Ok(InstallationStage::NothingInstalled);
     };
     let reapack_lib_file =
-        reapack_util::get_default_reapack_shared_lib_file(reaper_resource_dir, reaper_target);
+        reapack_util::get_default_reapack_shared_lib_file(custom_reaper_resource_dir, platform);
     if !reapack_lib_file.exists() {
         return Ok(InstallationStage::InstalledReaper);
     }
-    let reapack_db_file = reaper_resource_dir.reapack_registry_db_file();
+    let reapack_db_file = custom_reaper_resource_dir.reapack_registry_db_file();
     if !reapack_db_file.exists() {
         // ReaPack library is installed but the DB file doesn't exist. There's no easy way to
         // find out if the ReaPack installation is up-to-date, so we better download the latest
@@ -66,12 +114,4 @@ pub async fn determine_initial_installation_stage(
             bail!("This ReaBoot version is too old to handle your installed ReaPack database. Please download the latest ReaBoot version! If this already is the latest ReaBoot version, please send a quick message to info@helgoboss.org!");
         }
     }
-}
-
-#[derive(Error, Debug)]
-pub enum ResolveConfigError {
-    #[error("Unable to identify home directory")]
-    UnableToIdentifyHomeDir,
-    #[error("ReaBoot is running on a platform that's not supported by REAPER. It's still possible do do an install for a supported platform but you need to choose it manually.")]
-    RequireCustomReaperTarget,
 }

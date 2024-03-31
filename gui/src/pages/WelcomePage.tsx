@@ -1,5 +1,4 @@
 import {mainStore} from "../globals.ts";
-import {MainButton} from "../components/MainButton.tsx";
 
 export function WelcomePage() {
     return (
@@ -11,9 +10,10 @@ export function WelcomePage() {
                         ReaBoot is an all-in-one installer for REAPER, ReaPack and the packages of your
                         choice.
                     </p>
-                    <MainButton onClick={() => mainStore.currentPageId = "pick-reaper"}>
+                    <button class="btn btn-primary"
+                            onClick={() => mainStore.currentPageId = "pick-reaper"}>
                         Let's go!
-                    </MainButton>
+                    </button>
                 </div>
             </div>
         </div>

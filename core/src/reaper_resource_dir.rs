@@ -2,10 +2,12 @@ use crate::file_util::get_first_existing_parent_dir;
 
 use anyhow::{ensure, Context};
 use ref_cast::RefCast;
+use serde::Serialize;
 use std::env;
 use std::path::{Path, PathBuf};
+use ts_rs::TS;
 
-#[derive(Clone, Debug, RefCast)]
+#[derive(Clone, Eq, PartialEq, Debug, Serialize, TS, RefCast)]
 #[repr(transparent)]
 pub struct ReaperResourceDir(PathBuf);
 

@@ -6,7 +6,7 @@ use ts_rs::TS;
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Serialize, Deserialize, TS)]
 #[ts(export)]
-pub enum ReaperTarget {
+pub enum ReaperPlatform {
     /// Rust: macos/aarch64
     MacOsAarch64,
     /// Rust: macos/x86
@@ -34,7 +34,7 @@ pub enum ReaperTargetFamily {
     Linux,
 }
 
-impl ReaperTarget {
+impl ReaperPlatform {
     pub const BUILD: Option<Self> = Self::from_reaboot_build();
 
     const fn from_reaboot_build() -> Option<Self> {
@@ -75,7 +75,7 @@ impl ReaperTarget {
     }
 
     pub const fn family(&self) -> ReaperTargetFamily {
-        use ReaperTarget::*;
+        use ReaperPlatform::*;
         use ReaperTargetFamily::*;
         match self {
             MacOsAarch64 | MacOsX86 | MacOsX86_64 => MacOs,
@@ -98,7 +98,7 @@ impl ReaperTarget {
 }
 
 pub enum ReaperTargetOrFamily {
-    Target(ReaperTarget),
+    Target(ReaperPlatform),
     Family(ReaperTargetFamily),
 }
 
@@ -108,17 +108,17 @@ impl ReaperTargetOrFamily {
         let value = match platform {
             All => return None,
             Darwin => Self::Family(ReaperTargetFamily::MacOs),
-            Darwin32 => Self::Target(ReaperTarget::MacOsX86),
-            Darwin64 => Self::Target(ReaperTarget::MacOsX86_64),
-            DarwinArm64 => Self::Target(ReaperTarget::MacOsAarch64),
+            Darwin32 => Self::Target(ReaperPlatform::MacOsX86),
+            Darwin64 => Self::Target(ReaperPlatform::MacOsX86_64),
+            DarwinArm64 => Self::Target(ReaperPlatform::MacOsAarch64),
             Linux => Self::Family(ReaperTargetFamily::Linux),
-            Linux32 => Self::Target(ReaperTarget::LinuxI686),
-            Linux64 => Self::Target(ReaperTarget::LinuxX86_64),
-            LinuxArmv7l => Self::Target(ReaperTarget::LinuxArmv7l),
-            LinuxAarch64 => Self::Target(ReaperTarget::LinuxAarch64),
+            Linux32 => Self::Target(ReaperPlatform::LinuxI686),
+            Linux64 => Self::Target(ReaperPlatform::LinuxX86_64),
+            LinuxArmv7l => Self::Target(ReaperPlatform::LinuxArmv7l),
+            LinuxAarch64 => Self::Target(ReaperPlatform::LinuxAarch64),
             Windows => Self::Family(ReaperTargetFamily::Windows),
-            Win32 => Self::Target(ReaperTarget::WindowsX86),
-            Win64 => Self::Target(ReaperTarget::WindowsX64),
+            Win32 => Self::Target(ReaperPlatform::WindowsX86),
+            Win64 => Self::Target(ReaperPlatform::WindowsX64),
         };
         Some(value)
     }

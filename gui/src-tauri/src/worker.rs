@@ -1,9 +1,8 @@
-use reaboot_core::api::{ReabootConfig, ReabootEvent};
-use reaboot_core::downloader::Downloader;
-use reaboot_core::installer::{Installer, InstallerConfig};
-use reaboot_core::reaboot_util;
-use reaboot_reapack::model::VersionRef;
 use tauri::async_runtime::Receiver;
+
+use reaboot_core::api::{InstallerConfig, ReabootEvent};
+use reaboot_core::installer::Installer;
+use reaboot_core::reaboot_util;
 
 use crate::app_handle::ReabootAppHandle;
 
@@ -13,8 +12,8 @@ pub struct ReabootWorker {
 }
 
 pub enum ReabootWorkerCommand {
-    EmitInitialInstallationEvents(ReabootConfig),
-    Install(ReabootConfig),
+    EmitInitialInstallationEvents(InstallerConfig),
+    Install(InstallerConfig),
 }
 
 impl ReabootWorker {
@@ -39,22 +38,24 @@ impl ReabootWorker {
                 self.process_install(config).await?;
             }
             ReabootWorkerCommand::EmitInitialInstallationEvents(config) => {
-                self.emit_initial_events(&config).await?;
+                self.emit_initial_events(config).await?;
             }
         }
         Ok(())
     }
-    async fn emit_initial_events(&self, config: &ReabootConfig) -> anyhow::Result<()> {
-        let resolved_config = reaboot_util::resolve_config(config)?;
+
+    async fn emit_initial_events(&self, config: InstallerConfig) -> anyhow::Result<()> {
+        let backend_info = reaboot_util::collect_backend_info();
+        let config = reaboot_util::resolve_config(config)?;
         let installation_stage = reaboot_util::determine_initial_installation_stage(
-            &resolved_config.reaper_resource_dir.clone().into(),
-            resolved_config.reaper_target,
+            &config.reaper_resource_dir,
+            config.platform,
         )
         .await?;
         self.app_handle
-            .emit_reaboot_event(ReabootEvent::ConfigResolved {
-                config: resolved_config,
-            });
+            .emit_reaboot_event(ReabootEvent::BackendInfoChanged { info: backend_info });
+        self.app_handle
+            .emit_reaboot_event(ReabootEvent::ConfigResolved { config });
         self.app_handle
             .emit_reaboot_event(ReabootEvent::InstallationStageChanged {
                 stage: installation_stage,
@@ -62,22 +63,9 @@ impl ReabootWorker {
         Ok(())
     }
 
-    async fn process_install(&self, config: ReabootConfig) -> anyhow::Result<()> {
-        let downloader = Downloader::new(3);
-        let resolved_config = reaboot_util::resolve_config(&config)?;
-        let installer_config = InstallerConfig {
-            resolved_config,
-            package_urls: vec![],
-            downloader,
-            temp_parent_dir: None,
-            keep_temp_dir: false,
-            concurrent_downloads: 5,
-            dry_run: false,
-            listener: self.app_handle.clone(),
-            reaper_version: VersionRef::Latest,
-            skip_failed_packages: false,
-        };
-        let installer = Installer::new(installer_config).await?;
+    async fn process_install(&self, config: InstallerConfig) -> anyhow::Result<()> {
+        let listener = self.app_handle.clone();
+        let installer = Installer::new(config, listener).await?;
         installer.install().await?;
         Ok(())
     }

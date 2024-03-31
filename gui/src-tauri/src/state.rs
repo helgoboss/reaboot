@@ -1,8 +1,8 @@
 use crate::worker::ReabootWorkerCommand;
-use reaboot_core::api::ReabootConfig;
+use reaboot_core::api::InstallerConfig;
 use std::sync::Mutex;
 
 pub struct ReabootAppState {
-    pub config: Mutex<ReabootConfig>,
+    pub installer_config: Mutex<InstallerConfig>,
     pub worker_command_sender: tauri::async_runtime::Sender<ReabootWorkerCommand>,
 }

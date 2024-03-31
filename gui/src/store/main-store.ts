@@ -12,8 +12,12 @@ export type MainStoreState = {
     resolvedConfig?: ResolvedReabootConfig,
     // Current installation stage.
     installationStage: InstallationStage,
-    // Additional package URLs to be installed.
+    // Package URLs to be installed.
     packageUrls: string[],
+    // Last-picked portable REAPER directory
+    portableReaperDir?: string,
+    // Whether a main REAPER installation exists on this machine
+    mainReaperInstallationExists: boolean,
 }
 
 export class MainStore {
@@ -40,5 +44,9 @@ export class MainStore {
 
     set packageUrls(value: string[]) {
         this.setState("packageUrls", value);
+    }
+
+    set portableReaperDir(value: string) {
+        this.setState("portableReaperDir", value);
     }
 }

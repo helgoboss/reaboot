@@ -13,13 +13,19 @@ tauri-build = { version = "1", features = [] }
 [dependencies]
 reaboot-core.workspace = true
 reaboot-reapack.workspace = true
+# GUI framework
 tauri = { workspace = true, features = ["shell-open", "dialog-open"] }
+# For (de)serializing commands and events
 serde = { workspace = true, features = ["derive"] }
+# For (de)serializing commands and events
 serde_json.workspace = true
+# Async runtime
 tokio = { workspace = true, features = ["time"] }
+# For easier error handling
 anyhow.workspace = true
-tempdir.workspace = true
+# For logging in frontend
 tauri-plugin-log.workspace = true
+# For logging in backend
 tracing.workspace = true
 
 [features]

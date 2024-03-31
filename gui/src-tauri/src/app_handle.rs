@@ -1,6 +1,5 @@
-use reaboot_core::api::{InstallationStage, ReabootConfig, ReabootError, ReabootEvent};
+use reaboot_core::api::{InstallationStage, ReabootError, ReabootEvent};
 use reaboot_core::installer::{InstallerListener, InstallerTask};
-use reaboot_core::reaboot_util;
 use std::fmt::Display;
 use tauri::{AppHandle, Manager};
 

@@ -4,7 +4,7 @@
 use std::sync::Mutex;
 
 use crate::app_handle::ReabootAppHandle;
-use reaboot_core::api::ReabootConfig;
+use reaboot_core::api::InstallerConfig;
 use tauri::Manager;
 use tauri_plugin_log::LogTarget;
 use tracing::log::LevelFilter;
@@ -21,7 +21,7 @@ fn main() {
     let (worker_command_sender, worker_command_receiver) = tauri::async_runtime::channel(1);
     let simple_command_state = ReabootAppState {
         worker_command_sender,
-        config: Mutex::new(ReabootConfig::default()),
+        installer_config: Mutex::new(InstallerConfig::default()),
     };
     tauri::Builder::default()
         .plugin(

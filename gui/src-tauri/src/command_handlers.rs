@@ -1,7 +1,7 @@
 use crate::app_handle::ReabootAppHandle;
 use crate::worker::ReabootWorkerCommand;
 use crate::ReabootAppState;
-use reaboot_core::api::{ReabootCommand, ReabootConfig};
+use reaboot_core::api::{InstallerConfig, ReabootCommand};
 use tauri::State;
 
 #[tauri::command]
@@ -12,7 +12,7 @@ pub fn reaboot_command(
 ) {
     let app_handle = ReabootAppHandle(app_handle);
     let result = match command {
-        ReabootCommand::Configure { config } => configure(config, state),
+        ReabootCommand::ConfigureInstallation { config } => configure(config, state),
         ReabootCommand::StartInstallation => install(state),
         ReabootCommand::CancelInstallation => {
             todo!()
@@ -23,8 +23,8 @@ pub fn reaboot_command(
     }
 }
 
-fn configure(config: ReabootConfig, state: State<ReabootAppState>) -> anyhow::Result<()> {
-    let mut current_config = state.config.lock().unwrap();
+fn configure(config: InstallerConfig, state: State<ReabootAppState>) -> anyhow::Result<()> {
+    let mut current_config = state.installer_config.lock().unwrap();
     *current_config = config;
     state.worker_command_sender.blocking_send(
         ReabootWorkerCommand::EmitInitialInstallationEvents(current_config.clone()),
@@ -33,7 +33,7 @@ fn configure(config: ReabootConfig, state: State<ReabootAppState>) -> anyhow::Re
 }
 
 fn install(state: State<ReabootAppState>) -> anyhow::Result<()> {
-    let current_config = state.config.lock().unwrap().clone();
+    let current_config = state.installer_config.lock().unwrap().clone();
     state
         .worker_command_sender
         .blocking_send(ReabootWorkerCommand::Install(current_config))?;

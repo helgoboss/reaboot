@@ -1,5 +1,5 @@
 import {ButtonRow} from "../components/ButtonRow.tsx";
-import {NavButton} from "../components/nav-button.tsx";
+import {NavButton} from "../components/NavButton.tsx";
 import {Page} from "../components/Page.tsx";
 import {Phase, PhasePanel, PhaseStatus} from "../components/PhasePanel.tsx";
 import {mainService, mainStore} from "../globals.ts";

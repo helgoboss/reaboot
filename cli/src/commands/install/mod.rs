@@ -7,10 +7,8 @@ use crate::commands::install::listener::CliInstallerListener;
 use crate::commands::install::report::print_report;
 use anyhow::{bail, Context};
 use clap::Args;
-use reaboot_core::api::ReabootConfig;
-use reaboot_core::downloader::Downloader;
-use reaboot_core::installer::{InstallError, Installer, InstallerConfig};
-use reaboot_core::reaboot_util::resolve_config;
+use reaboot_core::api::InstallerConfig;
+use reaboot_core::installer::{InstallError, Installer};
 use std::path::PathBuf;
 use url::Url;
 
@@ -66,30 +64,24 @@ pub struct InstallArgs {
 }
 
 pub async fn install(args: InstallArgs) -> anyhow::Result<()> {
-    let config = ReabootConfig {
-        custom_reaper_resource_dir: args.reaper_resource_dir,
-        package_urls: args.package_url.unwrap_or_default(),
-        custom_reaper_target: None,
-    };
-    let resolved_config = resolve_config(&config)?;
-    let downloader = Downloader::new(args.concurrent_downloads);
     let reaper_version = args
         .reaper_version
         .parse()
         .context("You didn't provide a valid REAPER version string.")?;
     let config = InstallerConfig {
-        resolved_config,
-        package_urls: config.package_urls,
-        downloader,
+        custom_reaper_resource_dir: args.reaper_resource_dir,
+        custom_platform: None,
+        package_urls: args.package_url.unwrap_or_default(),
+        num_download_retries: None,
         temp_parent_dir: args.temp_parent_dir,
-        concurrent_downloads: args.concurrent_downloads,
-        dry_run: args.dry_run,
-        listener: CliInstallerListener::new(),
         keep_temp_dir: args.keep_temp_dir,
+        concurrent_downloads: Some(args.concurrent_downloads),
+        dry_run: args.dry_run,
+        reaper_version: Some(reaper_version),
         skip_failed_packages: args.skip_failed_packages,
-        reaper_version,
     };
-    let installer = Installer::new(config).await?;
+    let listener = CliInstallerListener::new();
+    let installer = Installer::new(config, listener).await?;
     // Show REAPER EULA if necessary
     let skip_license_prompts = args.non_interactive || args.accept_licenses;
     if !skip_license_prompts && installer.reaper_is_installable() {

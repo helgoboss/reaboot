@@ -2,11 +2,13 @@ import {JSX} from "solid-js";
 
 type Props = {
     selected: boolean,
+    onClick?: (event: MouseEvent) => void,
     children: JSX.Element,
 }
 
 export function ProminentChoice(props: Props) {
-    return <div class="card card-compact w-2/3 min-h-28 bg-base-200 cursor-pointer">
+    return <div class="card card-compact w-2/3 min-h-28 bg-base-200 cursor-pointer"
+                onClick={props.onClick}>
         <div class="card-body flex flex-row items-center">
             <div class="flex-none px-4">
                 <input type="radio" class="radio radio-warning" checked={props.selected}/>
@@ -16,4 +18,4 @@ export function ProminentChoice(props: Props) {
             </div>
         </div>
     </div>;
-};
+}

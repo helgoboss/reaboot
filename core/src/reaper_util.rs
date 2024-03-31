@@ -1,5 +1,5 @@
 use crate::file_util::move_dir_contents;
-use crate::reaper_target::ReaperTarget;
+use crate::reaper_platform::ReaperPlatform;
 use anyhow::{anyhow, bail, ensure, Context};
 
 use reaboot_reapack::model::{VersionName, VersionRef};
@@ -18,10 +18,9 @@ const LATEST_UNSTABLE_VERSION_URL: &str = "https://www.landoleet.org/whatsnew.tx
 const EULA_URL: &str = "https://www.reaper.fm/license.txt";
 
 /// Returns the expected location of the REAPER main resource directory, even if it doesn't exist.
-///
-/// Returns `None` if the home directory couldn't be identified.
-pub fn get_default_main_reaper_resource_dir() -> Option<ReaperResourceDir> {
-    Some(dirs::config_dir()?.join("REAPER").into())
+pub fn get_default_main_reaper_resource_dir() -> anyhow::Result<ReaperResourceDir> {
+    let config_dir = dirs::config_dir().context("couldn't identify home directory")?;
+    Ok(config_dir.join("REAPER").into())
 }
 
 pub struct ReaperInstallerAsset {
@@ -31,7 +30,7 @@ pub struct ReaperInstallerAsset {
 }
 
 pub async fn get_latest_reaper_installer_asset(
-    reaper_target: ReaperTarget,
+    reaper_target: ReaperPlatform,
     version_ref: &VersionRef,
 ) -> anyhow::Result<ReaperInstallerAsset> {
     let version = resolve_reaper_version(version_ref).await?;
@@ -217,21 +216,21 @@ pub async fn get_reaper_eula() -> anyhow::Result<String> {
 }
 
 fn get_os_specific_reaper_installer_file_name(
-    reaper_target: ReaperTarget,
+    reaper_target: ReaperPlatform,
     version: &VersionName,
 ) -> String {
     let version = version.to_string().replace('.', "");
     match reaper_target {
         // TODO-medium What about the "macOS 10.5-10.14" download ("reaper711_x86_64.dmg")?
-        ReaperTarget::MacOsAarch64 | ReaperTarget::MacOsX86_64 => {
+        ReaperPlatform::MacOsAarch64 | ReaperPlatform::MacOsX86_64 => {
             format!("reaper{version}_universal.dmg")
         }
-        ReaperTarget::MacOsX86 => format!("reaper{version}_i386.dmg"),
-        ReaperTarget::WindowsX86 => format!("reaper{version}-install.exe"),
-        ReaperTarget::WindowsX64 => format!("reaper{version}_x64-install.exe"),
-        ReaperTarget::LinuxAarch64 => format!("reaper{version}_linux_aarch64.tar.xz"),
-        ReaperTarget::LinuxArmv7l => format!("reaper{version}_linux_armv7l.tar.xz"),
-        ReaperTarget::LinuxI686 => format!("reaper{version}_linux_i686.tar.xz"),
-        ReaperTarget::LinuxX86_64 => format!("reaper{version}_linux_x86_64.tar.xz"),
+        ReaperPlatform::MacOsX86 => format!("reaper{version}_i386.dmg"),
+        ReaperPlatform::WindowsX86 => format!("reaper{version}-install.exe"),
+        ReaperPlatform::WindowsX64 => format!("reaper{version}_x64-install.exe"),
+        ReaperPlatform::LinuxAarch64 => format!("reaper{version}_linux_aarch64.tar.xz"),
+        ReaperPlatform::LinuxArmv7l => format!("reaper{version}_linux_armv7l.tar.xz"),
+        ReaperPlatform::LinuxI686 => format!("reaper{version}_linux_i686.tar.xz"),
+        ReaperPlatform::LinuxX86_64 => format!("reaper{version}_linux_x86_64.tar.xz"),
     }
 }

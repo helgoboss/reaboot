@@ -9,8 +9,8 @@ pub mod multi_downloader;
 mod preparation_report;
 pub mod reaboot_util;
 pub mod reapack_util;
+pub mod reaper_platform;
 pub mod reaper_resource_dir;
-pub mod reaper_target;
 pub mod reaper_util;
 pub mod task_tracker;
 

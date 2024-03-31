@@ -1,6 +1,6 @@
 use crate::installer::DownloadedIndex;
 use crate::multi_downloader::DownloadWithPayload;
-use crate::reaper_target::ReaperTarget;
+use crate::reaper_platform::ReaperPlatform;
 
 use reaboot_reapack::index::{Category, IndexPackageType, IndexPlatform, Package, Source, Version};
 use reaboot_reapack::model::{
@@ -63,7 +63,7 @@ pub fn determine_files_to_be_downloaded<'a>(
     package_urls: &'a [PackageUrl],
     indexes: &'a HashMap<Url, DownloadedIndex>,
     installed_packages_to_keep: &[InstalledPackage],
-    reaper_target: ReaperTarget,
+    reaper_target: ReaperPlatform,
 ) -> (Vec<QualifiedSource<'a>>, PreDownloadFailures<'a>) {
     let deduplicated_package_urls = HashSet::from_iter(package_urls);
     let (versions, package_descriptors_with_failures) =
@@ -238,7 +238,7 @@ fn weed_out_packages_with_version_conflicts(
 
 fn resolve_package_sources_weeding_out_platform_incompatible_versions(
     versions: Vec<QualifiedVersion>,
-    reaper_target: ReaperTarget,
+    reaper_target: ReaperPlatform,
 ) -> (Vec<QualifiedSource>, Vec<QualifiedVersion>) {
     let mut incompatible_versions = vec![];
     let sources: Vec<_> = versions
@@ -289,7 +289,7 @@ fn resolve_package_sources_weeding_out_platform_incompatible_versions(
 
 fn get_platform_compatible_sources(
     version: &Version,
-    reaper_target: ReaperTarget,
+    reaper_target: ReaperPlatform,
 ) -> impl Iterator<Item = &Source> {
     version.sources().filter(move |source| {
         let IndexPlatform::Known(platform) = &source.platform else {
