@@ -1,6 +1,6 @@
 import {Observable} from "rxjs";
-import {ReabootEvent} from "../../../core/bindings/ReabootEvent.ts";
-import {ReabootConfig} from "../../../core/bindings/ReabootConfig.ts";
+import {InstallerConfig} from "../../../core/bindings/InstallerConfig.ts";
+import {ReabootEvent} from "../../src-tauri/bindings/ReabootEvent.ts";
 
 // ReaBoot main service.
 export type MainService = {
@@ -16,7 +16,7 @@ export type MainService = {
     //
     // This will cause the backend to send a basic state change event and is therefore suitable for getting
     // all necessary initial data.
-    configure: (config: ReabootConfig) => void,
+    configure: (config: InstallerConfig) => void,
     // Starts the installation process.
     startInstallation: () => void,
     // Cancels the installation process.

@@ -12,6 +12,7 @@ use tracing::log::LevelFilter;
 use crate::state::ReabootAppState;
 use crate::worker::ReabootWorker;
 
+mod api;
 mod app_handle;
 mod command_handlers;
 mod state;

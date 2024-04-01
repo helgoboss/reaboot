@@ -9,15 +9,12 @@ import {toast, Toaster} from "solid-toast";
 import {PickReaperPage} from "./pages/PickReaperPage.tsx";
 import {InstallPage} from "./pages/InstallPage.tsx";
 import {PickPackagesPage} from "./pages/PickPackagesPage.tsx";
+import {configureInstallation} from "./epics/installation.ts";
 
 export function App() {
     keepSyncingStateFromBackendToStore();
     onMount(() => {
-        mainService.configure({
-            package_urls: mainStore.state.packageUrls,
-            custom_reaper_resource_dir: undefined,
-            custom_reaper_target: undefined,
-        });
+        configureInstallation({portable: false});
     });
     const page = () => pages.find((p) => p.id == mainStore.state.currentPageId)!;
     const resolvedConfig = () => mainStore.state.resolvedConfig;
@@ -46,14 +43,26 @@ function keepSyncingStateFromBackendToStore() {
     debug("Subscribing to ReaBoot events...");
     mainService.getNormalEvents().subscribe((evt) => {
         switch (evt.kind) {
+            case "BackendInfoChanged":
+                mainStore.backendInfo = evt.info;
+                break;
             case "ConfigResolved":
                 mainStore.resolvedConfig = evt.config;
                 break;
             case "InstallationStageChanged":
-                mainStore.installationStage = evt.stage;
+                mainStore.installationStage = {
+                    label: evt.label,
+                    stage: evt.stage,
+                };
+                if (evt.stage.kind === "Finished" || evt.stage.kind === "Failed") {
+                    mainStore.currentPageId = "done";
+                }
+                break;
+            case "InstallationReportReady":
+                mainStore.installationReportMarkdown = evt.markdown;
                 break;
             case "Error":
-                toast.error(evt.error.display_msg);
+                toast.error(evt.display_msg);
                 break;
         }
     });

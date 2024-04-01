@@ -16,10 +16,12 @@
     "rxjs": "^7.8.1",
     "solid-icons": "^1.1.0",
     "solid-js": "^1.7.8",
+    "solid-markdown": "^2.0.1",
     "solid-toast": "^0.5.0",
     "tauri-plugin-log-api": "github:tauri-apps/tauri-plugin-log#v1"
   },
   "devDependencies": {
+    "@tailwindcss/typography": "^0.5.12",
     "@tauri-apps/cli": "^1.5.11",
     "autoprefixer": "^10.4.18",
     "daisyui": "^4.9.0",

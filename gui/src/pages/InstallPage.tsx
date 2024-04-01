@@ -7,24 +7,24 @@ import {from, Index} from "solid-js";
 import {InstallationStage} from "../../../core/bindings/InstallationStage.ts";
 
 export function InstallPage() {
-    const installationStatus = mainStore.state.installationStage;
+    const installationStageContainer = mainStore.state.installationStage;
     const installationStatusProgress = from(mainService.getProgressEvents());
     const effectiveInstallationStatusProgress = () => installationStatusProgress() ?? 0.0;
-    const phases = () => derivePhases(installationStatus);
+    const phases = () => derivePhases(installationStageContainer.stage);
     const progressInPercent = () => effectiveInstallationStatusProgress() * 100;
     return (
         <Page>
             <div class="grow flex flex-row items-stretch gap-8">
-                <div class="grow-2 flex flex-col gap-4">
+                <div class="grow-0 basis-1/3 flex flex-col gap-4">
                     <Index each={phases()}>
                         {
                             (phase) => <PhasePanel {...phase()}/>
                         }
                     </Index>
                 </div>
-                <div class="grow-3 card bg-base-300">
+                <div class="grow-0 basis-2/3 card bg-base-300">
                     <div class="card-body text-center">
-                        <h2>{installationStatus.kind}</h2>
+                        <h2>{installationStageContainer.label}</h2>
                         <div>
                             <progress class="progress w-56" value={progressInPercent()} max="100"></progress>
                         </div>
@@ -45,15 +45,15 @@ function derivePhases(stage: InstallationStage): Phase[] {
     const actualTaskPos = getTaskPos(stage);
     return [
         {
-            label: "Install REAPER",
+            label: "1. Install REAPER",
             status: getTaskStatus(actualTaskPos, INSTALL_REAPER_POS),
         },
         {
-            label: "Install ReaPack",
+            label: "2. Install ReaPack",
             status: getTaskStatus(actualTaskPos, INSTALL_REAPACK_POS),
         },
         {
-            label: "Install packages",
+            label: "3. Install packages",
             status: getTaskStatus(actualTaskPos, INSTALL_PACKAGES_POS),
         },
     ];
@@ -93,7 +93,8 @@ function getTaskPos(stage: InstallationStage) {
         case "ApplyingReaPackState":
         case "ApplyingPackage":
             return INSTALL_PACKAGES_POS;
-        case "Done":
+        case "Finished":
+        case "Failed":
             return DONE_POS;
     }
 }
@@ -104,4 +105,4 @@ const INSTALLED_REAPER_POS = 2;
 const INSTALL_REAPACK_POS = 3;
 const INSTALLED_REAPACK_POS = 4;
 const INSTALL_PACKAGES_POS = 5;
-const DONE_POS = 4;
+const DONE_POS = 6;

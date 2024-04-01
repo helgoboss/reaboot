@@ -1,7 +1,8 @@
+use crate::api::ReabootCommand;
 use crate::app_handle::ReabootAppHandle;
 use crate::worker::ReabootWorkerCommand;
 use crate::ReabootAppState;
-use reaboot_core::api::{InstallerConfig, ReabootCommand};
+use reaboot_core::api::InstallerConfig;
 use tauri::State;
 
 #[tauri::command]

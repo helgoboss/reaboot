@@ -1,5 +1,14 @@
-import {FaSolidCheck} from "solid-icons/fa";
+import {
+    FaRegularCircle,
+    FaRegularCircleCheck,
+    FaRegularSquare,
+    FaRegularSquareCheck,
+    FaSolidCheck,
+    FaSolidSquare,
+    FaSolidSquareCheck
+} from "solid-icons/fa";
 import {Match, Switch} from "solid-js";
+import {BsCircle} from "solid-icons/bs";
 
 export type Phase = { label: string, status: PhaseStatus };
 
@@ -26,10 +35,13 @@ export function PhasePanel(props: Phase) {
         </div>
         <div>
             <Switch>
-                <Match when={props.status == "done"}>
-                    <FaSolidCheck size={24}/>
+                <Match when={props.status === "todo"}>
+                    <FaRegularCircle size={24}/>
                 </Match>
-                <Match when={props.status == "in-progress"}>
+                <Match when={props.status === "done"}>
+                    <FaRegularCircleCheck size={24}/>
+                </Match>
+                <Match when={props.status === "in-progress"}>
                     <span class="loading loading-dots loading-sm"></span>
                 </Match>
             </Switch>

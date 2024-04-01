@@ -11,6 +11,9 @@ export const mainStore = new MainStore({
     resolvedConfig: undefined,
     packageUrls: [],
     installationStage: {
-        kind: "NothingInstalled",
+        stage: {
+            kind: "NothingInstalled",
+        },
+        label: "",
     }
 });

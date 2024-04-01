@@ -31,7 +31,7 @@ pub fn resolve_config(config: InstallerConfig) -> anyhow::Result<ResolvedInstall
         let portable = d != main_reaper_resource_dir;
         (d, portable)
     } else {
-        (main_reaper_resource_dir, true)
+        (main_reaper_resource_dir, false)
     };
     let exists = reaper_resource_dir.get().exists();
     // Determine platform
@@ -64,7 +64,7 @@ pub fn resolve_config(config: InstallerConfig) -> anyhow::Result<ResolvedInstall
     let resolved = ResolvedInstallerConfig {
         reaper_resource_dir,
         reaper_resource_dir_exists: exists,
-        reaper_resource_dir_is_portable: portable,
+        portable,
         platform: reaper_platform,
         package_urls: config.package_urls,
         num_download_retries: config.num_download_retries.unwrap_or(3),

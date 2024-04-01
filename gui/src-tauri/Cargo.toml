@@ -27,6 +27,8 @@ anyhow.workspace = true
 tauri-plugin-log.workspace = true
 # For logging in backend
 tracing.workspace = true
+# For generating TypeScript types
+ts-rs.workspace = true
 
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!

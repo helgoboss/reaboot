@@ -1,4 +1,5 @@
-use reaboot_core::api::{InstallationStage, ReabootError, ReabootEvent};
+use crate::api::ReabootEvent;
+use reaboot_core::api::InstallationStage;
 use reaboot_core::installer::{InstallerListener, InstallerTask};
 use std::fmt::Display;
 use tauri::{AppHandle, Manager};
@@ -8,10 +9,9 @@ pub struct ReabootAppHandle(pub AppHandle);
 
 impl ReabootAppHandle {
     pub fn emit_generic_error(&self, error: impl Display) {
-        let error = ReabootError {
+        self.emit_reaboot_event(ReabootEvent::Error {
             display_msg: format!("{error:#}"),
-        };
-        self.emit_reaboot_event(ReabootEvent::Error { error })
+        })
     }
 
     pub fn emit_reaboot_event(&self, evt: ReabootEvent) {
@@ -25,7 +25,7 @@ impl ReabootAppHandle {
 
 impl InstallerListener for ReabootAppHandle {
     fn installation_stage_changed(&self, stage: InstallationStage) {
-        self.emit_reaboot_event(ReabootEvent::InstallationStageChanged { stage });
+        self.emit_reaboot_event(ReabootEvent::installation_stage_changed(stage));
     }
 
     fn installation_stage_progressed(&self, progress: f64) {
@@ -33,26 +33,23 @@ impl InstallerListener for ReabootAppHandle {
     }
 
     fn task_started(&self, task_id: u32, task: InstallerTask) {
-        todo!()
+        self.emit_reaboot_event(ReabootEvent::TaskStarted {
+            task_id,
+            label: task.label,
+        });
     }
 
     fn task_progressed(&self, task_id: u32, progress: f64) {
-        todo!()
+        self.emit_reaboot_event(ReabootEvent::TaskProgressed { task_id, progress });
     }
 
     fn task_finished(&self, task_id: u32) {
-        todo!()
+        self.emit_reaboot_event(ReabootEvent::TaskFinished { task_id });
     }
 
-    fn warn(&self, message: impl Display) {
-        todo!()
-    }
+    fn warn(&self, message: impl Display) {}
 
-    fn info(&self, message: impl Display) {
-        todo!()
-    }
+    fn info(&self, message: impl Display) {}
 
-    fn debug(&self, message: impl Display) {
-        todo!()
-    }
+    fn debug(&self, message: impl Display) {}
 }

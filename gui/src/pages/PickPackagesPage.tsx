@@ -1,6 +1,7 @@
 import {ButtonRow} from "../components/ButtonRow.tsx";
 import {NavButton} from "../components/NavButton.tsx";
 import {Page} from "../components/Page.tsx";
+import {mainStore} from "../globals.ts";
 
 export function PickPackagesPage() {
     return (
@@ -21,7 +22,7 @@ export function PickPackagesPage() {
                 ReaBoot again.
             </p>
             <ButtonRow>
-                <NavButton>Continue</NavButton>
+                <NavButton onClick={() => mainStore.currentPageId = "install"}>Continue</NavButton>
             </ButtonRow>
         </Page>
     );

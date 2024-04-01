@@ -1,8 +1,9 @@
 use tauri::async_runtime::Receiver;
 
-use reaboot_core::api::{InstallerConfig, ReabootEvent};
-use reaboot_core::installer::Installer;
-use reaboot_core::reaboot_util;
+use crate::api::ReabootEvent;
+use reaboot_core::api::InstallerConfig;
+use reaboot_core::installer::{InstallError, Installer};
+use reaboot_core::{reaboot_util, PreparationReport, PreparationReportAsMarkdown};
 
 use crate::app_handle::ReabootAppHandle;
 
@@ -57,16 +58,26 @@ impl ReabootWorker {
         self.app_handle
             .emit_reaboot_event(ReabootEvent::ConfigResolved { config });
         self.app_handle
-            .emit_reaboot_event(ReabootEvent::InstallationStageChanged {
-                stage: installation_stage,
-            });
+            .emit_reaboot_event(ReabootEvent::installation_stage_changed(installation_stage));
         Ok(())
     }
 
     async fn process_install(&self, config: InstallerConfig) -> anyhow::Result<()> {
         let listener = self.app_handle.clone();
         let installer = Installer::new(config, listener).await?;
-        installer.install().await?;
+        let (report, packages_have_been_installed) = match installer.install().await {
+            Ok(report) => (Some(report), true),
+            Err(e) => match e {
+                InstallError::SomePackagesFailed(report) => (Some(report), false),
+                InstallError::Other(e) => (None, false),
+            },
+        };
+        if let Some(r) = report {
+            let markdown =
+                PreparationReportAsMarkdown::new(&r, packages_have_been_installed).to_string();
+            self.app_handle
+                .emit_reaboot_event(ReabootEvent::InstallationReportReady { markdown });
+        }
         Ok(())
     }
 }

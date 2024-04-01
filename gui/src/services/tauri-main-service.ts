@@ -3,9 +3,9 @@ import {Observable} from "rxjs";
 import {invoke} from "@tauri-apps/api/tauri";
 import {listen} from "@tauri-apps/api/event";
 import {debug} from "tauri-plugin-log-api";
-import {ReabootEvent} from "../../../core/bindings/ReabootEvent.ts";
-import {ReabootCommand} from "../../../core/bindings/ReabootCommand.ts";
-import {ReabootConfig} from "../../../core/bindings/ReabootConfig.ts";
+import {InstallerConfig} from "../../../core/bindings/InstallerConfig.ts";
+import {ReabootEvent} from "../../src-tauri/bindings/ReabootEvent.ts";
+import {ReabootCommand} from "../../src-tauri/bindings/ReabootCommand.ts";
 
 export class TauriMainService implements MainService {
     private normalEvents: Observable<ReabootEvent> = new Observable((subscriber) => {
@@ -25,9 +25,9 @@ export class TauriMainService implements MainService {
         });
     });
 
-    configure(config: ReabootConfig): void {
+    configure(config: InstallerConfig): void {
         this.sendCommand({
-            kind: "Configure",
+            kind: "ConfigureInstallation",
             config
         })
     }

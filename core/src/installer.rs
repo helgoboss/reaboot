@@ -33,6 +33,7 @@ use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
 
 use std::fs;
+use std::future::Future;
 use std::io::BufReader;
 use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
@@ -110,7 +111,7 @@ impl<L: InstallerListener> Installer<L> {
             dry_run: config.dry_run,
             skip_failed_packages: config.skip_failed_packages,
             reaper_version: config.reaper_version,
-            portable: config.reaper_resource_dir_is_portable,
+            portable: config.portable,
             temp_dir_guard: Mutex::new(temp_dir_guard),
         };
         Ok(installer)
@@ -129,7 +130,20 @@ impl<L: InstallerListener> Installer<L> {
         .await
     }
 
-    pub async fn install(self) -> Result<PreparationReport, InstallError> {
+    pub async fn install(mut self) -> Result<PreparationReport, InstallError> {
+        let result = self.install_internal().await;
+        let final_stage = match &result {
+            Ok(_) => InstallationStage::Finished,
+            Err(e) => InstallationStage::Failed {
+                display_msg: e.to_string(),
+            },
+        };
+        self.listener.installation_stage_changed(final_stage);
+        self.clean_up();
+        result
+    }
+
+    async fn install_internal(&mut self) -> Result<PreparationReport, InstallError> {
         // Determine initial installation status, so that we know where to start off
         let initial_installation_stage = self.determine_initial_installation_stage().await?;
         // Download and extract REAPER if necessary
@@ -193,11 +207,9 @@ impl<L: InstallerListener> Installer<L> {
             &package_installation_plans,
         );
         if self.dry_run {
-            self.clean_up();
             return Ok(preparation_report);
         }
         if !self.skip_failed_packages && preparation_report.summary().failures > 0 {
-            self.clean_up();
             return Err(InstallError::SomePackagesFailed(preparation_report));
         }
         // Actually apply the changes (by copying/moving all stuff to the destination dir)
@@ -216,7 +228,6 @@ impl<L: InstallerListener> Installer<L> {
         // Apply packages
         self.apply_packages(package_installation_plans)
             .context("moving packages failed")?;
-        self.clean_up();
         Ok(preparation_report)
     }
 

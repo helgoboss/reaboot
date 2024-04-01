@@ -1,23 +1,33 @@
 import {createStore, SetStoreFunction} from "solid-js/store";
 import {PageId} from "../model/page.ts";
-import {ResolvedReabootConfig} from "../../../core/bindings/ResolvedReabootConfig.ts";
 import {InstallationStage} from "../../../core/bindings/InstallationStage.ts";
+import {ReabootBackendInfo} from "../../../core/bindings/ReabootBackendInfo.ts";
+import {ResolvedInstallerConfig} from "../../src-tauri/bindings/ResolvedInstallerConfig.ts";
 
 export type MainStoreState = {
     // ID of the currently displayed page.
     currentPageId: PageId,
+    // Basic info from the backend.
+    //
+    // If undefined, it means the backend hasn't sent its info yet.
+    backendInfo?: ReabootBackendInfo,
     // Resolved configuration.
     //
     // If undefined, it means the installer has not been configured yet.
-    resolvedConfig?: ResolvedReabootConfig,
+    resolvedConfig?: ResolvedInstallerConfig,
     // Current installation stage.
-    installationStage: InstallationStage,
+    installationStage: InstallationStageContainer,
     // Package URLs to be installed.
     packageUrls: string[],
     // Last-picked portable REAPER directory
     portableReaperDir?: string,
-    // Whether a main REAPER installation exists on this machine
-    mainReaperInstallationExists: boolean,
+    // Installation report, markdown-formatted
+    installationReportMarkdown?: string,
+}
+
+export type InstallationStageContainer = {
+    label: string,
+    stage: InstallationStage,
 }
 
 export class MainStore {
@@ -34,11 +44,15 @@ export class MainStore {
         this.setState("currentPageId", pageId);
     }
 
-    set resolvedConfig(value: ResolvedReabootConfig) {
+    set backendInfo(value: ReabootBackendInfo) {
+        this.setState("backendInfo", value);
+    }
+
+    set resolvedConfig(value: ResolvedInstallerConfig) {
         this.setState("resolvedConfig", value);
     }
 
-    set installationStage(value: InstallationStage) {
+    set installationStage(value: InstallationStageContainer) {
         this.setState("installationStage", value);
     }
 
@@ -48,5 +62,9 @@ export class MainStore {
 
     set portableReaperDir(value: string) {
         this.setState("portableReaperDir", value);
+    }
+
+    set installationReportMarkdown(value: string) {
+        this.setState("installationReportMarkdown", value);
     }
 }

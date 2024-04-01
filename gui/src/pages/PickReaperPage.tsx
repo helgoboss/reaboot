@@ -4,13 +4,14 @@ import {NavButton} from "../components/NavButton.tsx";
 import {Page} from "../components/Page.tsx";
 import {FaRegularFolderOpen} from "solid-icons/fa";
 import {open} from "@tauri-apps/api/dialog";
-import {mainService, mainStore} from "../globals.ts";
+import {mainStore} from "../globals.ts";
 import {Match, Show, Switch} from "solid-js";
+import {configureInstallation} from "../epics/installation.ts";
 
 export function PickReaperPage() {
+    const backendInfo = mainStore.state.backendInfo;
     const resolvedConfig = mainStore.state.resolvedConfig;
-    const installationStage = mainStore.state.installationStage;
-    if (!resolvedConfig) {
+    if (!backendInfo || !resolvedConfig) {
         return (
             <div>Waiting for data...</div>
         );
@@ -22,31 +23,33 @@ export function PickReaperPage() {
             </p>
             <p class="text-center">
                 <Switch>
-                    <Match when={installationStage.kind === "NothingInstalled"}>
-                        ReaBoot hasn't found any main REAPER installation on your machine.
-                    </Match>
-                    <Match when={installationStage.kind !== "NothingInstalled"}>
+                    <Match when={backendInfo.main_reaper_resource_dir_exists}>
                         ReaBoot has detected an existing main REAPER installation on your machine.
+                    </Match>
+                    <Match when={true}>
+                        ReaBoot hasn't found any main REAPER installation on your machine.
                     </Match>
                 </Switch>
             </p>
             <div class="grow flex flex-col items-center justify-center gap-4">
-                <ProminentChoice selected={!resolvedConfig.portable} onClick={() => configure(false)}>
+                <ProminentChoice selected={!resolvedConfig.portable}
+                                 onClick={() => configureInstallation({portable: false})}>
                     <h2 class="card-title">Main REAPER installation</h2>
                     <p class="text-base-content/50">
                         <Show when={!resolvedConfig.portable}>
                             <Switch>
-                                <Match when={installationStage.kind === "NothingInstalled"}>
-                                    Create a new main REAPER installation.
-                                </Match>
-                                <Match when={installationStage.kind !== "NothingInstalled"}>
+                                <Match when={backendInfo.main_reaper_resource_dir_exists}>
                                     Add packages to your existing main REAPER installation.
+                                </Match>
+                                <Match when={true}>
+                                    Create a new main REAPER installation.
                                 </Match>
                             </Switch>
                         </Show>
                     </p>
                 </ProminentChoice>
-                <ProminentChoice selected={resolvedConfig.portable} onClick={() => configurePortable(false)}>
+                <ProminentChoice selected={resolvedConfig.portable}
+                                 onClick={() => configurePortable(false)}>
                     <div class="flex flex-row items-center gap-4">
                         <div class="flex flex-col">
                             <h2 class="card-title">Portable REAPER installation</h2>
@@ -65,7 +68,7 @@ export function PickReaperPage() {
                 </ProminentChoice>
             </div>
             <ButtonRow>
-                <NavButton>Continue</NavButton>
+                <NavButton onClick={() => mainStore.currentPageId = "pick-packages"}>Continue</NavButton>
             </ButtonRow>
         </Page>
     );
@@ -75,7 +78,7 @@ async function configurePortable(forcePick: boolean) {
     if (forcePick || !mainStore.state.portableReaperDir) {
         await pickPortableReaperDir();
     }
-    configure(true);
+    configureInstallation({portable: true});
 }
 
 async function pickPortableReaperDir() {
@@ -88,11 +91,4 @@ async function pickPortableReaperDir() {
         return;
     }
     mainStore.portableReaperDir = chosenDir;
-}
-
-function configure(portable: boolean) {
-    mainService.configure({
-        custom_reaper_resource_dir: portable ? mainStore.state.portableReaperDir : undefined,
-        package_urls: mainStore.state.packageUrls,
-    });
 }

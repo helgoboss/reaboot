@@ -10,6 +10,7 @@ use strum::{AsRefStr, EnumIs};
 use ts_rs::TS;
 use url::Url;
 
+/// Basic configuration-independent information gathered by the backend.
 #[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
 pub struct ReabootBackendInfo {
@@ -26,20 +27,7 @@ pub struct ReabootBackendInfo {
     pub inherent_reaper_platform: Option<ReaperPlatform>,
 }
 
-/// A simple fire-and-forget command sent from the frontend to the backend.
-#[derive(Clone, Debug, Deserialize, TS)]
-#[ts(export)]
-#[serde(tag = "kind")]
-pub enum ReabootCommand {
-    /// Applies the given installer configuration.
-    ConfigureInstallation { config: InstallerConfig },
-    /// Starts the installation process.
-    StartInstallation,
-    /// Cancels the installation process.
-    CancelInstallation,
-}
-
-/// Command for configuring the installation process.
+/// Data structure for configuring the installer from the frontend.
 #[derive(Clone, Debug, Default, Deserialize, TS)]
 #[ts(export)]
 pub struct InstallerConfig {
@@ -92,12 +80,19 @@ pub struct InstallerConfig {
     pub skip_failed_packages: bool,
 }
 
+/// Resolved installer configuration (derived from the frontend installer config).
 #[derive(Clone, Debug, Serialize, TS)]
 pub struct ResolvedInstallerConfig {
+    /// Resolved REAPER resource directory.
     pub reaper_resource_dir: ReaperResourceDir,
+    /// Whether the resolved REAPER resource directory exists.
     pub reaper_resource_dir_exists: bool,
-    pub reaper_resource_dir_is_portable: bool,
+    /// Whether the resolved REAPER resource directory belongs to the main REAPER installation
+    /// or to a portable REAPER installation.
+    pub portable: bool,
+    /// Resolved REAPER platform.
     pub platform: ReaperPlatform,
+    /// Resolved package URLs (includes URLs of packages that will be installed anyway).
     pub package_urls: Vec<Url>,
     pub num_download_retries: u32,
     pub temp_parent_dir: PathBuf,
@@ -106,24 +101,6 @@ pub struct ResolvedInstallerConfig {
     pub dry_run: bool,
     pub reaper_version: VersionRef,
     pub skip_failed_packages: bool,
-}
-
-/// Event emitted by the backend.
-#[derive(Clone, Debug, Serialize, TS)]
-#[ts(export)]
-#[serde(tag = "kind")]
-pub enum ReabootEvent {
-    Error { error: ReabootError },
-    BackendInfoChanged { info: ReabootBackendInfo },
-    ConfigResolved { config: ResolvedInstallerConfig },
-    InstallationStageChanged { stage: InstallationStage },
-}
-
-/// Error.
-#[derive(Clone, Debug, Serialize, TS)]
-#[ts(export)]
-pub struct ReabootError {
-    pub display_msg: String,
 }
 
 /// Status of the installation process.
@@ -201,8 +178,11 @@ pub enum InstallationStage {
     /// Moving the files of each package to its final destination and updating the database.
     #[strum(serialize = "Applying package")]
     ApplyingPackage { package: PackageInfo },
-    #[strum(serialize = "Done")]
-    Done,
+    #[strum(serialize = "Installation failed")]
+    Failed { display_msg: String },
+    /// Installation has errored or is finished.
+    #[strum(serialize = "Finished successfully")]
+    Finished,
 }
 
 /// Information about an ongoing file download.
@@ -262,6 +242,11 @@ impl Display for InstallationStage {
             }
             InstallationStage::ApplyingPackage { package } => {
                 write!(f, "{simple_name}: {}", &package.name)?;
+            }
+            InstallationStage::Failed {
+                display_msg: message,
+            } => {
+                write!(f, "{simple_name}: {}", message)?;
             }
             _ => {
                 simple_name.fmt(f)?;
