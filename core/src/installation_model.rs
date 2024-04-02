@@ -2,6 +2,7 @@ use crate::installer::DownloadedIndex;
 use crate::multi_downloader::DownloadWithPayload;
 use crate::reaper_platform::ReaperPlatform;
 
+use camino::Utf8Path;
 use reaboot_reapack::index::{Category, IndexPackageType, IndexPlatform, Package, Source, Version};
 use reaboot_reapack::model::{
     InstalledPackage, LightPackageId, LightVersionId, PackageType, PackageUrl, VersionRef,
@@ -150,6 +151,16 @@ impl<'a> QualifiedVersion<'a> {
 impl<'a> QualifiedSource<'a> {
     pub fn package_id(&self) -> LightPackageId<'a> {
         self.version.id().package_id
+    }
+
+    pub fn simple_file_name(&self) -> &str {
+        let file_name = self
+            .source
+            .file
+            .as_ref()
+            .unwrap_or_else(|| &self.version.package.package.name);
+        let path = Utf8Path::new(file_name);
+        path.file_name().unwrap_or("")
     }
 }
 

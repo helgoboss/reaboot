@@ -60,7 +60,7 @@ pub struct InstallArgs {
     reaper_version: String,
     /// URLs of ReaPack packages to be installed.
     #[arg(short, long)]
-    package_url: Option<Vec<Url>>,
+    package_url: Option<Vec<String>>,
 }
 
 pub async fn install(args: InstallArgs) -> anyhow::Result<()> {

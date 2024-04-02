@@ -5,7 +5,7 @@ import {Page} from "../components/Page.tsx";
 import {open} from "@tauri-apps/api/dialog";
 import {mainStore} from "../globals.ts";
 import {Match, Switch} from "solid-js";
-import {configureInstallation} from "../epics/install.ts";
+import {configureInstaller} from "../epics/install.ts";
 import {MainInstallationIcon, PortableInstallationIcon} from "../components/icons.tsx";
 import {WaitingForDataPage} from "./WaitingForDataPage.tsx";
 
@@ -17,23 +17,21 @@ export function PickReaperPage() {
     }
     return (
         <Page>
-            <Switch>
-                <Match when={backendInfo.main_reaper_resource_dir_exists}>
-                    <p class="text-center font-bold">
+            <p class="text-center font-bold">
+                <Switch>
+                    <Match when={backendInfo.main_reaper_resource_dir_exists}>
                         Which REAPER installation do you want to modify?
-                    </p>
-                </Match>
-                <Match when={true}>
-                    <p class="text-center font-bold">
+                    </Match>
+                    <Match when={true}>
                         Please decide whether you want to create a main or a portable installation!
-                    </p>
-                </Match>
-            </Switch>
+                    </Match>
+                </Switch>
+            </p>
             <div class="grow flex flex-col items-center justify-center gap-4">
                 <ProminentChoice selected={!resolvedConfig.portable}
                                  icon={<MainInstallationIcon size="24"/>}
                                  topRightIndicator="Good default choice"
-                                 onClick={() => configureInstallation({portable: false})}>
+                                 onClick={() => configureInstaller({custom_reaper_resource_dir: null})}>
                     <h2 class="card-title">
                         Main REAPER installation
                     </h2>
@@ -73,7 +71,7 @@ export function PickReaperPage() {
                 </ProminentChoice>
             </div>
             <ButtonRow>
-                <NavButton onClick={() => mainStore.currentPageId = "pick-packages"}>Continue</NavButton>
+                <NavButton onClick={() => mainStore.setCurrentPageId("add-packages")}>Continue</NavButton>
             </ButtonRow>
         </Page>
     )
@@ -81,12 +79,10 @@ export function PickReaperPage() {
 }
 
 async function configurePortable(forcePick: boolean) {
-    if (forcePick || !mainStore.state.portableReaperDir) {
+    if (forcePick || !mainStore.state.lastPickedPortableReaperDir) {
         await pickPortableReaperDir();
     }
-    if (mainStore.state.portableReaperDir) {
-        configureInstallation({portable: true});
-    }
+    configureInstaller({custom_reaper_resource_dir: mainStore.state.lastPickedPortableReaperDir});
 }
 
 async function pickPortableReaperDir() {
@@ -98,5 +94,5 @@ async function pickPortableReaperDir() {
     if (chosenDir == null || Array.isArray(chosenDir)) {
         return;
     }
-    mainStore.portableReaperDir = chosenDir;
+    mainStore.setLastPickedPortableReaperDir(chosenDir);
 }

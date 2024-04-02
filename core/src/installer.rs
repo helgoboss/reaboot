@@ -91,18 +91,13 @@ impl<L: InstallerListener> Installer<L> {
         };
         let temp_reaper_resource_dir = temp_dir.join("REAPER");
         fs::create_dir_all(&temp_reaper_resource_dir)?;
-        let package_urls: Result<Vec<_>, ParsePackageUrlError> = config
-            .package_urls
-            .into_iter()
-            .map(PackageUrl::parse_from_url)
-            .collect();
         let installer = Self {
             multi_downloader: MultiDownloader::new(
                 Downloader::new(config.num_download_retries),
                 config.concurrent_downloads,
             ),
             downloader: Downloader::new(config.num_download_retries),
-            package_urls: package_urls?,
+            package_urls: config.package_urls,
             temp_dir,
             temp_reaper_resource_dir: ReaperResourceDir::new(temp_reaper_resource_dir)?,
             dest_reaper_resource_dir: config.reaper_resource_dir,
@@ -797,23 +792,19 @@ impl<L: InstallerListener> Installer<L> {
 
     async fn download_packages<'a>(
         &'a self,
-        files: Vec<QualifiedSource<'a>>,
+        sources: Vec<QualifiedSource<'a>>,
     ) -> Vec<DownloadResult<QualifiedSource<'a>>> {
-        let downloads = files.into_iter().map(|file| DownloadWithPayload {
+        let downloads = sources.into_iter().map(|source| DownloadWithPayload {
             download: Download {
-                label: file
-                    .source
-                    .file
-                    .clone()
-                    .unwrap_or_else(|| file.version.package.package.name.clone()),
-                url: file.source.content.clone(),
+                label: source.simple_file_name().to_string(),
+                url: source.source.content.clone(),
                 file: self
                     .temp_reaper_resource_dir
                     .get()
-                    .join(&file.relative_path),
-                expected_multihash: file.source.hash.clone(),
+                    .join(&source.relative_path),
+                expected_multihash: source.source.hash.clone(),
             },
-            payload: file,
+            payload: source,
         });
         let multi_download_listener = MultiDownloadListener::new(self, |info| {
             InstallationStage::DownloadingPackageFiles { download: info }

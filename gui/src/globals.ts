@@ -13,9 +13,14 @@ export const themeSignal = createThemeSignal();
 export const mainStore = new MainStore({
     currentPageId: "welcome",
     resolvedConfig: undefined,
-    packageUrls: [],
-    packageUrlsExpression: "",
-    invalidPackageUrls: [],
+    installerConfig: {
+        custom_reaper_resource_dir: undefined,
+        package_urls: [],
+        keep_temp_dir: false,
+        dry_run: false,
+        skip_failed_packages: false,
+    },
+    usePortableReaperDir: false,
     installationStage: {
         stage: {
             kind: "NothingInstalled",

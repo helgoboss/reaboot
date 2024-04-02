@@ -8,7 +8,7 @@ export class DummyMainService implements MainService {
 
     private normalEventsSubject = new Subject<ReabootEvent>();
 
-    configure(config: InstallerConfig) {
+    async configure(config: InstallerConfig) {
         this.normalEventsSubject.next({
             kind: "ConfigResolved",
             config: {
@@ -18,7 +18,7 @@ export class DummyMainService implements MainService {
                 dry_run: config.dry_run,
                 keep_temp_dir: config.keep_temp_dir,
                 num_download_retries: config.num_download_retries ?? 3,
-                package_urls: config.package_urls,
+                package_urls: [],
                 reaper_resource_dir_exists: true,
                 reaper_version: config.reaper_version ?? "latest",
                 skip_failed_packages: config.skip_failed_packages,
@@ -28,7 +28,7 @@ export class DummyMainService implements MainService {
         });
     }
 
-    cancelInstallation() {
+    async cancelInstallation() {
     }
 
     getNormalEvents(): Observable<ReabootEvent> {

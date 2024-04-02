@@ -1,7 +1,9 @@
 use crate::model::VersionRef;
 
+use serde::Serialize;
 use std::str::FromStr;
 use thiserror::Error;
+use ts_rs::TS;
 
 use url::{form_urlencoded, Url};
 
@@ -21,7 +23,8 @@ use url::{form_urlencoded, Url};
 /// - **PACKAGE_VERSION_REF =** `p={PACKAGE_PATH}&v={VERSION_REF}`
 /// - **PACKAGE_PATH =** `{CATEGORY}/{PACKAGE_NAME}`
 /// - **VERSION_REF =** `{VERSION_NAME}` or `latest` or `latest-pre`
-#[derive(Clone, Eq, PartialEq, Hash, Debug)]
+#[derive(Clone, Eq, PartialEq, Hash, Debug, Serialize, TS)]
+#[ts(export)]
 pub struct PackageUrl {
     /// Repository index URL.
     ///
@@ -56,7 +59,8 @@ pub struct PackageUrl {
 /// - The order of the key-value pairs is irrelevant.
 /// - `p` is required.
 /// - `v` is optional and defaults to `latest`.
-#[derive(Clone, Eq, PartialEq, Hash, Debug)]
+#[derive(Clone, Eq, PartialEq, Hash, Debug, Serialize, TS)]
+#[ts(export)]
 pub struct PackageVersionRef {
     package_path: PackagePath,
     version_ref: VersionRef,
@@ -73,7 +77,8 @@ pub struct PackageVersionRef {
 ///
 /// - **PACKAGE_PATH =** `{CATEGORY}/{PACKAGE_NAME}`
 /// - **VERSION_REF =** `{VERSION_NAME}` or `latest` or `latest-pre`
-#[derive(Clone, Eq, PartialEq, Hash, Debug)]
+#[derive(Clone, Eq, PartialEq, Hash, Debug, Serialize, TS)]
+#[ts(export)]
 pub struct PackagePath {
     /// May contain `/` characters.
     category: String,
@@ -82,7 +87,8 @@ pub struct PackagePath {
 }
 
 impl PackageUrl {
-    pub fn parse_from_url(mut url: Url) -> Result<Self, ParsePackageUrlError> {
+    pub fn parse(input: impl AsRef<str>) -> Result<Self, ParsePackageUrlError> {
+        let mut url = Url::parse(input.as_ref()).map_err(ParsePackageUrlError::InvalidUrl)?;
         let fragment = url
             .fragment()
             .ok_or(ParsePackageUrlError::MissingFragmentIdentifier)?;
@@ -192,6 +198,8 @@ impl FromStr for PackagePath {
 
 #[derive(Error, Debug)]
 pub enum ParsePackageUrlError {
+    #[error("Invalid URL")]
+    InvalidUrl(url::ParseError),
     #[error("Fragment identifier is missing")]
     MissingFragmentIdentifier,
     #[error("Package path is missing")]

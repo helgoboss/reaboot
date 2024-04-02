@@ -5,17 +5,20 @@ import {Stepper} from "./components/Stepper.tsx";
 import {mainService, mainStore} from "./globals.ts";
 import {debug} from "tauri-plugin-log-api";
 import {Match, onMount, Show, Switch} from "solid-js";
-import {toast, Toaster} from "solid-toast";
+import {Toaster} from "solid-toast";
 import {PickReaperPage} from "./pages/PickReaperPage.tsx";
 import {InstallPage} from "./pages/InstallPage.tsx";
-import {PickPackagesPage} from "./pages/PickPackagesPage.tsx";
-import {configureInstallation} from "./epics/install.ts";
+import {AddPackagesPage} from "./pages/AddPackagesPage.tsx";
+import {configureInstaller} from "./epics/install.ts";
 import {MainInstallationIcon, PortableInstallationIcon} from "./components/icons.tsx";
+import {showError} from "./epics/common.ts";
 
 export function App() {
     keepSyncingStateFromBackendToStore();
     onMount(() => {
-        configureInstallation({portable: false});
+        // Right at the beginning, we configure the installer exactly once with default values.
+        // This makes the backend give us all necessary data.
+        configureInstaller({});
     });
     const page = () => pages.find((p) => p.id == mainStore.state.currentPageId)!;
     const resolvedConfig = () => mainStore.state.resolvedConfig;
@@ -60,22 +63,19 @@ function keepSyncingStateFromBackendToStore() {
     mainService.getNormalEvents().subscribe((evt) => {
         switch (evt.kind) {
             case "BackendInfoChanged":
-                mainStore.backendInfo = evt.info;
+                mainStore.setBackendInfo(evt.info);
                 break;
             case "ConfigResolved":
-                mainStore.resolvedConfig = evt.config;
+                mainStore.setResolvedConfig(evt.config);
                 break;
             case "InstallationStageChanged":
-                mainStore.installationStage = {
-                    label: evt.label,
-                    stage: evt.stage,
-                };
+                mainStore.setInstallationStage(evt);
                 if (evt.stage.kind === "Finished" || evt.stage.kind === "Failed") {
-                    mainStore.currentPageId = "done";
+                    mainStore.setCurrentPageId("done");
                 }
                 break;
             case "InstallationReportReady":
-                mainStore.installationReportHtml = evt.html;
+                mainStore.setInstallationReportHtml(evt.html);
                 break;
             case "TaskStarted":
                 mainStore.addTask(evt.task_id, evt.label);
@@ -87,7 +87,7 @@ function keepSyncingStateFromBackendToStore() {
                 mainStore.removeTask(evt.task_id);
                 break;
             case "Error":
-                toast.error(evt.display_msg);
+                showError(evt.display_msg);
                 break;
         }
     });
@@ -97,32 +97,27 @@ const pages: PageDescriptor[] = [
     {
         id: "welcome",
         title: "Welcome",
-        description: "This installer provides an easy and clean way to set up REAPER, ReaPack and packages of your choice.",
         content: WelcomePage,
         showFooter: false,
     },
     {
         id: "pick-reaper",
         title: "Pick REAPER",
-        description: "You can install REAPER from scratch or choose an existing installation.",
         content: PickReaperPage,
     },
     {
-        id: "pick-packages",
-        title: "Pick packages",
-        description: "ReaBoot allows you to add initial bundles. Bundles are simply collections of ReaPack packages. You can add packages at a later time, either here or within ReaPack itself.",
-        content: PickPackagesPage,
+        id: "add-packages",
+        title: "Add packages",
+        content: AddPackagesPage,
     },
     {
         id: "install",
         title: "Install",
-        description: "Now it's time to review your settings and start the installation.",
         content: InstallPage,
     },
     {
         id: "done",
         title: "Done",
-        description: "Congratulations! Installation is finished",
         content: DonePage,
     },
 ];

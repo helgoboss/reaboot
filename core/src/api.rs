@@ -3,7 +3,7 @@ use crate::reaper_platform::ReaperPlatform;
 use serde::{Deserialize, Serialize};
 
 use crate::reaper_resource_dir::ReaperResourceDir;
-use reaboot_reapack::model::VersionRef;
+use reaboot_reapack::model::{PackageUrl, VersionRef};
 use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 use strum::{AsRefStr, EnumIs};
@@ -54,7 +54,7 @@ pub struct InstallerConfig {
     ///
     /// These recipes will be installed *in addition* to those that are going to be installed
     /// anyway (if the installer is branded).
-    pub package_urls: Vec<Url>,
+    pub package_urls: Vec<String>,
     /// Maximum number of retries if a download fails.
     #[ts(optional)]
     pub num_download_retries: Option<u32>,
@@ -93,7 +93,7 @@ pub struct ResolvedInstallerConfig {
     /// Resolved REAPER platform.
     pub platform: ReaperPlatform,
     /// Resolved package URLs (includes URLs of packages that will be installed anyway).
-    pub package_urls: Vec<Url>,
+    pub package_urls: Vec<PackageUrl>,
     pub num_download_retries: u32,
     pub temp_parent_dir: PathBuf,
     pub keep_temp_dir: bool,

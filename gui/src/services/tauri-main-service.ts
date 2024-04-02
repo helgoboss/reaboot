@@ -25,13 +25,6 @@ export class TauriMainService implements MainService {
         });
     });
 
-    configure(config: InstallerConfig): void {
-        this.invokeCommand({
-            kind: "ConfigureInstallation",
-            config
-        })
-    }
-
     getNormalEvents(): Observable<ReabootEvent> {
         return this.normalEvents;
     }
@@ -40,14 +33,21 @@ export class TauriMainService implements MainService {
         return this.progressEvents;
     }
 
-    startInstallation(): void {
-        this.invokeCommand({
+    async configure(config: InstallerConfig) {
+        await this.invokeCommand({
+            kind: "ConfigureInstallation",
+            config
+        });
+    }
+
+    async startInstallation() {
+        await this.invokeCommand({
             kind: "StartInstallation",
         });
     }
 
-    cancelInstallation(): void {
-        this.invokeCommand({
+    async cancelInstallation() {
+        await this.invokeCommand({
             kind: "CancelInstallation",
         });
     }

@@ -22,7 +22,7 @@ export function Stepper(props: StepperProps) {
                         <li
                             class="step cursor-pointer"
                             classList={{"step-primary": currentPageIndex() >= index}}
-                            onClick={() => mainStore.currentPageId = page().id}
+                            onClick={() => mainStore.setCurrentPageId(page().id)}
                         >
                             {page().title}
                         </li>

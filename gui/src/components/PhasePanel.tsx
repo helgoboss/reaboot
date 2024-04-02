@@ -23,7 +23,7 @@ export function PhasePanel(props: Phase) {
                 return props.darkMode ? "bg-base-300 text-success" : "bg-success text-success-content";
         }
     };
-    return <div class={`grow card flex flex-row items-center px-6 ${colorClasses()}`}>
+    return <div class={`grow card flex flex-row items-center px-6 whitespace-nowrap gap-4 ${colorClasses()}`}>
         <div class="grow">
             {props.index + 1}.&nbsp;
             <Switch>

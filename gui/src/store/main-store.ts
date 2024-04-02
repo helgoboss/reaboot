@@ -3,31 +3,37 @@ import {PageId} from "../model/page.ts";
 import {InstallationStage} from "../../../core/bindings/InstallationStage.ts";
 import {ReabootBackendInfo} from "../../../core/bindings/ReabootBackendInfo.ts";
 import {ResolvedInstallerConfig} from "../../src-tauri/bindings/ResolvedInstallerConfig.ts";
+import {InstallerConfig} from "../../../core/bindings/InstallerConfig.ts";
 
 export type MainStoreState = {
     // ID of the currently displayed page
+    // Dictated by frontend.
     currentPageId: PageId,
+    // Last-picked portable REAPER directory
+    // Dictated by frontend.
+    lastPickedPortableReaperDir?: string,
+    // Whether to use the portable REAPER installation.
+    // Dictated by frontend.
+    usePortableReaperDir: boolean,
+    // Installer config.
+    // Dictated by frontend.
+    installerConfig: InstallerConfig,
     // Basic info from the backend.
-    //
     // If undefined, it means the backend hasn't sent its info yet.
+    // Set in response to event from backend.
     backendInfo?: ReabootBackendInfo,
     // Resolved configuration.
-    //
     // If undefined, it means the installer has not been configured yet
+    // Set in response to event from backend.
     resolvedConfig?: ResolvedInstallerConfig,
     // Current installation stage.
+    // Set in response to event from backend.
     installationStage: InstallationStageContainer,
-    // Plain text from which package URLs are extracted
-    packageUrlsExpression: string,
-    // Package URLs to be installed
-    packageUrls: string[],
-    // Invalid package URLs
-    invalidPackageUrls: string[],
-    // Last-picked portable REAPER directory
-    portableReaperDir?: string,
     // Installation report, HTML-formatted
+    // Set in response to event from backend.
     installationReportHtml?: string,
     // Currently running tasks
+    // Set in response to event from backend.
     current_tasks: ReabootTask[],
 }
 
@@ -52,39 +58,31 @@ export class MainStore {
         this.setState = setState;
     }
 
-    set currentPageId(pageId: PageId) {
+    setCurrentPageId(pageId: PageId) {
         this.setState("currentPageId", pageId);
     }
 
-    set backendInfo(value: ReabootBackendInfo) {
+    setBackendInfo(value: ReabootBackendInfo) {
         this.setState("backendInfo", value);
     }
 
-    set resolvedConfig(value: ResolvedInstallerConfig) {
+    setInstallerConfig(value: InstallerConfig) {
+        this.setState("installerConfig", value);
+    }
+
+    setResolvedConfig(value: ResolvedInstallerConfig) {
         this.setState("resolvedConfig", value);
     }
 
-    set installationStage(value: InstallationStageContainer) {
+    setInstallationStage(value: InstallationStageContainer) {
         this.setState("installationStage", value);
     }
 
-    set packageUrlsExpression(value: string) {
-        this.setState("packageUrlsExpression", value);
+    setLastPickedPortableReaperDir(value: string | undefined) {
+        this.setState("lastPickedPortableReaperDir", value);
     }
 
-    set packageUrls(value: string[]) {
-        this.setState("packageUrls", value);
-    }
-
-    set invalidPackageUrls(value: string[]) {
-        this.setState("invalidPackageUrls", value);
-    }
-
-    set portableReaperDir(value: string | undefined) {
-        this.setState("portableReaperDir", value);
-    }
-
-    set installationReportHtml(value: string) {
+    setInstallationReportHtml(value: string) {
         this.setState("installationReportHtml", value);
     }
 

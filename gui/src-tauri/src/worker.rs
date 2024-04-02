@@ -1,12 +1,10 @@
 use tauri::async_runtime::Receiver;
 
-use crate::api::ReabootEvent;
 use reaboot_core::api::InstallerConfig;
 use reaboot_core::installer::{InstallError, Installer};
-use reaboot_core::{
-    reaboot_util, PreparationReport, PreparationReportAsMarkdown, PreparationReportMarkdownOptions,
-};
+use reaboot_core::{reaboot_util, PreparationReportAsMarkdown, PreparationReportMarkdownOptions};
 
+use crate::api::ReabootEvent;
 use crate::app_handle::ReabootAppHandle;
 
 pub struct ReabootWorker {
@@ -15,7 +13,6 @@ pub struct ReabootWorker {
 }
 
 pub enum ReabootWorkerCommand {
-    EmitInitialInstallationEvents(InstallerConfig),
     Install(InstallerConfig),
 }
 
@@ -40,27 +37,7 @@ impl ReabootWorker {
             ReabootWorkerCommand::Install(config) => {
                 self.process_install(config).await?;
             }
-            ReabootWorkerCommand::EmitInitialInstallationEvents(config) => {
-                self.emit_initial_events(config).await?;
-            }
         }
-        Ok(())
-    }
-
-    async fn emit_initial_events(&self, config: InstallerConfig) -> anyhow::Result<()> {
-        let backend_info = reaboot_util::collect_backend_info();
-        let config = reaboot_util::resolve_config(config)?;
-        let installation_stage = reaboot_util::determine_initial_installation_stage(
-            &config.reaper_resource_dir,
-            config.platform,
-        )
-        .await?;
-        self.app_handle
-            .emit_reaboot_event(ReabootEvent::BackendInfoChanged { info: backend_info });
-        self.app_handle
-            .emit_reaboot_event(ReabootEvent::ConfigResolved { config });
-        self.app_handle
-            .emit_reaboot_event(ReabootEvent::installation_stage_changed(installation_stage));
         Ok(())
     }
 

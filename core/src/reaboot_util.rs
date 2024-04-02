@@ -2,6 +2,7 @@ use anyhow::{bail, Context};
 use std::env;
 
 use reaboot_reapack::database::{CompatibilityInfo, Database};
+use reaboot_reapack::model::{PackageUrl, ParsePackageUrlError};
 
 use crate::api::{InstallationStage, InstallerConfig, ReabootBackendInfo, ResolvedInstallerConfig};
 use crate::file_util::file_or_dir_is_writable_or_creatable;
@@ -61,12 +62,17 @@ pub fn resolve_config(config: InstallerConfig) -> anyhow::Result<ResolvedInstall
             env::temp_dir()
         }
     };
+    let package_urls: Result<Vec<_>, ParsePackageUrlError> = config
+        .package_urls
+        .into_iter()
+        .map(PackageUrl::parse)
+        .collect();
     let resolved = ResolvedInstallerConfig {
         reaper_resource_dir,
         reaper_resource_dir_exists: exists,
         portable,
         platform: reaper_platform,
-        package_urls: config.package_urls,
+        package_urls: package_urls?,
         num_download_retries: config.num_download_retries.unwrap_or(3),
         temp_parent_dir,
         keep_temp_dir: config.keep_temp_dir,

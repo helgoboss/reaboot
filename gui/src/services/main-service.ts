@@ -16,11 +16,11 @@ export type MainService = {
     //
     // This will cause the backend to send a basic state change event and is therefore suitable for getting
     // all necessary initial data.
-    configure: (config: InstallerConfig) => void,
+    configure: (config: InstallerConfig) => Promise<void>,
     // Starts the installation process.
-    startInstallation: () => void,
+    startInstallation: () => Promise<void>,
     // Cancels the installation process.
-    cancelInstallation: () => void,
+    cancelInstallation: () => Promise<void>,
     // Starts the REAPER installation associated with the current configuration.
     startReaper: () => Promise<void>,
 }

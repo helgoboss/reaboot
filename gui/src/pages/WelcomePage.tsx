@@ -25,7 +25,7 @@ export function WelcomePage() {
                         &#32;of your choice.
                     </p>
                     <button class="btn btn-primary"
-                            onClick={() => mainStore.currentPageId = "pick-reaper"}>
+                            onClick={() => mainStore.setCurrentPageId("pick-reaper")}>
                         Let's go!
                     </button>
                 </div>

@@ -1,12 +1,23 @@
 import {mainService, mainStore} from "../globals.ts";
+import {showError} from "./common.ts";
 
-export function configureInstallation(args: { portable?: boolean }) {
-    const portable = args.portable === undefined ? (mainStore.state.resolvedConfig?.portable ?? false) : args.portable;
-    mainService.configure({
-        custom_reaper_resource_dir: portable ? mainStore.state.portableReaperDir : undefined,
-        package_urls: mainStore.state.packageUrls,
-        keep_temp_dir: false,
-        dry_run: false,
-        skip_failed_packages: false,
-    });
+type PatchConfigurationArgs = {
+    custom_reaper_resource_dir?: string | null,
+    packageUrls?: string[]
+};
+
+export async function configureInstaller(args: PatchConfigurationArgs) {
+    const oldConfig = mainStore.state.installerConfig;
+    const newConfig = {
+        ...oldConfig,
+        custom_reaper_resource_dir: args.custom_reaper_resource_dir === undefined ? oldConfig.custom_reaper_resource_dir : (args.custom_reaper_resource_dir ?? undefined),
+        package_urls: args.packageUrls ?? oldConfig.package_urls,
+    };
+    try {
+        await mainService.configure(newConfig);
+        // Only write config to store if configuration was successful
+        mainStore.setInstallerConfig(newConfig);
+    } catch (e) {
+        showError(e);
+    }
 }

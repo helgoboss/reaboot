@@ -57,6 +57,8 @@ multihash-codetable = { workspace = true, features = ["sha2"] }
 hex.workspace = true
 # For verifying hashes in a streaming way
 sha2.workspace = true
+# For dealing with ReaPack source file names (which are always UTF-8)
+camino.workspace = true
 
 [target.'cfg(target_os = "macos")'.dependencies]
 # For converting the REAPER DMG file to a hfs+ IMG file. The DMG file itself can't be mounted silently.

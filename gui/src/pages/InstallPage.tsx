@@ -6,6 +6,7 @@ import {mainService, mainStore, themeSignal} from "../globals.ts";
 import {For, from, Index, Match, Show, Switch} from "solid-js";
 import {InstallationStage} from "../../../core/bindings/InstallationStage.ts";
 import {WaitingForDataPage} from "./WaitingForDataPage.tsx";
+import {PackageTable} from "../components/PackageTable.tsx";
 
 export function InstallPage() {
     const resolvedConfig = mainStore.state.resolvedConfig;
@@ -19,7 +20,7 @@ export function InstallPage() {
     const mainProgressInPercent = () => effectiveInstallationStatusProgress() * 100;
     return (
         <Page>
-            <p class="text-center pb-6">
+            <p class="text-center font-bold pb-6">
                 Please review your choices and start the installation!
             </p>
             <div class="grow flex flex-row items-stretch gap-8 min-h-0">
@@ -63,29 +64,19 @@ export function InstallPage() {
                             </Match>
                             <Match when={true}>
                                 <div class="prose prose-sm overflow-y-auto">
-                                    <h4>REAPER</h4>
-                                    <p>{resolvedConfig.portable ? "Portable" : "Main"} installation</p>
+                                    <h4>General</h4>
+                                    <ul>
+                                        <li>
+                                            <b>Destination:</b> REAPER {resolvedConfig.portable ? "portable" : "main"} installation
+                                        </li>
+                                        <li><b>Platform:</b> {resolvedConfig.platform}</li>
+                                        <li>
+                                            <b>Error
+                                                handling:</b> {resolvedConfig.skip_failed_packages ? "Ignoring failing packages" : "Prevent incomplete installations"}
+                                        </li>
+                                    </ul>
                                     <h4>Packages</h4>
-                                    <table class="table table-xs table-zebra">
-                                        <thead>
-                                        <tr>
-                                            <th>Package</th>
-                                            <th>Category</th>
-                                            <th>Version</th>
-                                        </tr>
-                                        </thead>
-                                        <tbody>
-                                        <For each={mainStore.state.packageUrls}>
-                                            {url =>
-                                                <tr class="border-none">
-                                                    <td>
-                                                        {url}
-                                                    </td>
-                                                </tr>
-                                            }
-                                        </For>
-                                        </tbody>
-                                    </table>
+                                    <PackageTable packages={resolvedConfig.package_urls}/>
                                 </div>
                             </Match>
                         </Switch>

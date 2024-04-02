@@ -14,7 +14,7 @@ tauri-build = { version = "1", features = [] }
 reaboot-core.workspace = true
 reaboot-reapack.workspace = true
 # GUI framework
-tauri = { workspace = true, features = ["shell-open", "dialog-open", "process-exit"] }
+tauri = { workspace = true, features = ["shell-open", "dialog-open", "process-exit", "clipboard-read-text"] }
 # For (de)serializing commands and events
 serde = { workspace = true, features = ["derive"] }
 # For (de)serializing commands and events
