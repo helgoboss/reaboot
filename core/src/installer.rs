@@ -801,7 +801,11 @@ impl<L: InstallerListener> Installer<L> {
     ) -> Vec<DownloadResult<QualifiedSource<'a>>> {
         let downloads = files.into_iter().map(|file| DownloadWithPayload {
             download: Download {
-                label: file.version.id().to_string(),
+                label: file
+                    .source
+                    .file
+                    .clone()
+                    .unwrap_or_else(|| file.version.package.package.name.clone()),
                 url: file.source.content.clone(),
                 file: self
                     .temp_reaper_resource_dir

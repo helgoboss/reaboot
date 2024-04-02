@@ -2,68 +2,73 @@ import {ProminentChoice} from "../components/ProminentChoice.tsx";
 import {ButtonRow} from "../components/ButtonRow.tsx";
 import {NavButton} from "../components/NavButton.tsx";
 import {Page} from "../components/Page.tsx";
-import {FaRegularFolderOpen} from "solid-icons/fa";
 import {open} from "@tauri-apps/api/dialog";
 import {mainStore} from "../globals.ts";
-import {Match, Show, Switch} from "solid-js";
-import {configureInstallation} from "../epics/installation.ts";
+import {Match, Switch} from "solid-js";
+import {configureInstallation} from "../epics/install.ts";
+import {MainInstallationIcon, PortableInstallationIcon} from "../components/icons.tsx";
+import {WaitingForDataPage} from "./WaitingForDataPage.tsx";
 
 export function PickReaperPage() {
     const backendInfo = mainStore.state.backendInfo;
     const resolvedConfig = mainStore.state.resolvedConfig;
     if (!backendInfo || !resolvedConfig) {
-        return (
-            <div>Waiting for data...</div>
-        );
+        return <WaitingForDataPage/>;
     }
     return (
         <Page>
-            <p class="text-center font-bold">
-                Please choose the REAPER installation to which you want to add packages.
-            </p>
-            <p class="text-center">
-                <Switch>
-                    <Match when={backendInfo.main_reaper_resource_dir_exists}>
-                        ReaBoot has detected an existing main REAPER installation on your machine.
-                    </Match>
-                    <Match when={true}>
-                        ReaBoot hasn't found any main REAPER installation on your machine.
-                    </Match>
-                </Switch>
-            </p>
+            <Switch>
+                <Match when={backendInfo.main_reaper_resource_dir_exists}>
+                    <p class="text-center font-bold">
+                        Which REAPER installation do you want to modify?
+                    </p>
+                </Match>
+                <Match when={true}>
+                    <p class="text-center font-bold">
+                        Please decide whether you want to create a main or a portable installation!
+                    </p>
+                </Match>
+            </Switch>
             <div class="grow flex flex-col items-center justify-center gap-4">
                 <ProminentChoice selected={!resolvedConfig.portable}
+                                 icon={<MainInstallationIcon size="24"/>}
+                                 topRightIndicator="Good default choice"
                                  onClick={() => configureInstallation({portable: false})}>
-                    <h2 class="card-title">Main REAPER installation</h2>
+                    <h2 class="card-title">
+                        Main REAPER installation
+                    </h2>
                     <p class="text-base-content/50">
-                        <Show when={!resolvedConfig.portable}>
-                            <Switch>
-                                <Match when={backendInfo.main_reaper_resource_dir_exists}>
-                                    Add packages to your existing main REAPER installation.
-                                </Match>
-                                <Match when={true}>
-                                    Create a new main REAPER installation.
-                                </Match>
-                            </Switch>
-                        </Show>
+                        <Switch>
+                            <Match when={backendInfo.main_reaper_resource_dir_exists}>
+                                Add packages to your existing main REAPER installation.
+                            </Match>
+                            <Match when={true}>
+                                Create a new main REAPER installation.
+                            </Match>
+                        </Switch>
                     </p>
                 </ProminentChoice>
                 <ProminentChoice selected={resolvedConfig.portable}
+                                 icon={<PortableInstallationIcon size="24"/>}
+                                 bottomRightIndicator={<button class="btn btn-accent" onClick={(e) => {
+                                     e.stopPropagation();
+                                     return configurePortable(true);
+                                 }}>
+                                     Choose directory...
+                                 </button>}
                                  onClick={() => configurePortable(false)}>
                     <div class="flex flex-row items-center gap-4">
                         <div class="flex flex-col">
-                            <h2 class="card-title">Portable REAPER installation</h2>
-                            <p class="text-base-content/50">
-                                Add packages to an existing portable REAPER installation or
-                                create a new one.
-                            </p>
+                            <h2 class="card-title">
+                                Portable REAPER installation
+                            </h2>
+                            <div>
+                                <p class="text-base-content/50">
+                                    Add packages to an existing portable REAPER installation or
+                                    create a new one.
+                                </p>
+                            </div>
                         </div>
-                        <button class="btn btn-circle">
-                            <FaRegularFolderOpen size={24} onClick={(e) => {
-                                e.stopPropagation();
-                                return configurePortable(true);
-                            }}/>
-                        </button>
                     </div>
                 </ProminentChoice>
             </div>
@@ -71,14 +76,17 @@ export function PickReaperPage() {
                 <NavButton onClick={() => mainStore.currentPageId = "pick-packages"}>Continue</NavButton>
             </ButtonRow>
         </Page>
-    );
+    )
+        ;
 }
 
 async function configurePortable(forcePick: boolean) {
     if (forcePick || !mainStore.state.portableReaperDir) {
         await pickPortableReaperDir();
     }
-    configureInstallation({portable: true});
+    if (mainStore.state.portableReaperDir) {
+        configureInstallation({portable: true});
+    }
 }
 
 async function pickPortableReaperDir() {

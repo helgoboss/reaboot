@@ -2,38 +2,100 @@ import {ButtonRow} from "../components/ButtonRow.tsx";
 import {NavButton} from "../components/NavButton.tsx";
 import {Page} from "../components/Page.tsx";
 import {Phase, PhasePanel, PhaseStatus} from "../components/PhasePanel.tsx";
-import {mainService, mainStore} from "../globals.ts";
-import {from, Index} from "solid-js";
+import {mainService, mainStore, themeSignal} from "../globals.ts";
+import {For, from, Index, Match, Show, Switch} from "solid-js";
 import {InstallationStage} from "../../../core/bindings/InstallationStage.ts";
+import {WaitingForDataPage} from "./WaitingForDataPage.tsx";
 
 export function InstallPage() {
+    const resolvedConfig = mainStore.state.resolvedConfig;
+    if (!resolvedConfig) {
+        return <WaitingForDataPage/>;
+    }
     const installationStageContainer = mainStore.state.installationStage;
-    const installationStatusProgress = from(mainService.getProgressEvents());
-    const effectiveInstallationStatusProgress = () => installationStatusProgress() ?? 0.0;
+    const mainProgress = from(mainService.getProgressEvents());
+    const effectiveInstallationStatusProgress = () => mainProgress() ?? 0.0;
     const phases = () => derivePhases(installationStageContainer.stage);
-    const progressInPercent = () => effectiveInstallationStatusProgress() * 100;
+    const mainProgressInPercent = () => effectiveInstallationStatusProgress() * 100;
     return (
         <Page>
-            <div class="grow flex flex-row items-stretch gap-8">
-                <div class="grow-0 basis-1/3 flex flex-col gap-4">
+            <p class="text-center pb-6">
+                Please review your choices and start the installation!
+            </p>
+            <div class="grow flex flex-row items-stretch gap-8 min-h-0">
+                <div class="basis-1/3 flex flex-col gap-4">
                     <Index each={phases()}>
                         {
-                            (phase) => <PhasePanel {...phase()}/>
+                            (phase) => <PhasePanel {...phase()} darkMode={themeSignal() == "dark"}/>
                         }
                     </Index>
                 </div>
-                <div class="grow-0 basis-2/3 card bg-base-300">
-                    <div class="card-body text-center">
-                        <h2>{installationStageContainer.label}</h2>
-                        <div>
-                            <progress class="progress w-56" value={progressInPercent()} max="100"></progress>
-                        </div>
+                <div class="basis-2/3 card bg-base-300">
+                    <div class="card-body min-h-0">
+                        <Switch>
+                            <Match when={mainStore.installationIsRunning}>
+                                <h2 class="text-center">{installationStageContainer.label}</h2>
+                                <div>
+                                    <progress class="progress" value={mainProgressInPercent()} max="100"/>
+                                </div>
+                                <Show when={mainStore.state.current_tasks.length > 0}>
+                                    <div class="divider"></div>
+                                    <div>
+                                        <table class="table table-xs table-fixed">
+                                            <tbody>
+                                            <For each={mainStore.state.current_tasks}>
+                                                {task =>
+                                                    <tr class="border-none">
+                                                        <td class="w-1/3 whitespace-nowrap overflow-hidden p-0">
+                                                            {task.label}
+                                                        </td>
+                                                        <td class="w-2/3 pl-4 pr-0">
+                                                            <progress class="progress" value={task.progress * 100}
+                                                                      max="100"/>
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </For>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </Show>
+                            </Match>
+                            <Match when={true}>
+                                <div class="prose prose-sm overflow-y-auto">
+                                    <h4>REAPER</h4>
+                                    <p>{resolvedConfig.portable ? "Portable" : "Main"} installation</p>
+                                    <h4>Packages</h4>
+                                    <table class="table table-xs table-zebra">
+                                        <thead>
+                                        <tr>
+                                            <th>Package</th>
+                                            <th>Category</th>
+                                            <th>Version</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <For each={mainStore.state.packageUrls}>
+                                            {url =>
+                                                <tr class="border-none">
+                                                    <td>
+                                                        {url}
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </For>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </Match>
+                        </Switch>
                     </div>
                 </div>
             </div>
             <ButtonRow>
-                <NavButton class="btn-warning" onClick={() => mainService.startInstallation()}>
-                    Start installation
+                <NavButton class="btn-warning" onClick={() => mainService.startInstallation()}
+                           disabled={mainStore.installationIsRunning}>
+                    {mainStore.installationIsRunning ? "Installation in progress..." : "Start installation"}
                 </NavButton>
             </ButtonRow>
         </Page>
@@ -41,19 +103,28 @@ export function InstallPage() {
 }
 
 
-function derivePhases(stage: InstallationStage): Phase[] {
+function derivePhases(stage: InstallationStage): Omit<Phase, "darkMode">[] {
     const actualTaskPos = getTaskPos(stage);
     return [
         {
-            label: "1. Install REAPER",
+            index: 0,
+            todoLabel: "Install REAPER",
+            inProgressLabel: "Installing REAPER",
+            doneLabel: "REAPER is installed",
             status: getTaskStatus(actualTaskPos, INSTALL_REAPER_POS),
         },
         {
-            label: "2. Install ReaPack",
+            index: 1,
+            todoLabel: "Install ReaPack",
+            inProgressLabel: "Installing ReaPack",
+            doneLabel: "ReaPack is installed",
             status: getTaskStatus(actualTaskPos, INSTALL_REAPACK_POS),
         },
         {
-            label: "3. Install packages",
+            index: 2,
+            todoLabel: "Install packages",
+            inProgressLabel: "Installing packages",
+            doneLabel: "Packages are installed",
             status: getTaskStatus(actualTaskPos, INSTALL_PACKAGES_POS),
         },
     ];
@@ -94,15 +165,17 @@ function getTaskPos(stage: InstallationStage) {
         case "ApplyingPackage":
             return INSTALL_PACKAGES_POS;
         case "Finished":
+            return FINISHED_POS;
         case "Failed":
-            return DONE_POS;
+            return FAILED_POS;
     }
 }
 
-const NOTHING_INSTALLED_POS = 0;
-const INSTALL_REAPER_POS = 1;
-const INSTALLED_REAPER_POS = 2;
-const INSTALL_REAPACK_POS = 3;
-const INSTALLED_REAPACK_POS = 4;
-const INSTALL_PACKAGES_POS = 5;
-const DONE_POS = 6;
+const FAILED_POS = 0;
+const NOTHING_INSTALLED_POS = 1;
+const INSTALL_REAPER_POS = 2;
+const INSTALLED_REAPER_POS = 3;
+const INSTALL_REAPACK_POS = 4;
+const INSTALLED_REAPACK_POS = 5;
+const INSTALL_PACKAGES_POS = 6;
+const FINISHED_POS = 7;

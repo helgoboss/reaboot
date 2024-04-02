@@ -3,7 +3,9 @@ use tauri::async_runtime::Receiver;
 use crate::api::ReabootEvent;
 use reaboot_core::api::InstallerConfig;
 use reaboot_core::installer::{InstallError, Installer};
-use reaboot_core::{reaboot_util, PreparationReport, PreparationReportAsMarkdown};
+use reaboot_core::{
+    reaboot_util, PreparationReport, PreparationReportAsMarkdown, PreparationReportMarkdownOptions,
+};
 
 use crate::app_handle::ReabootAppHandle;
 
@@ -73,10 +75,15 @@ impl ReabootWorker {
             },
         };
         if let Some(r) = report {
-            let markdown =
-                PreparationReportAsMarkdown::new(&r, packages_have_been_installed).to_string();
+            let options = PreparationReportMarkdownOptions {
+                packages_have_been_installed,
+                optimize_for_termimad: false,
+            };
+            let markdown = PreparationReportAsMarkdown::new(&r, options).to_string();
+            let html = markdown::to_html_with_options(&markdown, &markdown::Options::gfm())
+                .unwrap_or_default();
             self.app_handle
-                .emit_reaboot_event(ReabootEvent::InstallationReportReady { markdown });
+                .emit_reaboot_event(ReabootEvent::InstallationReportReady { html });
         }
         Ok(())
     }

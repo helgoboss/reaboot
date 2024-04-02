@@ -275,15 +275,79 @@ impl Display for PackagePrepStatus {
 
 pub struct PreparationReportAsMarkdown<'a> {
     report: &'a PreparationReport,
-    packages_have_been_installed: bool,
+    options: PreparationReportMarkdownOptions,
+}
+
+#[derive(Copy, Clone)]
+pub struct PreparationReportMarkdownOptions {
+    /// Whether the packages have actually been installed (`true`) or if installation failed
+    /// or this was just a dry run (`false`).
+    pub packages_have_been_installed: bool,
+    /// Whether to optimize markdown output for [Termimad](https://github.com/Canop/termimad).
+    pub optimize_for_termimad: bool,
 }
 
 impl<'a> PreparationReportAsMarkdown<'a> {
-    pub fn new(report: &'a PreparationReport, packages_have_been_installed: bool) -> Self {
-        Self {
-            report,
-            packages_have_been_installed,
+    pub fn new(report: &'a PreparationReport, options: PreparationReportMarkdownOptions) -> Self {
+        Self { report, options }
+    }
+
+    fn write_heading(
+        &self,
+        f: &mut Formatter,
+        label: &str,
+        count: usize,
+        suffix: &str,
+    ) -> std::fmt::Result {
+        write!(f, "\n## {count} {label}")?;
+        if count > 1 {
+            f.write_str("s")?;
         }
+        write!(f, "{suffix}\n")?;
+        Ok(())
+    }
+
+    fn write_3col_table_header(
+        &self,
+        f: &mut Formatter,
+        label1: &str,
+        label2: &str,
+        label3: &str,
+    ) -> std::fmt::Result {
+        if self.options.optimize_for_termimad {
+            // Termimad needs this in order to print the top table border. Standard
+            // GFM parsers don't understand this.
+            writeln!(f, "|:-|:-|:-")?;
+        }
+        writeln!(f, "|**{label1}**|**{label2}**|**{label3}**")?;
+        writeln!(f, "|:-|:-|:-")?;
+        Ok(())
+    }
+
+    fn write_3col_table_divider(&self, f: &mut Formatter) -> std::fmt::Result {
+        if self.options.optimize_for_termimad {
+            // Termimad needs this in order to print the bottom table border. Standard
+            // GFM parsers don't understand this.
+            f.write_str("|-|-|-\n")?;
+        }
+        Ok(())
+    }
+
+    fn outcome_row(
+        &self,
+        f: &mut Formatter,
+        outcome: &PackagePreparationOutcome,
+        label3: impl Display,
+    ) -> std::fmt::Result {
+        write!(f, "| {} | ", &outcome.package_id.package)?;
+        if let Some(v) = outcome.version.as_ref() {
+            v.fmt(f)?;
+        } else {
+            f.write_char('-')?;
+        }
+        writeln!(f, " | {label3}")?;
+        self.write_3col_table_divider(f)?;
+        Ok(())
     }
 }
 
@@ -294,22 +358,22 @@ impl<'a> Display for PreparationReportAsMarkdown<'a> {
         let mut heading_count = 0;
         if summary.failures > 0 {
             heading_count += 1;
-            write_heading(f, "package failure", summary.failures, "")?;
-            write_3col_table_header(f, "Package", "Version", "Error")?;
+            self.write_heading(f, "package failure", summary.failures, "")?;
+            self.write_3col_table_header(f, "Package", "Version", "Error")?;
             for o in &self.report.package_preparation_outcomes {
                 if o.status.category() == PackageStatusCategory::Failure {
-                    outcome_row(f, o, &o.status)?;
+                    self.outcome_row(f, o, &o.status)?;
                 }
             }
         }
-        let skipped_suffix = if self.packages_have_been_installed {
+        let skipped_suffix = if self.options.packages_have_been_installed {
             ""
         } else {
             " **[SKIPPED]**"
         };
         if !self.report.tooling_changes.is_empty() {
             heading_count += 1;
-            write_heading(
+            self.write_heading(
                 f,
                 "tooling change",
                 self.report.tooling_changes.len(),
@@ -323,13 +387,13 @@ impl<'a> Display for PreparationReportAsMarkdown<'a> {
         }
         if summary.replacements > 0 {
             heading_count += 1;
-            write_heading(
+            self.write_heading(
                 f,
                 "package replacement",
                 summary.replacements,
                 skipped_suffix,
             )?;
-            write_3col_table_header(
+            self.write_3col_table_header(
                 f,
                 "Package",
                 "Version",
@@ -337,13 +401,13 @@ impl<'a> Display for PreparationReportAsMarkdown<'a> {
             )?;
             for o in &self.report.package_preparation_outcomes {
                 if let PackagePrepStatus::ToBeReplaced { old_version } = &o.status {
-                    outcome_row(f, o, old_version)?;
+                    self.outcome_row(f, o, old_version)?;
                 }
             }
         }
         if summary.additions > 0 {
             heading_count += 1;
-            write_heading(f, "package addition", summary.additions, skipped_suffix)?;
+            self.write_heading(f, "package addition", summary.additions, skipped_suffix)?;
             for o in &self.report.package_preparation_outcomes {
                 if o.status.category() == PackageStatusCategory::Addition {
                     writeln!(f, "- {}", PackageVersionAsMarkdown(o))?;
@@ -351,19 +415,20 @@ impl<'a> Display for PreparationReportAsMarkdown<'a> {
             }
         }
         if heading_count == 0 {
-            f.write_str("No changes")?;
+            f.write_str("No changes were necessary.")?;
         }
         Ok(())
     }
 }
 
-fn write_heading(f: &mut Formatter, label: &str, count: usize, suffix: &str) -> std::fmt::Result {
-    write!(f, "\n## {count} {label}{suffix}")?;
-    if count > 1 {
-        f.write_str("s")?;
+struct PackageVersionAsMarkdown<'a>(&'a PackagePreparationOutcome);
+
+impl<'a> Display for PackageVersionAsMarkdown<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write_name_and_version(f, &self.0.package_id.package, self.0.version.as_ref())?;
+        write!(f, " ({})", &self.0.package_id.category)?;
+        Ok(())
     }
-    f.write_char('\n')?;
-    Ok(())
 }
 
 fn write_name_and_version(
@@ -376,46 +441,4 @@ fn write_name_and_version(
         write!(f, " {v}")?;
     }
     Ok(())
-}
-
-fn write_3col_table_header(
-    f: &mut Formatter,
-    label1: &str,
-    label2: &str,
-    label3: &str,
-) -> std::fmt::Result {
-    writeln!(f, "|:-|:-|:-")?;
-    writeln!(f, "|**{label1}**|**{label2}**|**{label3}**")?;
-    writeln!(f, "|:-|:-|:-")?;
-    Ok(())
-}
-
-fn write_3col_table_divider(f: &mut Formatter) -> std::fmt::Result {
-    f.write_str("|-|-|-\n")
-}
-
-fn outcome_row(
-    f: &mut Formatter,
-    outcome: &PackagePreparationOutcome,
-    label3: impl Display,
-) -> std::fmt::Result {
-    write!(f, "| {} | ", &outcome.package_id.package)?;
-    if let Some(v) = outcome.version.as_ref() {
-        v.fmt(f)?;
-    } else {
-        f.write_char('-')?;
-    }
-    writeln!(f, " | {label3}")?;
-    write_3col_table_divider(f)?;
-    Ok(())
-}
-
-struct PackageVersionAsMarkdown<'a>(&'a PackagePreparationOutcome);
-
-impl<'a> Display for PackageVersionAsMarkdown<'a> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write_name_and_version(f, &self.0.package_id.package, self.0.version.as_ref())?;
-        write!(f, " ({})", &self.0.package_id.category)?;
-        Ok(())
-    }
 }

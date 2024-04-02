@@ -1,50 +1,53 @@
-import {
-    FaRegularCircle,
-    FaRegularCircleCheck,
-    FaRegularSquare,
-    FaRegularSquareCheck,
-    FaSolidCheck,
-    FaSolidSquare,
-    FaSolidSquareCheck
-} from "solid-icons/fa";
+import {FaRegularCircle, FaRegularCircleCheck} from "solid-icons/fa";
 import {Match, Switch} from "solid-js";
-import {BsCircle} from "solid-icons/bs";
 
-export type Phase = { label: string, status: PhaseStatus };
+export type Phase = {
+    index: number,
+    todoLabel: string,
+    doneLabel: string,
+    inProgressLabel: string,
+    darkMode: boolean,
+    status: PhaseStatus
+};
 
 export type PhaseStatus = "todo" | "in-progress" | "done";
 
 export function PhasePanel(props: Phase) {
-    // TODO In dark mode, it looks better if the background is base and the foreground is special
-    // window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
-    //     const newColorScheme = event.matches ? "dark" : "light";
-    // });
     const colorClasses = () => {
         switch (props.status) {
             case "todo":
-                return "bg-info text-info-content";
+                return props.darkMode ? "bg-base-300 text-info" : "bg-info text-info-content";
             case "in-progress":
-                return "bg-info text-info-content";
+                return props.darkMode ? "bg-base-300 text-info" : "bg-info text-info-content";
             case "done":
-                return "bg-success text-success-content";
+                return props.darkMode ? "bg-base-300 text-success" : "bg-success text-success-content";
         }
     };
     return <div class={`grow card flex flex-row items-center px-6 ${colorClasses()}`}>
         <div class="grow">
-            {props.label}
-        </div>
-        <div>
+            {props.index + 1}.&nbsp;
             <Switch>
                 <Match when={props.status === "todo"}>
-                    <FaRegularCircle size={24}/>
-                </Match>
-                <Match when={props.status === "done"}>
-                    <FaRegularCircleCheck size={24}/>
+                    {props.todoLabel}
                 </Match>
                 <Match when={props.status === "in-progress"}>
-                    <span class="loading loading-dots loading-sm"></span>
+                    {props.inProgressLabel}
+                </Match>
+                <Match when={props.status === "done"}>
+                    {props.doneLabel}
                 </Match>
             </Switch>
         </div>
+        <Switch>
+            <Match when={props.status === "todo"}>
+                <FaRegularCircle size={24}/>
+            </Match>
+            <Match when={props.status === "in-progress"}>
+                <span class="loading loading-ball loading-md"></span>
+            </Match>
+            <Match when={props.status === "done"}>
+                <FaRegularCircleCheck size={24}/>
+            </Match>
+        </Switch>
     </div>;
 }

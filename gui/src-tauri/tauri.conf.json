@@ -18,6 +18,9 @@
       },
       "dialog": {
         "open": true
+      },
+      "process": {
+        "exit": true
       }
     },
     "windows": [

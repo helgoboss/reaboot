@@ -4,11 +4,11 @@ use anyhow::{anyhow, bail, ensure, Context};
 
 use reaboot_reapack::model::{VersionName, VersionRef};
 
-use std::fs;
 use std::fs::File;
 use std::io::BufWriter;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::{env, fs};
 
 use crate::reaper_resource_dir::ReaperResourceDir;
 use url::Url;
@@ -215,12 +215,79 @@ pub async fn get_reaper_eula() -> anyhow::Result<String> {
     Ok(body)
 }
 
+pub fn start_reaper(
+    custom_reaper_resource_dir: Option<impl AsRef<Path>>,
+    platform: ReaperPlatform,
+) -> anyhow::Result<()> {
+    let exe = if let Some(dir) = custom_reaper_resource_dir {
+        dir.as_ref()
+            .join(get_os_specific_reaper_exe_file_name(platform))
+    } else {
+        get_os_specific_main_reaper_exe_path(platform).into()
+    };
+    if cfg!(target_os = "macos") {
+        Command::new("open").arg("-a").arg(exe).spawn()?;
+    } else {
+        Command::new(exe).spawn()?;
+    }
+    Ok(())
+}
+
+fn get_os_specific_main_reaper_exe_path(platform: ReaperPlatform) -> String {
+    let exe_file_name = get_os_specific_reaper_exe_file_name(platform);
+    match platform {
+        // TODO-medium What about the "macOS 10.5-10.14" download ("reaper711_x86_64.dmg")?
+        ReaperPlatform::MacOsAarch64 | ReaperPlatform::MacOsX86_64 | ReaperPlatform::MacOsX86 => {
+            format!("/Applications/{exe_file_name}")
+        }
+        ReaperPlatform::WindowsX86 => {
+            let program_files_dir =
+                env::var("ProgramFiles(x86)").unwrap_or("C:\\Program Files (x86)".to_string());
+            format!("{program_files_dir}/REAPER/{exe_file_name}")
+        }
+        ReaperPlatform::WindowsX64 => {
+            let program_files_dir =
+                env::var("ProgramFiles").unwrap_or("C:\\Program Files".to_string());
+            format!("{program_files_dir}/REAPER/{exe_file_name}")
+        }
+        ReaperPlatform::LinuxAarch64
+        | ReaperPlatform::LinuxArmv7l
+        | ReaperPlatform::LinuxI686
+        | ReaperPlatform::LinuxX86_64 => {
+            let relative_path = || format!("opt/REAPER/{exe_file_name}");
+            dirs::home_dir()
+                .map(|dir| dir.join(relative_path()))
+                .and_then(|p| {
+                    if p.exists() {
+                        Some(p.to_str()?.to_string())
+                    } else {
+                        None
+                    }
+                })
+                .unwrap_or_else(|| relative_path())
+        }
+    }
+}
+
+fn get_os_specific_reaper_exe_file_name(platform: ReaperPlatform) -> &'static str {
+    match platform {
+        ReaperPlatform::MacOsAarch64 | ReaperPlatform::MacOsX86_64 | ReaperPlatform::MacOsX86 => {
+            "REAPER.app"
+        }
+        ReaperPlatform::WindowsX86 | ReaperPlatform::WindowsX64 => "reaper.exe",
+        ReaperPlatform::LinuxAarch64
+        | ReaperPlatform::LinuxArmv7l
+        | ReaperPlatform::LinuxI686
+        | ReaperPlatform::LinuxX86_64 => "reaper",
+    }
+}
+
 fn get_os_specific_reaper_installer_file_name(
-    reaper_target: ReaperPlatform,
+    platform: ReaperPlatform,
     version: &VersionName,
 ) -> String {
     let version = version.to_string().replace('.', "");
-    match reaper_target {
+    match platform {
         // TODO-medium What about the "macOS 10.5-10.14" download ("reaper711_x86_64.dmg")?
         ReaperPlatform::MacOsAarch64 | ReaperPlatform::MacOsX86_64 => {
             format!("reaper{version}_universal.dmg")

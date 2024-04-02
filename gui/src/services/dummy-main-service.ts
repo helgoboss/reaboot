@@ -42,6 +42,9 @@ export class DummyMainService implements MainService {
     async startInstallation() {
         await simulateProgress(this.progressEventsSubject, 3000);
     }
+
+    async startReaper() {
+    }
 }
 
 function timeout(value: number) {

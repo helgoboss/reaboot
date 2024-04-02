@@ -15,6 +15,8 @@ pub enum ReabootCommand {
     StartInstallation,
     /// Cancels the installation process.
     CancelInstallation,
+    /// Starts REAPER.
+    StartReaper,
 }
 
 /// Event emitted by the backend.
@@ -47,7 +49,7 @@ pub enum ReabootEvent {
         task_id: u32,
     },
     InstallationReportReady {
-        markdown: String,
+        html: String,
     },
 }
 

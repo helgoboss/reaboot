@@ -8,7 +8,7 @@ export type PageProps = {
 
 export function Page(props: PageProps) {
     return (
-        <div class="grow flex flex-col px-6">
+        <div class="grow flex flex-col px-6 min-h-0">
             {props.children}
         </div>
     );

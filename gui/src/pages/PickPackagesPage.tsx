@@ -2,6 +2,7 @@ import {ButtonRow} from "../components/ButtonRow.tsx";
 import {NavButton} from "../components/NavButton.tsx";
 import {Page} from "../components/Page.tsx";
 import {mainStore} from "../globals.ts";
+import {configureInstallation} from "../epics/install.ts";
 
 export function PickPackagesPage() {
     return (
@@ -13,18 +14,57 @@ export function PickPackagesPage() {
             </p>
             <div class="grow flex flex-col py-4">
                 <textarea class="grow textarea textarea-primary"
-                          placeholder="Paste package URLs here, one per line!">
+                          placeholder="Paste package URLs here, one per line!"
+                          onInput={(e) => processText(e.target.value)}>
+                    {mainStore.state.packageUrlsExpression}
                 </textarea>
             </div>
             <p class="text-center">
+                Valid: {mainStore.state.packageUrls.length} / Invalid: {mainStore.state.invalidPackageUrls.length}
+            </p>
+            <p class="text-center">
                 You can add more packages later at any time
-                by using ReaPack in REAPER (Extensions → ReaPack → Browse packages) or by starting
-                ReaBoot again.
+                by starting ReaBoot again, or by using ReaPack in REAPER
+                (Extensions&nbsp;→&nbsp;ReaPack&nbsp;→&nbsp;Browse packages).
             </p>
             <ButtonRow>
-                <NavButton onClick={() => mainStore.currentPageId = "install"}>Continue</NavButton>
+                <NavButton onClick={() => {
+                    configureInstallation({});
+                    return mainStore.currentPageId = "install";
+                }}>
+                    Continue
+                </NavButton>
             </ButtonRow>
         </Page>
     );
 }
 
+function processText(text: string) {
+    const lines = text.split("\n");
+    const invalidUrls: string[] = [];
+    const validUrls = lines
+        .map(line => line.trim())
+        .filter(line => {
+            if (line.length === 0) {
+                return false;
+            }
+            const isValid = isValidPackageUrl(line);
+            if (!isValid) {
+                invalidUrls.push(line);
+            }
+            return isValid;
+        });
+    // TODO set all at once (improve setter)
+    mainStore.packageUrlsExpression = text;
+    mainStore.invalidPackageUrls = invalidUrls;
+    mainStore.packageUrls = validUrls;
+}
+
+function isValidPackageUrl(text: string): boolean {
+    try {
+        new URL(text);
+        return true;
+    } catch (e) {
+        return false;
+    }
+}

@@ -12,7 +12,7 @@ use crate::{reapack_util, reaper_util};
 pub fn collect_backend_info() -> ReabootBackendInfo {
     let (main_reaper_resource_dir, exists) =
         if let Ok(dir) = reaper_util::get_default_main_reaper_resource_dir() {
-            let exists = dir.get().exists();
+            let exists = dir.contains_reaper_ini();
             (Some(dir.into_inner()), exists)
         } else {
             (None, false)
@@ -33,7 +33,7 @@ pub fn resolve_config(config: InstallerConfig) -> anyhow::Result<ResolvedInstall
     } else {
         (main_reaper_resource_dir, false)
     };
-    let exists = reaper_resource_dir.get().exists();
+    let exists = reaper_resource_dir.contains_reaper_ini();
     // Determine platform
     let reaper_platform = config
         .custom_platform

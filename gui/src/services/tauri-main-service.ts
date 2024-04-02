@@ -26,7 +26,7 @@ export class TauriMainService implements MainService {
     });
 
     configure(config: InstallerConfig): void {
-        this.sendCommand({
+        this.invokeCommand({
             kind: "ConfigureInstallation",
             config
         })
@@ -41,19 +41,25 @@ export class TauriMainService implements MainService {
     }
 
     startInstallation(): void {
-        this.sendCommand({
+        this.invokeCommand({
             kind: "StartInstallation",
         });
     }
 
     cancelInstallation(): void {
-        this.sendCommand({
+        this.invokeCommand({
             kind: "CancelInstallation",
         });
     }
 
-    private sendCommand(command: ReabootCommand) {
-        invoke('reaboot_command', {
+    async startReaper() {
+        await this.invokeCommand({
+            kind: "StartReaper",
+        });
+    }
+
+    private async invokeCommand(command: ReabootCommand) {
+        await invoke('reaboot_command', {
             command
         })
     }
