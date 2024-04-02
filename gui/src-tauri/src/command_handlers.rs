@@ -41,11 +41,8 @@ async fn configure(
     // Only write config if successfully resolved
     *state.installer_config.lock().unwrap() = config;
     // Send derived events
-    let installation_stage = reaboot_util::determine_initial_installation_stage(
-        &resolved_config.reaper_resource_dir,
-        resolved_config.platform,
-    )
-    .await?;
+    let installation_stage =
+        reaboot_util::determine_initial_installation_stage(&resolved_config).await?;
     let backend_info = reaboot_util::collect_backend_info();
     app_handle.emit_reaboot_event(ReabootEvent::BackendInfoChanged { info: backend_info });
     app_handle.emit_reaboot_event(ReabootEvent::ConfigResolved {

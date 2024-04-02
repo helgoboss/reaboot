@@ -1,14 +1,8 @@
-import {WelcomePage} from "./pages/WelcomePage.tsx";
-import {PageDescriptor} from "./model/page.ts";
-import {DonePage} from "./pages/DonePage.tsx";
 import {Stepper} from "./components/Stepper.tsx";
-import {mainService, mainStore} from "./globals.ts";
+import {mainService, mainStore, pages} from "./globals.ts";
 import {debug} from "tauri-plugin-log-api";
 import {Match, onMount, Show, Switch} from "solid-js";
 import {Toaster} from "solid-toast";
-import {PickReaperPage} from "./pages/PickReaperPage.tsx";
-import {InstallPage} from "./pages/InstallPage.tsx";
-import {AddPackagesPage} from "./pages/AddPackagesPage.tsx";
 import {configureInstaller} from "./epics/install.ts";
 import {MainInstallationIcon, PortableInstallationIcon} from "./components/icons.tsx";
 import {showError} from "./epics/common.ts";
@@ -70,8 +64,10 @@ function keepSyncingStateFromBackendToStore() {
                 break;
             case "InstallationStageChanged":
                 mainStore.setInstallationStage(evt);
-                if (evt.stage.kind === "Finished" || evt.stage.kind === "Failed") {
-                    mainStore.setCurrentPageId("done");
+                if (mainStore.state.currentPageId === "install") {
+                    if (evt.stage.kind === "Finished" || evt.stage.kind === "Failed") {
+                        mainStore.setCurrentPageId("done");
+                    }
                 }
                 break;
             case "InstallationReportReady":
@@ -92,32 +88,3 @@ function keepSyncingStateFromBackendToStore() {
         }
     });
 }
-
-const pages: PageDescriptor[] = [
-    {
-        id: "welcome",
-        title: "Welcome",
-        content: WelcomePage,
-        showFooter: false,
-    },
-    {
-        id: "pick-reaper",
-        title: "Pick REAPER",
-        content: PickReaperPage,
-    },
-    {
-        id: "add-packages",
-        title: "Add packages",
-        content: AddPackagesPage,
-    },
-    {
-        id: "install",
-        title: "Install",
-        content: InstallPage,
-    },
-    {
-        id: "done",
-        title: "Done",
-        content: DonePage,
-    },
-];

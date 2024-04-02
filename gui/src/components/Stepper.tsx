@@ -1,16 +1,12 @@
 import {Index} from "solid-js";
-import {PageId} from "../model/page.ts";
+import {PageDescriptor, PageId} from "../model/page.ts";
 import {mainStore} from "../globals.ts";
 
 export type StepperProps = {
     currentPageId?: PageId,
-    pages: StepperPage[]
+    pages: PageDescriptor[]
 }
 
-export type StepperPage = {
-    id: PageId,
-    title: string,
-}
 
 export function Stepper(props: StepperProps) {
     const currentPageIndex = () => props.pages.findIndex(p => p.id == props.currentPageId);
@@ -18,15 +14,21 @@ export function Stepper(props: StepperProps) {
         <ol class="steps w-full">
             <Index each={props.pages}>
                 {
-                    (page, index) => (
-                        <li
-                            class="step cursor-pointer"
-                            classList={{"step-primary": currentPageIndex() >= index}}
-                            onClick={() => mainStore.setCurrentPageId(page().id)}
-                        >
-                            {page().title}
-                        </li>
-                    )
+                    (page, index) => {
+                        const isRandomlyAccessible = page().isRandomlyAccessible ?? true;
+                        return (
+                            <li
+                                class="step"
+                                classList={{
+                                    "step-primary": currentPageIndex() >= index,
+                                    "cursor-pointer": isRandomlyAccessible,
+                                }}
+                                onClick={isRandomlyAccessible ? () => mainStore.setCurrentPageId(page().id) : undefined}
+                            >
+                                {page().title}
+                            </li>
+                        );
+                    }
                 }
             </Index>
         </ol>

@@ -3,6 +3,12 @@ import {MainStore} from "./store/main-store.ts";
 import {TauriMainService} from "./services/tauri-main-service.ts";
 import {Accessor, createSignal} from "solid-js";
 import {appWindow, Theme} from "@tauri-apps/api/window";
+import {PageDescriptor} from "./model/page.ts";
+import {WelcomePage} from "./pages/WelcomePage.tsx";
+import {PickReaperPage} from "./pages/PickReaperPage.tsx";
+import {AddPackagesPage} from "./pages/AddPackagesPage.tsx";
+import {InstallPage} from "./pages/InstallPage.tsx";
+import {DonePage} from "./pages/DonePage.tsx";
 
 export const useDummyService = false;
 
@@ -29,6 +35,36 @@ export const mainStore = new MainStore({
     },
     current_tasks: []
 });
+
+export const pages: PageDescriptor[] = [
+    {
+        id: "welcome",
+        title: "Welcome",
+        content: WelcomePage,
+        showFooter: false,
+    },
+    {
+        id: "pick-reaper",
+        title: "Pick REAPER",
+        content: PickReaperPage,
+    },
+    {
+        id: "add-packages",
+        title: "Add packages",
+        content: AddPackagesPage,
+    },
+    {
+        id: "install",
+        title: "Install",
+        content: InstallPage,
+    },
+    {
+        id: "done",
+        title: "Done",
+        content: DonePage,
+        isRandomlyAccessible: false,
+    },
+];
 
 function createThemeSignal(): Accessor<Theme | undefined> {
     const [theme, setTheme] = createSignal<Theme>();

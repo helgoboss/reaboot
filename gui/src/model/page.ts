@@ -7,4 +7,5 @@ export type PageDescriptor = {
     title: string,
     content: Component,
     showFooter?: boolean,
+    isRandomlyAccessible?: boolean,
 }

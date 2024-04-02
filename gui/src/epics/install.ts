@@ -6,6 +6,13 @@ type PatchConfigurationArgs = {
     packageUrls?: string[]
 };
 
+export async function startInstallation() {
+    // At first, reset outcome of potential previous installation
+    mainStore.setInstallationReportHtml(undefined);
+    // Then start installation
+    await mainService.startInstallation();
+}
+
 export async function configureInstaller(args: PatchConfigurationArgs) {
     const oldConfig = mainStore.state.installerConfig;
     const newConfig = {

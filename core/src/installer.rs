@@ -1,5 +1,6 @@
 use crate::api::{
     DownloadInfo, InstallationStage, InstallerConfig, MultiDownloadInfo, PackageInfo,
+    ResolvedInstallerConfig,
 };
 use crate::downloader::{Download, Downloader};
 use crate::file_util::{
@@ -44,18 +45,12 @@ use url::Url;
 
 /// Responsible for orchestrating and carrying out the actual installation.
 pub struct Installer<L> {
+    resolved_config: ResolvedInstallerConfig,
     downloader: Downloader,
     multi_downloader: MultiDownloader,
     temp_dir: PathBuf,
     temp_reaper_resource_dir: ReaperResourceDir,
-    dest_reaper_resource_dir: ReaperResourceDir,
-    package_urls: Vec<PackageUrl>,
-    platform: ReaperPlatform,
-    dry_run: bool,
     listener: L,
-    reaper_version: VersionRef,
-    portable: bool,
-    skip_failed_packages: bool,
     /// This is set if [`InstallerConfig::keep_temp_dir`] is `false`. It will cause
     /// the temporary directory to be removed latest on drop.
     ///
@@ -70,21 +65,23 @@ impl<L: InstallerListener> Installer<L> {
     ///
     /// Creates a temporary directly already.
     pub async fn new(config: InstallerConfig, listener: L) -> anyhow::Result<Self> {
-        let config = reaboot_util::resolve_config(config)?;
+        let resolved_config = reaboot_util::resolve_config(config)?;
         // Do some early sanity checks
-        let dest_reapack_db_file = config.reaper_resource_dir.reapack_registry_db_file();
+        let dest_reapack_db_file = resolved_config
+            .reaper_resource_dir
+            .reapack_registry_db_file();
         if dest_reapack_db_file.exists() {
             Database::open(dest_reapack_db_file).await.context("ReaPack database is currently busy. Please close REAPER and/or stop existing ReaBoot processes and try again!")?;
         }
-        if !config.dry_run {
-            let resource_dir = config.reaper_resource_dir.get();
+        if !resolved_config.dry_run {
+            let resource_dir = resolved_config.reaper_resource_dir.get();
             ensure!(file_or_dir_is_writable_or_creatable(resource_dir), "REAPER resource directory {resource_dir:?} is read-only. Are you trying to write into a system directory? REAPER resource directories are usually accessible without root/admin privileges.");
         }
         // Create some directories
-        fs::create_dir_all(&config.temp_parent_dir)?;
-        let temp_dir_guard = TempDir::new_in(&config.temp_parent_dir, "reaboot-")
+        fs::create_dir_all(&resolved_config.temp_parent_dir)?;
+        let temp_dir_guard = TempDir::new_in(&resolved_config.temp_parent_dir, "reaboot-")
             .context("couldn't create temp directory")?;
-        let (temp_dir, temp_dir_guard) = if config.keep_temp_dir {
+        let (temp_dir, temp_dir_guard) = if resolved_config.keep_temp_dir {
             (temp_dir_guard.into_path(), None)
         } else {
             (temp_dir_guard.path().to_path_buf(), Some(temp_dir_guard))
@@ -93,36 +90,26 @@ impl<L: InstallerListener> Installer<L> {
         fs::create_dir_all(&temp_reaper_resource_dir)?;
         let installer = Self {
             multi_downloader: MultiDownloader::new(
-                Downloader::new(config.num_download_retries),
-                config.concurrent_downloads,
+                Downloader::new(resolved_config.num_download_retries),
+                resolved_config.concurrent_downloads,
             ),
-            downloader: Downloader::new(config.num_download_retries),
-            package_urls: config.package_urls,
+            downloader: Downloader::new(resolved_config.num_download_retries),
             temp_dir,
             temp_reaper_resource_dir: ReaperResourceDir::new(temp_reaper_resource_dir)?,
-            dest_reaper_resource_dir: config.reaper_resource_dir,
-            platform: config.platform,
             listener,
-            dry_run: config.dry_run,
-            skip_failed_packages: config.skip_failed_packages,
-            reaper_version: config.reaper_version,
-            portable: config.portable,
             temp_dir_guard: Mutex::new(temp_dir_guard),
+            resolved_config,
         };
         Ok(installer)
     }
 
     /// Returns whether ReaBoot is capable of installing REAPER automatically.
     pub fn reaper_is_installable(&self) -> bool {
-        self.portable
+        self.resolved_config.portable
     }
 
     pub async fn determine_initial_installation_stage(&self) -> anyhow::Result<InstallationStage> {
-        reaboot_util::determine_initial_installation_stage(
-            &self.dest_reaper_resource_dir,
-            self.platform,
-        )
-        .await
+        reaboot_util::determine_initial_installation_stage(&self.resolved_config).await
     }
 
     pub async fn install(mut self) -> Result<PreparationReport, InstallError> {
@@ -130,7 +117,7 @@ impl<L: InstallerListener> Installer<L> {
         let final_stage = match &result {
             Ok(_) => InstallationStage::Finished,
             Err(e) => InstallationStage::Failed {
-                display_msg: e.to_string(),
+                display_msg: format!("{e:#}"),
             },
         };
         self.listener.installation_stage_changed(final_stage);
@@ -166,10 +153,10 @@ impl<L: InstallerListener> Installer<L> {
             .await?;
         // Determine files to be downloaded, weeding out pre-download failures
         let (files_to_be_downloaded, pre_download_failures) = determine_files_to_be_downloaded(
-            &self.package_urls,
+            &self.resolved_config.package_urls,
             &downloaded_indexes,
             &package_status_quo.installed_packages_to_keep,
-            self.platform,
+            self.resolved_config.platform,
         );
         // Download packages
         let package_download_results = self.download_packages(files_to_be_downloaded).await;
@@ -201,10 +188,10 @@ impl<L: InstallerListener> Installer<L> {
             temp_install_failures,
             &package_installation_plans,
         );
-        if self.dry_run {
+        if self.resolved_config.dry_run {
             return Ok(preparation_report);
         }
-        if !self.skip_failed_packages && preparation_report.summary().failures > 0 {
+        if !self.resolved_config.skip_failed_packages && preparation_report.summary().failures > 0 {
             return Err(InstallError::SomePackagesFailed(preparation_report));
         }
         // Actually apply the changes (by copying/moving all stuff to the destination dir)
@@ -231,7 +218,7 @@ impl<L: InstallerListener> Installer<L> {
         // If the user didn't provide a custom temp parent dir, it's "REAPER_RESOURCE_DIR/ReaBoot".
         // This directory is going to be empty if the user or installer didn't decide to keep it.
         // In this case, we just delete it in order to not leave traces.
-        let _ = fs::remove_dir(self.dest_reaper_resource_dir.temp_reaboot_dir());
+        let _ = fs::remove_dir(self.resolved_config.reaper_resource_dir.temp_reaboot_dir());
     }
 
     fn apply_reapack_lib(&self, download: Option<&ToolDownload>) -> anyhow::Result<()> {
@@ -242,7 +229,8 @@ impl<L: InstallerListener> Installer<L> {
                 .file_name()
                 .context("ReaPack lib file should have name")?;
             let dest_file = self
-                .dest_reaper_resource_dir
+                .resolved_config
+                .reaper_resource_dir
                 .user_plugins_dir()
                 .join(file_name);
             move_file(&download.download.file, dest_file, true)?;
@@ -268,12 +256,15 @@ impl<L: InstallerListener> Installer<L> {
                     dir_containing_reaper,
                     ..
                 } => {
-                    move_dir_contents(dir_containing_reaper, self.dest_reaper_resource_dir.get())?;
+                    move_dir_contents(
+                        dir_containing_reaper,
+                        self.resolved_config.reaper_resource_dir.get(),
+                    )?;
                     // Copy reaper.ini file, but only if it doesn't exist already. E.g. the silent Windows installation
                     // already contains such a file with some minimal content.
                     let _ = move_file(
                         self.temp_reaper_resource_dir.reaper_ini_file(),
-                        self.dest_reaper_resource_dir.reaper_ini_file(),
+                        self.resolved_config.reaper_resource_dir.reaper_ini_file(),
                         false,
                     );
                 }
@@ -489,7 +480,11 @@ impl<L: InstallerListener> Installer<L> {
                 // Dry remove installed package files
                 for file in &p.files {
                     relative_paths_to_be_replaced.insert(&file.path);
-                    let absolute_path = self.dest_reaper_resource_dir.get().join(&file.path);
+                    let absolute_path = self
+                        .resolved_config
+                        .reaper_resource_dir
+                        .get()
+                        .join(&file.path);
                     dry_remove_file(&absolute_path)?;
                 }
                 // Remove package from DB
@@ -510,7 +505,8 @@ impl<L: InstallerListener> Installer<L> {
                 }
                 let src_file = &download.download.file;
                 let dest_file = self
-                    .dest_reaper_resource_dir
+                    .resolved_config
+                    .reaper_resource_dir
                     .join(&download.payload.relative_path);
                 dry_move_file(src_file, dest_file)?;
             }
@@ -529,15 +525,17 @@ impl<L: InstallerListener> Installer<L> {
             .installation_stage_changed(InstallationStage::ApplyingReaPackState);
         move_file_overwriting_with_backup(
             self.temp_reaper_resource_dir.reapack_ini_file(),
-            self.dest_reaper_resource_dir.reapack_ini_file(),
+            self.resolved_config.reaper_resource_dir.reapack_ini_file(),
         )
         .context("moving ReaPack INI file failed")?;
         move_file_overwriting_with_backup(
             self.temp_reaper_resource_dir.reapack_registry_db_file(),
-            self.dest_reaper_resource_dir.reapack_registry_db_file(),
+            self.resolved_config
+                .reaper_resource_dir
+                .reapack_registry_db_file(),
         )
         .context("moving ReaPack registry DB file failed")?;
-        let dest_cache_dir = self.dest_reaper_resource_dir.reapack_cache_dir();
+        let dest_cache_dir = self.resolved_config.reaper_resource_dir.reapack_cache_dir();
         for index in downloaded_indexes.values() {
             let src_index_file_name = index
                 .temp_download_file
@@ -569,7 +567,11 @@ impl<L: InstallerListener> Installer<L> {
             self.listener
                 .info(format!("Deleting files of existing package {p}"));
             for file in &p.files {
-                let path = self.dest_reaper_resource_dir.get().join(&file.path);
+                let path = self
+                    .resolved_config
+                    .reaper_resource_dir
+                    .get()
+                    .join(&file.path);
                 fs::remove_file(path).context("couldn't remove file of package to be replaced")?;
             }
         }
@@ -579,7 +581,8 @@ impl<L: InstallerListener> Installer<L> {
         for download in plan.to_be_moved.into_iter() {
             let src_file = download.download.file;
             let dest_file = self
-                .dest_reaper_resource_dir
+                .resolved_config
+                .reaper_resource_dir
                 .get()
                 .join(download.payload.relative_path);
             move_file(&src_file, &dest_file, false)?;
@@ -595,6 +598,7 @@ impl<L: InstallerListener> Installer<L> {
         let mut db = Database::open(reapack_db_file).await?;
         let already_installed_packages = db.installed_packages().await?;
         let package_ids_to_be_installed: HashSet<LightPackageId> = self
+            .resolved_config
             .package_urls
             .iter()
             .filter_map(|purl| {
@@ -626,9 +630,11 @@ impl<L: InstallerListener> Installer<L> {
     async fn download_reaper(&self) -> anyhow::Result<ToolDownload> {
         self.listener
             .installation_stage_changed(InstallationStage::CheckingLatestReaperVersion);
-        let installer_asset =
-            reaper_util::get_latest_reaper_installer_asset(self.platform, &self.reaper_version)
-                .await?;
+        let installer_asset = reaper_util::get_latest_reaper_installer_asset(
+            self.resolved_config.platform,
+            &self.resolved_config.reaper_version,
+        )
+        .await?;
         let file = self.temp_dir.join(installer_asset.file_name);
         let version = installer_asset.version;
         self.listener
@@ -662,7 +668,7 @@ impl<L: InstallerListener> Installer<L> {
         &self,
         reaper_download: ToolDownload,
     ) -> anyhow::Result<ReaperInstallationOutcome> {
-        if !self.portable {
+        if !self.resolved_config.portable {
             let outcome =
                 ReaperInstallationOutcome::InstallManuallyBecauseNoPortableInstall(reaper_download);
             return Ok(outcome);
@@ -692,7 +698,9 @@ impl<L: InstallerListener> Installer<L> {
     async fn download_reapack(&self) -> anyhow::Result<ToolDownload> {
         let latest_release = reapack_util::get_latest_reapack_release().await?;
         let tag_name = latest_release.tag_name.clone();
-        let asset = reapack_util::get_correct_reapack_asset(latest_release, self.platform).await?;
+        let asset =
+            reapack_util::get_correct_reapack_asset(latest_release, self.resolved_config.platform)
+                .await?;
         let file = self
             .temp_reaper_resource_dir
             .user_plugins_dir()
@@ -728,6 +736,7 @@ impl<L: InstallerListener> Installer<L> {
     async fn download_repository_indexes(&self) -> anyhow::Result<HashMap<Url, DownloadedIndex>> {
         let temp_cache_dir = self.temp_reaper_resource_dir.reapack_cache_dir();
         let repository_urls: HashSet<_> = self
+            .resolved_config
             .package_urls
             .iter()
             .map(|purl| purl.repository_url())
@@ -818,7 +827,7 @@ impl<L: InstallerListener> Installer<L> {
         &self,
         rel_path: impl AsRef<Path>,
     ) -> anyhow::Result<()> {
-        let file_in_final_dir = self.dest_reaper_resource_dir.join(&rel_path);
+        let file_in_final_dir = self.resolved_config.reaper_resource_dir.join(&rel_path);
         if file_in_final_dir.exists() {
             let file_in_temp_dir = self.temp_reaper_resource_dir.join(&rel_path);
             create_parent_dirs(&file_in_temp_dir)?;

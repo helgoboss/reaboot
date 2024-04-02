@@ -85,19 +85,23 @@ pub fn resolve_config(config: InstallerConfig) -> anyhow::Result<ResolvedInstall
 }
 
 pub async fn determine_initial_installation_stage(
-    custom_reaper_resource_dir: &ReaperResourceDir,
-    platform: ReaperPlatform,
+    resolved_config: &ResolvedInstallerConfig,
 ) -> anyhow::Result<InstallationStage> {
-    let reaper_installed = custom_reaper_resource_dir.contains_reaper_ini();
+    let reaper_installed = resolved_config.reaper_resource_dir.contains_reaper_ini();
     if !reaper_installed {
         return Ok(InstallationStage::NothingInstalled);
     };
-    let reapack_lib_file =
-        reapack_util::get_default_reapack_shared_lib_file(custom_reaper_resource_dir, platform);
+    // At this point, we can be sure that REAPER is installed
+    let reapack_lib_file = reapack_util::get_default_reapack_shared_lib_file(
+        &resolved_config.reaper_resource_dir,
+        resolved_config.platform,
+    );
     if !reapack_lib_file.exists() {
         return Ok(InstallationStage::InstalledReaper);
     }
-    let reapack_db_file = custom_reaper_resource_dir.reapack_registry_db_file();
+    let reapack_db_file = resolved_config
+        .reaper_resource_dir
+        .reapack_registry_db_file();
     if !reapack_db_file.exists() {
         // ReaPack library is installed but the DB file doesn't exist. There's no easy way to
         // find out if the ReaPack installation is up-to-date, so we better download the latest
@@ -108,16 +112,20 @@ pub async fn determine_initial_installation_stage(
         return Ok(InstallationStage::InstalledReaper);
     };
     match reapack_db.compatibility_info().await? {
-        CompatibilityInfo::PerfectlyCompatible | CompatibilityInfo::DbNewerButCompatible => {
-            Ok(InstallationStage::InstalledReaPack)
-        }
         CompatibilityInfo::CompatibleButNeedsMigration => {
             // This is a good indicator that the installed ReaPack version is too old, so we should
             // install the latest (and do a migration later!).
-            Ok(InstallationStage::InstalledReaper)
+            return Ok(InstallationStage::InstalledReaper);
         }
         CompatibilityInfo::DbTooNew => {
             bail!("This ReaBoot version is too old to handle your installed ReaPack database. Please download the latest ReaBoot version! If this already is the latest ReaBoot version, please send a quick message to info@helgoboss.org!");
         }
+        _ => {}
     }
+    // At this point, we can be sure that ReaPack is installed
+    if !resolved_config.package_urls.is_empty() {
+        return Ok(InstallationStage::InstalledReaper);
+    }
+    // No packages to be installed
+    Ok(InstallationStage::Finished)
 }

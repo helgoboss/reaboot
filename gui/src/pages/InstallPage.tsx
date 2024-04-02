@@ -7,6 +7,8 @@ import {For, from, Index, Match, Show, Switch} from "solid-js";
 import {InstallationStage} from "../../../core/bindings/InstallationStage.ts";
 import {WaitingForDataPage} from "./WaitingForDataPage.tsx";
 import {PackageTable} from "../components/PackageTable.tsx";
+import {ResolvedInstallerConfig} from "../../src-tauri/bindings/ResolvedInstallerConfig.ts";
+import {startInstallation} from "../epics/install.ts";
 
 export function InstallPage() {
     const resolvedConfig = mainStore.state.resolvedConfig;
@@ -16,7 +18,7 @@ export function InstallPage() {
     const installationStageContainer = mainStore.state.installationStage;
     const mainProgress = from(mainService.getProgressEvents());
     const effectiveInstallationStatusProgress = () => mainProgress() ?? 0.0;
-    const phases = () => derivePhases(installationStageContainer.stage);
+    const phases = () => derivePhases(installationStageContainer.stage, resolvedConfig);
     const mainProgressInPercent = () => effectiveInstallationStatusProgress() * 100;
     return (
         <Page>
@@ -63,19 +65,21 @@ export function InstallPage() {
                                 </Show>
                             </Match>
                             <Match when={true}>
-                                <div class="prose prose-sm overflow-y-auto">
-                                    <h4>General</h4>
-                                    <ul>
-                                        <li>
-                                            <b>Destination:</b> REAPER {resolvedConfig.portable ? "portable" : "main"} installation
-                                        </li>
-                                        <li><b>Platform:</b> {resolvedConfig.platform}</li>
-                                        <li>
-                                            <b>Error
-                                                handling:</b> {resolvedConfig.skip_failed_packages ? "Ignoring failing packages" : "Prevent incomplete installations"}
-                                        </li>
-                                    </ul>
-                                    <h4>Packages</h4>
+                                <div class="overflow-y-auto">
+                                    <div class="prose prose-sm">
+                                        <h4>General</h4>
+                                        <ul>
+                                            <li>
+                                                <b>Destination:</b> REAPER {resolvedConfig.portable ? "portable" : "main"} installation
+                                            </li>
+                                            <li><b>Platform:</b> {resolvedConfig.platform}</li>
+                                            <li>
+                                                <b>Error
+                                                    handling:</b> {resolvedConfig.skip_failed_packages ? "Ignoring failing packages" : "Prevent incomplete installations"}
+                                            </li>
+                                        </ul>
+                                        <h4>Packages</h4>
+                                    </div>
                                     <PackageTable packages={resolvedConfig.package_urls}/>
                                 </div>
                             </Match>
@@ -84,9 +88,9 @@ export function InstallPage() {
                 </div>
             </div>
             <ButtonRow>
-                <NavButton class="btn-warning" onClick={() => mainService.startInstallation()}
+                <NavButton class="btn-warning" onClick={() => startInstallation()}
                            disabled={mainStore.installationIsRunning}>
-                    {mainStore.installationIsRunning ? "Installation in progress..." : "Start installation"}
+                    {mainStore.installButtonLabel}
                 </NavButton>
             </ButtonRow>
         </Page>
@@ -94,9 +98,9 @@ export function InstallPage() {
 }
 
 
-function derivePhases(stage: InstallationStage): Omit<Phase, "darkMode">[] {
+function derivePhases(stage: InstallationStage, config: ResolvedInstallerConfig): Omit<Phase, "darkMode">[] {
     const actualTaskPos = getTaskPos(stage);
-    return [
+    const phases = [
         {
             index: 0,
             todoLabel: "Install REAPER",
@@ -111,14 +115,17 @@ function derivePhases(stage: InstallationStage): Omit<Phase, "darkMode">[] {
             doneLabel: "ReaPack is installed",
             status: getTaskStatus(actualTaskPos, INSTALL_REAPACK_POS),
         },
-        {
+    ];
+    if (config.package_urls.length > 0) {
+        phases.push({
             index: 2,
             todoLabel: "Install packages",
             inProgressLabel: "Installing packages",
             doneLabel: "Packages are installed",
             status: getTaskStatus(actualTaskPos, INSTALL_PACKAGES_POS),
-        },
-    ];
+        });
+    }
+    return phases;
 }
 
 function getTaskStatus(actualTaskPos: number, expectedTaskPos: number): PhaseStatus {

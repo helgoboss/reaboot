@@ -82,7 +82,7 @@ export class MainStore {
         this.setState("lastPickedPortableReaperDir", value);
     }
 
-    setInstallationReportHtml(value: string) {
+    setInstallationReportHtml(value: string | undefined) {
         this.setState("installationReportHtml", value);
     }
 
@@ -96,6 +96,21 @@ export class MainStore {
                 return false;
             default:
                 return true;
+        }
+    }
+
+    get installButtonLabel(): string {
+        switch (this.state.installationStage.stage.kind) {
+            case "NothingInstalled":
+            case "InstalledReaper":
+            case "InstalledReaPack":
+                return "Start installation";
+            case "Failed":
+                return "Retry installation";
+            case "Finished":
+                return "Continue";
+            default:
+                return "Installation in progress...";
         }
     }
 

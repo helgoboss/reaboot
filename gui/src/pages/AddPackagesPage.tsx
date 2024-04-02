@@ -32,7 +32,7 @@ export function AddPackagesPage() {
                 </div>
             </div>
             <p class="text-center">
-                Packages that are already installed will be
+                Packages which are already installed will be
                 replaced with the version that
                 you provide here.
                 You can add more packages later at any time
