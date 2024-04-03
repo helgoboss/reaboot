@@ -57,7 +57,7 @@ pub async fn get_latest_reaper_installer_asset(
 /// - On macOS, `dest_dir` will contain just one entry: The `REAPER.app` application bundle directory.
 /// - On Windows, `dest_dir` will contain `reaper.exe` and other files and directories.
 /// - On Linux, `dest_dir` will contain `reaper.so` and other files and directories.
-pub fn extract_reaper_to_portable_dir(
+pub fn extract_reaper_to_dir(
     installer_asset: &Path,
     dest_dir: &Path,
     temp_dir: &Path,
@@ -129,16 +129,37 @@ fn extract_reaper_for_windows_to_dir(
     let dest_dir_string = dest_dir
         .to_str()
         .context("destination directory for extracting REAPER is not valid UTF-8")?;
-    let exit_status = Command::new(reaper_installer_exe)
+    let output = Command::new(reaper_installer_exe)
         .arg("/S")
         .arg("/PORTABLE")
         .arg(format!("/D={dest_dir_string}"))
         .output()
-        .context("Error while executing the REAPER installer")?
-        .status;
+        .context("Error while executing the REAPER installer (portable)")?;
     ensure!(
-        exit_status.success(),
-        "REAPER installer returned with a non-zero exit code"
+        output.status.success(),
+        "REAPER installer returned with a non-zero exit code (portable). Output:\n\n{output:?}"
+    );
+    Ok(())
+}
+
+pub fn install_reaper_for_windows_main(reaper_installer_exe: &Path) -> anyhow::Result<()> {
+    ensure!(
+        cfg!(target_os = "windows"),
+        "It's not possible on a non-Windows system to install REAPER for Windows"
+    );
+    let output = Command::new(reaper_installer_exe)
+        .arg("/S")
+        .output()
+        .context("Error while executing the REAPER installer (main)")?;
+    if output.status.code() == Some(1223) {
+        // Unfortunately, this exit code is returned after a successful installation but also after denying root
+        // access on Windows. Well, if the user denies root access, then we assume he knows what he's doing and
+        // count this as success anyway.
+        return Ok(());
+    }
+    ensure!(
+        output.status.success(),
+        "REAPER installer returned with a non-zero exit code (main). Output:\n\n{output:?}"
     );
     Ok(())
 }
@@ -248,7 +269,7 @@ pub fn get_os_specific_main_reaper_exe_path(platform: ReaperPlatform) -> String 
         ReaperPlatform::WindowsX64 => {
             let program_files_dir =
                 env::var("ProgramFiles").unwrap_or("C:\\Program Files".to_string());
-            format!("{program_files_dir}/REAPER/{exe_file_name}")
+            format!("{program_files_dir}/REAPER (x64)/{exe_file_name}")
         }
         ReaperPlatform::LinuxAarch64
         | ReaperPlatform::LinuxArmv7l
