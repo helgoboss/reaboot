@@ -19,6 +19,7 @@ export const themeSignal = createThemeSignal();
 export const mainStore = new MainStore({
     currentPageId: "welcome",
     resolvedConfig: undefined,
+    agreedToReaperEula: false,
     installerConfig: {
         custom_reaper_resource_dir: undefined,
         package_urls: [],
@@ -42,27 +43,32 @@ export const pages: PageDescriptor[] = [
         title: "Welcome",
         content: WelcomePage,
         showFooter: false,
+        requiresReaperEulaAgreement: false,
     },
     {
         id: "pick-reaper",
         title: "Pick REAPER",
         content: PickReaperPage,
+        requiresReaperEulaAgreement: false,
     },
     {
         id: "add-packages",
         title: "Add packages",
         content: AddPackagesPage,
+        requiresReaperEulaAgreement: true,
     },
     {
         id: "install",
         title: "Install",
         content: InstallPage,
+        requiresReaperEulaAgreement: true,
     },
     {
         id: "done",
         title: "Done",
         content: DonePage,
         isRandomlyAccessible: false,
+        requiresReaperEulaAgreement: false,
     },
 ];
 

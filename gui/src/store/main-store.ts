@@ -1,9 +1,11 @@
 import {createStore, produce, SetStoreFunction} from "solid-js/store";
-import {PageId} from "../model/page.ts";
+import {PageDescriptor, PageId} from "../model/page.ts";
 import {InstallationStage} from "../../../core/bindings/InstallationStage.ts";
 import {ReabootBackendInfo} from "../../../core/bindings/ReabootBackendInfo.ts";
 import {ResolvedInstallerConfig} from "../../src-tauri/bindings/ResolvedInstallerConfig.ts";
 import {InstallerConfig} from "../../../core/bindings/InstallerConfig.ts";
+import {Accessor, createMemo} from "solid-js";
+import {getPage} from "../epics/common.tsx";
 
 export type MainStoreState = {
     // ID of the currently displayed page
@@ -15,6 +17,8 @@ export type MainStoreState = {
     // Whether to use the portable REAPER installation.
     // Dictated by frontend.
     usePortableReaperDir: boolean,
+    // Whether user has agreed to the REAPER EULA already.
+    agreedToReaperEula: boolean,
     // Installer config.
     // Dictated by frontend.
     installerConfig: InstallerConfig,
@@ -84,6 +88,14 @@ export class MainStore {
 
     setInstallationReportHtml(value: string | undefined) {
         this.setState("installationReportHtml", value);
+    }
+
+    agreeToEula() {
+        this.setState("agreedToReaperEula", true);
+    }
+
+    get currentPage(): Accessor<PageDescriptor> {
+        return createMemo(() => getPage(this.state.currentPageId));
     }
 
     get installationIsRunning(): boolean {

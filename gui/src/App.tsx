@@ -5,7 +5,8 @@ import {Match, onMount, Show, Switch} from "solid-js";
 import {Toaster} from "solid-toast";
 import {configureInstaller} from "./epics/install.ts";
 import {MainInstallationIcon, PortableInstallationIcon} from "./components/icons.tsx";
-import {showError} from "./epics/common.ts";
+import {navigateTo, showError} from "./epics/common.tsx";
+import {GlobalDialog} from "./components/GlobalDialog.tsx";
 
 export function App() {
     keepSyncingStateFromBackendToStore();
@@ -14,16 +15,15 @@ export function App() {
         // This makes the backend give us all necessary data.
         configureInstaller({});
     });
-    const page = () => pages.find((p) => p.id == mainStore.state.currentPageId)!;
     const resolvedConfig = () => mainStore.state.resolvedConfig;
     return <div class="w-screen h-screen flex flex-col min-h-0">
         <header class="flex-none p-4">
-            <Stepper pages={pages} currentPageId={page().id}/>
+            <Stepper pages={pages} currentPageId={mainStore.currentPage().id}/>
         </header>
         <main class="grow flex flex-col min-h-0">
-            {page().content({})}
+            {mainStore.currentPage().content({})}
         </main>
-        <Show when={page().showFooter != false}>
+        <Show when={mainStore.currentPage().showFooter != false}>
             <Show when={resolvedConfig()}>
                 {(conf) =>
                     <footer class="p-4 bg-base-300 text-base-content flex flex-row text-xs gap-3">
@@ -48,6 +48,7 @@ export function App() {
                 }
             </Show>
         </Show>
+        <GlobalDialog/>
         <Toaster/>
     </div>
 }
@@ -66,7 +67,7 @@ function keepSyncingStateFromBackendToStore() {
                 mainStore.setInstallationStage(evt);
                 if (mainStore.state.currentPageId === "install") {
                     if (evt.stage.kind === "Finished" || evt.stage.kind === "Failed") {
-                        mainStore.setCurrentPageId("done");
+                        navigateTo("done");
                     }
                 }
                 break;

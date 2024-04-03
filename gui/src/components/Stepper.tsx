@@ -1,6 +1,6 @@
 import {Index} from "solid-js";
 import {PageDescriptor, PageId} from "../model/page.ts";
-import {mainStore} from "../globals.ts";
+import {navigateTo} from "../epics/common.tsx";
 
 export type StepperProps = {
     currentPageId?: PageId,
@@ -23,7 +23,7 @@ export function Stepper(props: StepperProps) {
                                     "step-primary": currentPageIndex() >= index,
                                     "cursor-pointer": isRandomlyAccessible,
                                 }}
-                                onClick={isRandomlyAccessible ? () => mainStore.setCurrentPageId(page().id) : undefined}
+                                onClick={isRandomlyAccessible ? () => navigateTo(page().id) : undefined}
                             >
                                 {page().title}
                             </li>

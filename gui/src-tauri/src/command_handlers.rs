@@ -11,6 +11,13 @@ use reaboot_reapack::model::PackageUrl;
 use tauri::State;
 
 #[tauri::command]
+pub async fn reaper_eula() -> Result<String, String> {
+    reaper_util::get_reaper_eula()
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 pub async fn reaboot_command(
     command: ReabootCommand,
     app_handle: tauri::AppHandle,

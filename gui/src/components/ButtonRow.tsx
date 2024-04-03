@@ -5,7 +5,7 @@ type Props = {
 }
 
 export function ButtonRow(props: Props) {
-    return <div class="flex flex-row justify-center gap-8 p-6">
+    return <div class="flex flex-row justify-center gap-8 p-4">
         {props.children}
     </div>;
 }

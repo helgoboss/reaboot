@@ -1,5 +1,5 @@
 import {mainService, mainStore} from "../globals.ts";
-import {showError} from "./common.ts";
+import {showError} from "./common.tsx";
 
 type PatchConfigurationArgs = {
     custom_reaper_resource_dir?: string | null,

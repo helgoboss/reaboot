@@ -8,6 +8,7 @@ import {Match, Switch} from "solid-js";
 import {configureInstaller} from "../epics/install.ts";
 import {MainInstallationIcon, PortableInstallationIcon} from "../components/icons.tsx";
 import {WaitingForDataPage} from "./WaitingForDataPage.tsx";
+import {navigateTo} from "../epics/common.tsx";
 
 export function PickReaperPage() {
     const backendInfo = mainStore.state.backendInfo;
@@ -72,7 +73,7 @@ export function PickReaperPage() {
                 </ProminentChoice>
             </div>
             <ButtonRow>
-                <NavButton onClick={() => mainStore.setCurrentPageId("add-packages")}>Continue</NavButton>
+                <NavButton onClick={() => navigateTo("add-packages")}>Continue</NavButton>
             </ButtonRow>
         </Page>
     )

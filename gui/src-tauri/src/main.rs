@@ -32,7 +32,10 @@ fn main() {
                 .build(),
         )
         .manage(simple_command_state)
-        .invoke_handler(tauri::generate_handler![command_handlers::reaboot_command])
+        .invoke_handler(tauri::generate_handler![
+            command_handlers::reaboot_command,
+            command_handlers::reaper_eula,
+        ])
         .setup(move |app| {
             let mut worker =
                 ReabootWorker::new(worker_command_receiver, ReabootAppHandle(app.app_handle()));

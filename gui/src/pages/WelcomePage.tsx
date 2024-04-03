@@ -1,4 +1,4 @@
-import {mainStore} from "../globals.ts";
+import {navigateTo} from "../epics/common.tsx";
 
 export function WelcomePage() {
     return (
@@ -25,7 +25,7 @@ export function WelcomePage() {
                         &#32;of your choice.
                     </p>
                     <button class="btn btn-primary"
-                            onClick={() => mainStore.setCurrentPageId("pick-reaper")}>
+                            onClick={() => navigateTo("pick-reaper")}>
                         Let's go!
                     </button>
                 </div>

@@ -12,6 +12,7 @@ export type MainService = {
     getNormalEvents: () => Observable<ReabootEvent>,
     // Returns a stream of progress events (sent much more frequently).
     getProgressEvents: () => Observable<number>,
+    getReaperEula: () => Promise<string>,
     // Configures the installation.
     //
     // This will cause the backend to send a basic state change event and is therefore suitable for getting

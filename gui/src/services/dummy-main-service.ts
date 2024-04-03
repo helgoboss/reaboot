@@ -39,6 +39,10 @@ export class DummyMainService implements MainService {
         return this.progressEventsSubject;
     }
 
+    async getReaperEula() {
+        return "";
+    }
+
     async startInstallation() {
         await simulateProgress(this.progressEventsSubject, 3000);
     }

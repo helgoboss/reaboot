@@ -33,6 +33,11 @@ export class TauriMainService implements MainService {
         return this.progressEvents;
     }
 
+    async getReaperEula() {
+        const eula = await invoke('reaper_eula', {});
+        return eula as string;
+    }
+
     async configure(config: InstallerConfig) {
         await this.invokeCommand({
             kind: "ConfigureInstallation",
@@ -61,6 +66,6 @@ export class TauriMainService implements MainService {
     private async invokeCommand(command: ReabootCommand) {
         await invoke('reaboot_command', {
             command
-        })
+        });
     }
 }
