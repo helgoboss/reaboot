@@ -233,7 +233,7 @@ pub fn start_reaper(
     Ok(())
 }
 
-fn get_os_specific_main_reaper_exe_path(platform: ReaperPlatform) -> String {
+pub fn get_os_specific_main_reaper_exe_path(platform: ReaperPlatform) -> String {
     let exe_file_name = get_os_specific_reaper_exe_file_name(platform);
     match platform {
         // TODO-medium What about the "macOS 10.5-10.14" download ("reaper711_x86_64.dmg")?

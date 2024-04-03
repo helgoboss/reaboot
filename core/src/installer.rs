@@ -32,6 +32,7 @@ use reaboot_reapack::model::{
 use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
 
+use crate::reaper_platform::ReaperPlatform;
 use std::fs;
 use std::future::Future;
 use std::io::BufReader;
@@ -226,18 +227,47 @@ impl<L: InstallerListener> Installer<L> {
                     dir_containing_reaper,
                     ..
                 } => {
-                    move_dir_contents(
-                        dir_containing_reaper,
-                        self.resolved_config.reaper_resource_dir.get(),
-                    )?;
-                    // Copy reaper.ini file, but only if it doesn't exist already. E.g. the silent Windows installation
-                    // already contains such a file with some minimal content.
-                    let _ = move_file(
-                        self.temp_reaper_resource_dir.reaper_ini_file(),
-                        self.resolved_config.reaper_resource_dir.reaper_ini_file(),
-                        false,
-                    );
+                    if self.resolved_config.portable {
+                        self.apply_reaper_portable(dir_containing_reaper)?;
+                    } else {
+                        self.apply_reaper_main(dir_containing_reaper)?;
+                    }
                 }
+            }
+        }
+        Ok(())
+    }
+
+    fn apply_reaper_portable(&self, dir_containing_reaper: &PathBuf) -> anyhow::Result<()> {
+        move_dir_contents(
+            dir_containing_reaper,
+            self.resolved_config.reaper_resource_dir.get(),
+        )?;
+        // Copy reaper.ini file, but only if it doesn't exist already. E.g. the silent Windows installation
+        // already contains such a file with some minimal content.
+        let _ = move_file(
+            self.temp_reaper_resource_dir.reaper_ini_file(),
+            self.resolved_config.reaper_resource_dir.reaper_ini_file(),
+            false,
+        );
+        Ok(())
+    }
+
+    fn apply_reaper_main(&self, dir_containing_reaper: &PathBuf) -> anyhow::Result<()> {
+        if cfg!(target_os = "macos") {
+            let src_path = dir_containing_reaper.join("REAPER.app");
+            let dest_path =
+                reaper_util::get_os_specific_main_reaper_exe_path(self.resolved_config.platform);
+            dbg!(&src_path, &dest_path);
+            let mut command = std::process::Command::new("mv");
+            command
+                // .gui(true).show(true)
+                .arg(src_path)
+                .arg(dest_path);
+            let status = command.status()?;
+            if !status.success() {
+                self.keep_temp_directory();
+                bail!("Couldn't copy REAPER.app to /Applications directory (exist status: {status:?})");
             }
         }
         Ok(())
@@ -638,7 +668,7 @@ impl<L: InstallerListener> Installer<L> {
         &self,
         reaper_download: ToolDownload,
     ) -> anyhow::Result<ReaperInstallationOutcome> {
-        if !self.resolved_config.portable {
+        if !self.resolved_config.portable && cfg!(target_os = "windows") {
             let outcome =
                 ReaperInstallationOutcome::InstallManuallyBecauseNoPortableInstall(reaper_download);
             return Ok(outcome);
@@ -866,8 +896,9 @@ enum ReaperInstallationOutcome {
     /// REAPER has been extracted successfully.
     ExtractedSuccessfully {
         download: ToolDownload,
-        /// It's a portable install and the REAPER executable along with other files (Windows & Linux) or the bundle dir
-        /// (macOS) has been placed **into** the given directory.
+        /// It's a portable install and the REAPER executable along with other files
+        /// (Windows & Linux) or the bundle dir `REAPER.app` (macOS) has been placed **into** the
+        /// given directory.
         dir_containing_reaper: PathBuf,
     },
 }
