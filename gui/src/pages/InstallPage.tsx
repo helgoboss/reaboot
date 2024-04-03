@@ -3,12 +3,12 @@ import {NavButton} from "../components/NavButton.tsx";
 import {Page} from "../components/Page.tsx";
 import {Phase, PhasePanel, PhaseStatus} from "../components/PhasePanel.tsx";
 import {mainService, mainStore, themeSignal} from "../globals.ts";
-import {For, from, Index, Match, Show, Switch} from "solid-js";
+import {createMemo, For, from, Index, Match, Show, Switch} from "solid-js";
 import {InstallationStage} from "../../../core/bindings/InstallationStage.ts";
 import {WaitingForDataPage} from "./WaitingForDataPage.tsx";
 import {PackageTable} from "../components/PackageTable.tsx";
 import {ResolvedInstallerConfig} from "../../src-tauri/bindings/ResolvedInstallerConfig.ts";
-import {startInstallation} from "../epics/install.ts";
+import {install} from "../epics/install.ts";
 
 export function InstallPage() {
     const resolvedConfig = mainStore.state.resolvedConfig;
@@ -20,10 +20,11 @@ export function InstallPage() {
     const effectiveInstallationStatusProgress = () => mainProgress() ?? 0.0;
     const phases = () => derivePhases(installationStageContainer.stage, resolvedConfig);
     const mainProgressInPercent = () => effectiveInstallationStatusProgress() * 100;
+    const installButtonProps = createMemo(() => getInstallButtonProps(installationStageContainer.stage));
     return (
         <Page>
             <p class="text-center font-bold pb-6">
-                Please review your choices and start the installation!
+                {installButtonProps().title}
             </p>
             <div class="grow flex flex-row items-stretch gap-8 min-h-0">
                 <div class="basis-1/3 flex flex-col gap-4">
@@ -72,7 +73,8 @@ export function InstallPage() {
                                             <li>
                                                 <b>Destination:</b> REAPER {resolvedConfig.portable ? "portable" : "main"} installation
                                             </li>
-                                            <li><b>Platform:</b> {resolvedConfig.platform}</li>
+                                            <li><b>Platform:</b> <span
+                                                class="font-mono">{resolvedConfig.platform}</span></li>
                                             <li>
                                                 <b>Error
                                                     handling:</b> {resolvedConfig.skip_failed_packages ? "Ignoring failing packages" : "Prevent incomplete installations"}
@@ -88,15 +90,45 @@ export function InstallPage() {
                 </div>
             </div>
             <ButtonRow>
-                <NavButton class="btn-warning" onClick={() => startInstallation()}
+                <NavButton class={installButtonProps().buttonClass} onClick={() => install()}
                            disabled={mainStore.installationIsRunning}>
-                    {mainStore.installButtonLabel}
+                    {
+                        installButtonProps().buttonLabel
+                    }
                 </NavButton>
             </ButtonRow>
         </Page>
     );
 }
 
+type DisplayProps = {
+    title: string,
+    buttonLabel: string,
+    buttonClass: string,
+}
+
+function getInstallButtonProps(stage: InstallationStage): DisplayProps {
+    switch (stage.kind) {
+        case "NothingInstalled":
+        case "InstalledReaper":
+        case "InstalledReaPack":
+            return {
+                buttonLabel: "Start installation",
+                buttonClass: "btn-warning",
+                title: "Please review your choices and start the installation!"
+            };
+        case "Failed":
+            return {
+                buttonLabel: "Retry installation",
+                buttonClass: "btn-error",
+                title: "Installation has failed. Want to try again?"
+            };
+        case "Finished":
+            return {buttonLabel: "Show summary", buttonClass: "btn-success", title: "There's nothing left to install."};
+        default:
+            return {buttonLabel: "Installing...", buttonClass: "btn-warning", title: "Installation in progress."};
+    }
+}
 
 function derivePhases(stage: InstallationStage, config: ResolvedInstallerConfig): Omit<Phase, "darkMode">[] {
     const actualTaskPos = getTaskPos(stage);

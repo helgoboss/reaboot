@@ -17,7 +17,7 @@ export function AddPackagesPage() {
     return (
         <Page>
             <p class="text-center font-bold">
-                Optional: Add more packages
+                Optional: Add {resolvedConfig.package_urls.length > 0 ? "more" : ""} packages
             </p>
             <ButtonRow>
                 <button class="btn" onClick={() => addPackageUrlsFromClipboard()}>
@@ -41,7 +41,7 @@ export function AddPackagesPage() {
             </p>
             <ButtonRow>
                 <NavButton onClick={() => mainStore.setCurrentPageId("install")}>
-                    {resolvedConfig.package_urls.length == 0 ? "Skip" : "Continue"}
+                    {resolvedConfig.package_urls.length == 0 ? "Continue without packages" : "Continue"}
                 </NavButton>
             </ButtonRow>
         </Page>

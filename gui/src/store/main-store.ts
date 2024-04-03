@@ -99,21 +99,6 @@ export class MainStore {
         }
     }
 
-    get installButtonLabel(): string {
-        switch (this.state.installationStage.stage.kind) {
-            case "NothingInstalled":
-            case "InstalledReaper":
-            case "InstalledReaPack":
-                return "Start installation";
-            case "Failed":
-                return "Retry installation";
-            case "Finished":
-                return "Continue";
-            default:
-                return "Installation in progress...";
-        }
-    }
-
     addTask(id: number, label: string) {
         this.setState(
             produce((state) => {

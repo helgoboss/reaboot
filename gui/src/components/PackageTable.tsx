@@ -34,7 +34,7 @@ export function PackageTable(props: Props) {
             </tbody>
         </table>
         <Show when={props.packages.length === 0}>
-            <div class="text-center text-neutral/50 text-sm pt-1">
+            <div class="text-center text-neutral text-sm pt-1">
                 No packages are planned for installation
             </div>
         </Show>

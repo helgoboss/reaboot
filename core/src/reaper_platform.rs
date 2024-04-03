@@ -7,28 +7,64 @@ use ts_rs::TS;
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub enum ReaperPlatform {
-    /// Rust: macos/aarch64
-    MacOsAarch64,
-    /// Rust: macos/x86
-    MacOsX86,
-    /// Rust: macos/x86_64
+    /// - REAPER about: macOS-arm64
+    /// - REAPER installer: _universal.dmg (in DMG readme.txt also called arm64)
+    /// - ReaPack lib: -arm64.dylib
+    /// - Rust: macos/aarch64
+    #[serde(rename = "macos-arm64")]
+    MacOsArm64,
+    /// - REAPER about: ?
+    /// - REAPER installer: _i386.dmg
+    /// - ReaPack lib: -i386.dylib
+    /// - Rust: macos/x86
+    #[serde(rename = "macos-i386")]
+    MacOsI386,
+    /// - REAPER about: OSX64
+    /// - REAPER installer: _universal.dmg (in DMG readme.txt also called x86_64)
+    /// - ReaPack lib: -x86_64.dylib
+    /// - Rust: macos/x86_64
+    #[serde(rename = "macos-x86_64")]
     MacOsX86_64,
-    /// Rust: windows/x86
+    /// - REAPER about: win32
+    /// - REAPER installer: -install.exe
+    /// - ReaPack lib: -x86.dll
+    /// - Rust: windows/x86
+    #[serde(rename = "windows-x86")]
     WindowsX86,
-    /// Rust: windows/x86_64
+    /// - REAPER about: win64
+    /// - REAPER installer: _x64-install.exe
+    /// - ReaPack lib: -x64.dll
+    /// - Rust: windows/x86_64
+    #[serde(rename = "windows-x64")]
     WindowsX64,
-    /// Rust: linux/aarch64
+    /// - REAPER about: ?
+    /// - REAPER installer: _linux_aarch64.tar.xz
+    /// - ReaPack lib: -aarch64.so
+    /// - Rust: linux/aarch64
+    #[serde(rename = "linux-aarch64")]
     LinuxAarch64,
-    /// Rust: linux/arm
+    /// - REAPER about: ?
+    /// - REAPER installer: _linux_armv7l.tar.xz
+    /// - ReaPack lib: -armv7l.so
+    /// - Rust: linux/arm
+    #[serde(rename = "linux-armv7l")]
     LinuxArmv7l,
-    /// Rust: linux/x86
+    /// - REAPER about: ?
+    /// - REAPER installer: _linux_i686.tar.xz
+    /// - ReaPack lib: -i686.so
+    /// - Rust: linux/x86
+    #[serde(rename = "linux-i686")]
     LinuxI686,
-    /// Rust: linux/x86_64
+    /// - REAPER about: linux-x86_64
+    /// - REAPER installer: _linux_x86_64.tar.xz
+    /// - ReaPack lib: -x86_64.so
+    /// - Rust: linux/x86_64
+    #[serde(rename = "linux-x86_64")]
     LinuxX86_64,
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
-pub enum ReaperTargetFamily {
+pub enum ReaperOs {
     MacOs,
     Windows,
     Linux,
@@ -40,9 +76,9 @@ impl ReaperPlatform {
     const fn from_reaboot_build() -> Option<Self> {
         let target = if cfg!(target_os = "macos") {
             if cfg!(target_arch = "aarch64") {
-                Self::MacOsAarch64
+                Self::MacOsArm64
             } else if cfg!(target_arch = "x86") {
-                Self::MacOsX86
+                Self::MacOsI386
             } else if cfg!(target_arch = "x86_64") {
                 Self::MacOsX86_64
             } else {
@@ -74,11 +110,11 @@ impl ReaperPlatform {
         Some(target)
     }
 
-    pub const fn family(&self) -> ReaperTargetFamily {
+    pub const fn family(&self) -> ReaperOs {
+        use ReaperOs::*;
         use ReaperPlatform::*;
-        use ReaperTargetFamily::*;
         match self {
-            MacOsAarch64 | MacOsX86 | MacOsX86_64 => MacOs,
+            MacOsArm64 | MacOsI386 | MacOsX86_64 => MacOs,
             WindowsX86 | WindowsX64 => Windows,
             LinuxAarch64 | LinuxArmv7l | LinuxI686 | LinuxX86_64 => Linux,
         }
@@ -91,15 +127,15 @@ impl ReaperPlatform {
             return true;
         };
         match reaper_target_or_family {
-            ReaperTargetOrFamily::Target(t) => *self == t,
-            ReaperTargetOrFamily::Family(f) => self.family() == f,
+            ReaperTargetOrFamily::Platform(t) => *self == t,
+            ReaperTargetOrFamily::Os(f) => self.family() == f,
         }
     }
 }
 
 pub enum ReaperTargetOrFamily {
-    Target(ReaperPlatform),
-    Family(ReaperTargetFamily),
+    Platform(ReaperPlatform),
+    Os(ReaperOs),
 }
 
 impl ReaperTargetOrFamily {
@@ -107,18 +143,18 @@ impl ReaperTargetOrFamily {
         use Platform::*;
         let value = match platform {
             All => return None,
-            Darwin => Self::Family(ReaperTargetFamily::MacOs),
-            Darwin32 => Self::Target(ReaperPlatform::MacOsX86),
-            Darwin64 => Self::Target(ReaperPlatform::MacOsX86_64),
-            DarwinArm64 => Self::Target(ReaperPlatform::MacOsAarch64),
-            Linux => Self::Family(ReaperTargetFamily::Linux),
-            Linux32 => Self::Target(ReaperPlatform::LinuxI686),
-            Linux64 => Self::Target(ReaperPlatform::LinuxX86_64),
-            LinuxArmv7l => Self::Target(ReaperPlatform::LinuxArmv7l),
-            LinuxAarch64 => Self::Target(ReaperPlatform::LinuxAarch64),
-            Windows => Self::Family(ReaperTargetFamily::Windows),
-            Win32 => Self::Target(ReaperPlatform::WindowsX86),
-            Win64 => Self::Target(ReaperPlatform::WindowsX64),
+            Darwin => Self::Os(ReaperOs::MacOs),
+            Darwin32 => Self::Platform(ReaperPlatform::MacOsI386),
+            Darwin64 => Self::Platform(ReaperPlatform::MacOsX86_64),
+            DarwinArm64 => Self::Platform(ReaperPlatform::MacOsArm64),
+            Linux => Self::Os(ReaperOs::Linux),
+            Linux32 => Self::Platform(ReaperPlatform::LinuxI686),
+            Linux64 => Self::Platform(ReaperPlatform::LinuxX86_64),
+            LinuxArmv7l => Self::Platform(ReaperPlatform::LinuxArmv7l),
+            LinuxAarch64 => Self::Platform(ReaperPlatform::LinuxAarch64),
+            Windows => Self::Os(ReaperOs::Windows),
+            Win32 => Self::Platform(ReaperPlatform::WindowsX86),
+            Win64 => Self::Platform(ReaperPlatform::WindowsX64),
         };
         Some(value)
     }

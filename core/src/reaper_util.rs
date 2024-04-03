@@ -237,7 +237,7 @@ fn get_os_specific_main_reaper_exe_path(platform: ReaperPlatform) -> String {
     let exe_file_name = get_os_specific_reaper_exe_file_name(platform);
     match platform {
         // TODO-medium What about the "macOS 10.5-10.14" download ("reaper711_x86_64.dmg")?
-        ReaperPlatform::MacOsAarch64 | ReaperPlatform::MacOsX86_64 | ReaperPlatform::MacOsX86 => {
+        ReaperPlatform::MacOsArm64 | ReaperPlatform::MacOsX86_64 | ReaperPlatform::MacOsI386 => {
             format!("/Applications/{exe_file_name}")
         }
         ReaperPlatform::WindowsX86 => {
@@ -271,7 +271,7 @@ fn get_os_specific_main_reaper_exe_path(platform: ReaperPlatform) -> String {
 
 fn get_os_specific_reaper_exe_file_name(platform: ReaperPlatform) -> &'static str {
     match platform {
-        ReaperPlatform::MacOsAarch64 | ReaperPlatform::MacOsX86_64 | ReaperPlatform::MacOsX86 => {
+        ReaperPlatform::MacOsArm64 | ReaperPlatform::MacOsX86_64 | ReaperPlatform::MacOsI386 => {
             "REAPER.app"
         }
         ReaperPlatform::WindowsX86 | ReaperPlatform::WindowsX64 => "reaper.exe",
@@ -289,10 +289,10 @@ fn get_os_specific_reaper_installer_file_name(
     let version = version.to_string().replace('.', "");
     match platform {
         // TODO-medium What about the "macOS 10.5-10.14" download ("reaper711_x86_64.dmg")?
-        ReaperPlatform::MacOsAarch64 | ReaperPlatform::MacOsX86_64 => {
+        ReaperPlatform::MacOsArm64 | ReaperPlatform::MacOsX86_64 => {
             format!("reaper{version}_universal.dmg")
         }
-        ReaperPlatform::MacOsX86 => format!("reaper{version}_i386.dmg"),
+        ReaperPlatform::MacOsI386 => format!("reaper{version}_i386.dmg"),
         ReaperPlatform::WindowsX86 => format!("reaper{version}-install.exe"),
         ReaperPlatform::WindowsX64 => format!("reaper{version}_x64-install.exe"),
         ReaperPlatform::LinuxAarch64 => format!("reaper{version}_linux_aarch64.tar.xz"),

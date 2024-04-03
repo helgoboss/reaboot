@@ -23,7 +23,7 @@ export function PickReaperPage() {
                         Which REAPER installation do you want to modify?
                     </Match>
                     <Match when={true}>
-                        Please decide whether you want to create a main or a portable installation!
+                        Do you want to create a new main REAPER installation or pick a portable one?
                     </Match>
                 </Switch>
             </p>
@@ -48,12 +48,13 @@ export function PickReaperPage() {
                 </ProminentChoice>
                 <ProminentChoice selected={resolvedConfig.portable}
                                  icon={<PortableInstallationIcon size="24"/>}
-                                 bottomRightIndicator={<button class="btn btn-accent" onClick={(e) => {
-                                     e.stopPropagation();
-                                     return configurePortable(true);
-                                 }}>
-                                     Choose directory...
-                                 </button>}
+                                 bottomRightIndicator={mainStore.state.lastPickedPortableReaperDir &&
+                                     <button class="btn btn-accent" onClick={(e) => {
+                                         e.stopPropagation();
+                                         return configurePortable(true);
+                                     }}>
+                                         Change directory...
+                                     </button>}
                                  onClick={() => configurePortable(false)}>
                     <div class="flex flex-row items-center gap-4">
                         <div class="flex flex-col">

@@ -56,8 +56,8 @@ pub async fn get_correct_reapack_asset(
 
 pub fn get_os_specific_reapack_file_name(reaper_target: ReaperPlatform) -> &'static str {
     match reaper_target {
-        ReaperPlatform::MacOsAarch64 => "reaper_reapack-arm64.dylib",
-        ReaperPlatform::MacOsX86 => "reaper_reapack-i386.dylib",
+        ReaperPlatform::MacOsArm64 => "reaper_reapack-arm64.dylib",
+        ReaperPlatform::MacOsI386 => "reaper_reapack-i386.dylib",
         ReaperPlatform::MacOsX86_64 => "reaper_reapack-x86_64.dylib",
         ReaperPlatform::WindowsX86 => "reaper_reapack-x86.dll",
         ReaperPlatform::WindowsX64 => "reaper_reapack-x64.dll",

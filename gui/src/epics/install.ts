@@ -6,7 +6,7 @@ type PatchConfigurationArgs = {
     packageUrls?: string[]
 };
 
-export async function startInstallation() {
+export async function install() {
     // At first, reset outcome of potential previous installation
     mainStore.setInstallationReportHtml(undefined);
     // Then start installation
