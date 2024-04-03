@@ -50,10 +50,10 @@ export function InstallPage() {
                                             <For each={mainStore.state.current_tasks}>
                                                 {task =>
                                                     <tr class="border-none">
-                                                        <td class="w-1/3 whitespace-nowrap overflow-hidden p-0">
+                                                        <td class="w-1/2 whitespace-nowrap overflow-hidden p-0">
                                                             {task.label}
                                                         </td>
-                                                        <td class="w-2/3 pl-4 pr-0">
+                                                        <td class="w-1/2 pl-4 pr-0">
                                                             <progress class="progress" value={task.progress * 100}
                                                                       max="100"/>
                                                         </td>
@@ -111,7 +111,6 @@ function getInstallButtonProps(stage: InstallationStage): DisplayProps {
     switch (stage.kind) {
         case "NothingInstalled":
         case "InstalledReaper":
-        case "InstalledReaPack":
             return {
                 buttonLabel: "Start installation",
                 buttonClass: "btn-warning",
@@ -124,9 +123,13 @@ function getInstallButtonProps(stage: InstallationStage): DisplayProps {
                 title: "Installation has failed. Want to try again?"
             };
         case "Finished":
-            return {buttonLabel: "Show summary", buttonClass: "btn-success", title: "There's nothing left to install."};
+            return {
+                buttonLabel: "Restart installation",
+                buttonClass: "btn-success",
+                title: "Installation succeeded. But you can do it again, if you want."
+            };
         default:
-            return {buttonLabel: "Installing...", buttonClass: "btn-warning", title: "Installation in progress."};
+            return {buttonLabel: "Installing...", buttonClass: "btn-warning", title: "Installation in progress"};
     }
 }
 
@@ -140,17 +143,10 @@ function derivePhases(stage: InstallationStage, config: ResolvedInstallerConfig)
             doneLabel: "REAPER is installed",
             status: getTaskStatus(actualTaskPos, INSTALL_REAPER_POS),
         },
-        {
-            index: 1,
-            todoLabel: "Install ReaPack",
-            inProgressLabel: "Installing ReaPack",
-            doneLabel: "ReaPack is installed",
-            status: getTaskStatus(actualTaskPos, INSTALL_REAPACK_POS),
-        },
     ];
     if (config.package_urls.length > 0) {
         phases.push({
-            index: 2,
+            index: 1,
             todoLabel: "Install packages",
             inProgressLabel: "Installing packages",
             doneLabel: "Packages are installed",
@@ -180,11 +176,6 @@ function getTaskPos(stage: InstallationStage) {
             return INSTALL_REAPER_POS;
         case "InstalledReaper":
             return INSTALLED_REAPER_POS;
-        case "CheckingLatestReaPackVersion":
-        case "DownloadingReaPack":
-            return INSTALL_REAPACK_POS;
-        case "InstalledReaPack":
-            return INSTALLED_REAPACK_POS;
         case "PreparingTempDirectory":
         case "DownloadingRepositoryIndexes":
         case "ParsingRepositoryIndexes":
@@ -205,7 +196,5 @@ const FAILED_POS = 0;
 const NOTHING_INSTALLED_POS = 1;
 const INSTALL_REAPER_POS = 2;
 const INSTALLED_REAPER_POS = 3;
-const INSTALL_REAPACK_POS = 4;
-const INSTALLED_REAPACK_POS = 5;
-const INSTALL_PACKAGES_POS = 6;
-const FINISHED_POS = 7;
+const INSTALL_PACKAGES_POS = 4;
+const FINISHED_POS = 5;

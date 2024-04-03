@@ -224,6 +224,7 @@ impl Database {
 }
 
 /// Compatibility of this ReaBoot version with a given ReaPack registry database.
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub enum CompatibilityInfo {
     /// Versions match exactly. Jackpot.
     PerfectlyCompatible,

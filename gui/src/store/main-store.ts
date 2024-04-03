@@ -90,7 +90,6 @@ export class MainStore {
         switch (this.state.installationStage.stage.kind) {
             case "NothingInstalled":
             case "InstalledReaper":
-            case "InstalledReaPack":
             case "Failed":
             case "Finished":
                 return false;

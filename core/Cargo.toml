@@ -27,8 +27,6 @@ anyhow.workspace = true
 tokio.workspace = true
 # For things like joining or buffering futures, which we do e.g. for multiple parallel downloads
 futures.workspace = true
-# For conveniently finding the latest version of ReaPack
-octocrab.workspace = true
 # For convenient access to typical OS dirs
 dirs.workspace = true
 # For very convenient custom error types

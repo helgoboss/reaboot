@@ -37,7 +37,7 @@ async fn configure(
     state: State<'_, ReabootAppState>,
 ) -> anyhow::Result<()> {
     // Resolve config
-    let resolved_config = resolve_config(config.clone())?;
+    let resolved_config = resolve_config(config.clone()).await?;
     // Only write config if successfully resolved
     *state.installer_config.lock().unwrap() = config;
     // Send derived events

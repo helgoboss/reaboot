@@ -15,13 +15,12 @@ use crate::multi_downloader::{
 };
 use crate::preparation_report::PreparationReport;
 
-use crate::reaper_platform::ReaperPlatform;
 use crate::reaper_resource_dir::{
     ReaperResourceDir, REAPACK_INI_FILE_PATH, REAPACK_REGISTRY_DB_FILE_PATH,
 };
 use crate::reaper_util::extract_reaper_to_portable_dir;
 use crate::task_tracker::{TaskSummary, TaskTrackerListener};
-use crate::{reaboot_util, reapack_util, reaper_util, ToolDownload, ToolingChange};
+use crate::{reaboot_util, reaper_util, ToolDownload, ToolingChange};
 use anyhow::{bail, ensure, Context};
 use enumset::EnumSet;
 use reaboot_reapack::database::Database;
@@ -65,7 +64,7 @@ impl<L: InstallerListener> Installer<L> {
     ///
     /// Creates a temporary directly already.
     pub async fn new(config: InstallerConfig, listener: L) -> anyhow::Result<Self> {
-        let resolved_config = reaboot_util::resolve_config(config)?;
+        let resolved_config = reaboot_util::resolve_config(config).await?;
         // Do some early sanity checks
         let dest_reapack_db_file = resolved_config
             .reaper_resource_dir
@@ -137,12 +136,6 @@ impl<L: InstallerListener> Installer<L> {
             } else {
                 None
             };
-        // Download ReaPack if necessary
-        let reapack_download = if initial_installation_stage < InstallationStage::InstalledReaPack {
-            Some(self.download_reapack().await?)
-        } else {
-            None
-        };
         // Prepare temporary directory
         self.prepare_temp_dir()?;
         // Download repository indexes
@@ -178,9 +171,6 @@ impl<L: InstallerListener> Installer<L> {
         {
             tooling_changes.push(ToolingChange::new("REAPER".to_string(), download.clone()));
         }
-        if let Some(download) = reapack_download.as_ref() {
-            tooling_changes.push(ToolingChange::new("ReaPack".to_string(), download.clone()));
-        }
         let preparation_report = PreparationReport::new(
             tooling_changes,
             pre_download_failures,
@@ -198,9 +188,6 @@ impl<L: InstallerListener> Installer<L> {
         // Apply REAPER
         self.apply_reaper(&reaper_installation_outcome)
             .context("installing REAPER failed")?;
-        // Apply ReaPack lib
-        self.apply_reapack_lib(reapack_download.as_ref())
-            .context("installing ReaPack library failed")?;
         // Apply ReaPack state
         // We do that *before* applying the packages. If something fails when
         // copying/moving the package files, the real ReaPack can still install the
@@ -219,23 +206,6 @@ impl<L: InstallerListener> Installer<L> {
         // This directory is going to be empty if the user or installer didn't decide to keep it.
         // In this case, we just delete it in order to not leave traces.
         let _ = fs::remove_dir(self.resolved_config.reaper_resource_dir.temp_reaboot_dir());
-    }
-
-    fn apply_reapack_lib(&self, download: Option<&ToolDownload>) -> anyhow::Result<()> {
-        if let Some(download) = download {
-            let file_name = download
-                .download
-                .file
-                .file_name()
-                .context("ReaPack lib file should have name")?;
-            let dest_file = self
-                .resolved_config
-                .reaper_resource_dir
-                .user_plugins_dir()
-                .join(file_name);
-            move_file(&download.download.file, dest_file, true)?;
-        }
-        Ok(())
     }
 
     fn apply_reaper(
@@ -689,46 +659,6 @@ impl<L: InstallerListener> Installer<L> {
                 download: reaper_download,
                 dir_containing_reaper: reaper_dest_dir,
             }
-        };
-        Ok(outcome)
-    }
-
-    /// Downloads the ReaPack shared library to the temporary directory and returns the path to the
-    /// downloaded file.
-    async fn download_reapack(&self) -> anyhow::Result<ToolDownload> {
-        let latest_release = reapack_util::get_latest_reapack_release().await?;
-        let tag_name = latest_release.tag_name.clone();
-        let asset =
-            reapack_util::get_correct_reapack_asset(latest_release, self.resolved_config.platform)
-                .await?;
-        let file = self
-            .temp_reaper_resource_dir
-            .user_plugins_dir()
-            .join(asset.name);
-        let download_url = asset.browser_download_url;
-        self.listener
-            .installation_stage_changed(InstallationStage::DownloadingReaPack {
-                download: DownloadInfo {
-                    label: tag_name.clone(),
-                    url: download_url.clone(),
-                    file: file.clone(),
-                },
-            });
-        let download = Download::new(
-            format!("ReaPack {tag_name}"),
-            download_url,
-            file.clone(),
-            None,
-        );
-        self.downloader
-            .download(download.clone(), |s| {
-                self.listener
-                    .installation_stage_progressed(s.to_simple_progress())
-            })
-            .await?;
-        let outcome = ToolDownload {
-            version: tag_name,
-            download,
         };
         Ok(outcome)
     }

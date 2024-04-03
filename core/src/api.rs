@@ -125,19 +125,6 @@ pub enum InstallationStage {
     /// This means that the desired REAPER resource directory already exists.
     #[strum(serialize = "REAPER is installed, ReaPack not yet")]
     InstalledReaper,
-    /// Checking which is the latest available ReaPack version.
-    #[strum(serialize = "Checking latest ReaPack version")]
-    CheckingLatestReaPackVersion,
-    /// Downloading ReaPack.
-    #[strum(to_string = "Download ReaPack")]
-    DownloadingReaPack { download: DownloadInfo },
-    /// ReaPack is already installed in the minimum supported version.
-    ///
-    /// This means that the ReaPack shared library already exists in the desired REAPER resource
-    /// directory and that its version is high enough (verified by checking that the major pragma
-    /// user version of the ReaPack database is high enough)
-    #[strum(to_string = "REAPER and ReaPack are installed")]
-    InstalledReaPack,
 
     // =================================================================================
     // === Everything above is only done if REAPER/ReaPack was not already available ===
@@ -218,8 +205,7 @@ impl Display for InstallationStage {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let simple_name: &str = self.as_ref();
         match self {
-            InstallationStage::DownloadingReaper { download }
-            | InstallationStage::DownloadingReaPack { download } => {
+            InstallationStage::DownloadingReaper { download } => {
                 write!(
                     f,
                     "{simple_name} {} ({:?})",

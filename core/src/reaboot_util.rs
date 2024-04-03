@@ -1,14 +1,17 @@
 use anyhow::{bail, Context};
 use std::env;
+use url::Url;
 
 use reaboot_reapack::database::{CompatibilityInfo, Database};
-use reaboot_reapack::model::{PackageUrl, ParsePackageUrlError};
+use reaboot_reapack::model::{
+    PackagePath, PackageUrl, PackageVersionRef, ParsePackageUrlError, VersionRef,
+};
 
 use crate::api::{InstallationStage, InstallerConfig, ReabootBackendInfo, ResolvedInstallerConfig};
 use crate::file_util::file_or_dir_is_writable_or_creatable;
 use crate::reaper_platform::ReaperPlatform;
 use crate::reaper_resource_dir::ReaperResourceDir;
-use crate::{reapack_util, reaper_util};
+use crate::reaper_util;
 
 pub fn collect_backend_info() -> ReabootBackendInfo {
     let (main_reaper_resource_dir, exists) =
@@ -25,7 +28,7 @@ pub fn collect_backend_info() -> ReabootBackendInfo {
     }
 }
 
-pub fn resolve_config(config: InstallerConfig) -> anyhow::Result<ResolvedInstallerConfig> {
+pub async fn resolve_config(config: InstallerConfig) -> anyhow::Result<ResolvedInstallerConfig> {
     let main_reaper_resource_dir = reaper_util::get_default_main_reaper_resource_dir()?;
     let (reaper_resource_dir, portable) = if let Some(d) = config.custom_reaper_resource_dir {
         let d = ReaperResourceDir::new(d)?;
@@ -40,12 +43,13 @@ pub fn resolve_config(config: InstallerConfig) -> anyhow::Result<ResolvedInstall
         .custom_platform
         .or(ReaperPlatform::BUILD)
         .context("ReaBoot is running on a platform that's not supported by REAPER. It's still possible do do an install for a supported platform but you need to choose it manually.")?;
-
+    // Check ReaPack DB
+    complain_if_reapack_db_too_new(&reaper_resource_dir).await?;
     // Prefer a sub dir of the destination REAPER resource dir as location for all temporary
     // files, e.g. downloads. Rationale: Eventually, all downloaded files need to be moved
     // to their final destination. This move is very fast if it's just a rename, not a copy
     // operation. A rename is only possible if source file and destination directory are on
-    // the same mount ... and this is much more likely using this approach than to choose
+    // the same mount ... and this is much more likely with this approach than to choose
     // a random OS temp directory.
     let temp_parent_dir = if let Some(d) = config.temp_parent_dir {
         if file_or_dir_is_writable_or_creatable(&d) {
@@ -62,17 +66,23 @@ pub fn resolve_config(config: InstallerConfig) -> anyhow::Result<ResolvedInstall
             env::temp_dir()
         }
     };
+    // Parse user-defined package URLs
     let package_urls: Result<Vec<_>, ParsePackageUrlError> = config
         .package_urls
         .into_iter()
         .map(PackageUrl::parse)
         .collect();
+    let mut package_urls = package_urls?;
+    // Add ReaPack package (this is good to have for updates within REAPER and also necessary
+    // for scripts being registered at runtime)
+    package_urls.push(create_reapack_package_url());
+    // Create config value
     let resolved = ResolvedInstallerConfig {
         reaper_resource_dir,
         reaper_resource_dir_exists: exists,
         portable,
         platform: reaper_platform,
-        package_urls: package_urls?,
+        package_urls,
         num_download_retries: config.num_download_retries.unwrap_or(3),
         temp_parent_dir,
         keep_temp_dir: config.keep_temp_dir,
@@ -84,6 +94,24 @@ pub fn resolve_config(config: InstallerConfig) -> anyhow::Result<ResolvedInstall
     Ok(resolved)
 }
 
+pub async fn complain_if_reapack_db_too_new(
+    reaper_resource_dir: &ReaperResourceDir,
+) -> anyhow::Result<()> {
+    let reapack_db_file = reaper_resource_dir.reapack_registry_db_file();
+    if !reapack_db_file.exists() {
+        // ReaPack DB file doesn't exist yet. Good for us.
+        return Ok(());
+    }
+    let Ok(mut reapack_db) = Database::open(reapack_db_file).await else {
+        // ReaPack DB exists, but it can't be read ... unsure.
+        return Ok(());
+    };
+    if reapack_db.compatibility_info().await? == CompatibilityInfo::DbTooNew {
+        bail!("This ReaBoot version is too old to handle your installed ReaPack database. Please download the latest ReaBoot version! If this already is the latest ReaBoot version, please send a quick message to info@helgoboss.org!");
+    }
+    Ok(())
+}
+
 pub async fn determine_initial_installation_stage(
     resolved_config: &ResolvedInstallerConfig,
 ) -> anyhow::Result<InstallationStage> {
@@ -92,40 +120,22 @@ pub async fn determine_initial_installation_stage(
         return Ok(InstallationStage::NothingInstalled);
     };
     // At this point, we can be sure that REAPER is installed
-    let reapack_lib_file = reapack_util::get_default_reapack_shared_lib_file(
-        &resolved_config.reaper_resource_dir,
-        resolved_config.platform,
-    );
-    if !reapack_lib_file.exists() {
-        return Ok(InstallationStage::InstalledReaper);
-    }
-    let reapack_db_file = resolved_config
-        .reaper_resource_dir
-        .reapack_registry_db_file();
-    if !reapack_db_file.exists() {
-        // ReaPack library is installed but the DB file doesn't exist. There's no easy way to
-        // find out if the ReaPack installation is up-to-date, so we better download the latest
-        // version of ReaPack.
-        return Ok(InstallationStage::InstalledReaper);
-    }
-    let Ok(mut reapack_db) = Database::open(reapack_db_file).await else {
-        return Ok(InstallationStage::InstalledReaper);
-    };
-    match reapack_db.compatibility_info().await? {
-        CompatibilityInfo::CompatibleButNeedsMigration => {
-            // This is a good indicator that the installed ReaPack version is too old, so we should
-            // install the latest (and do a migration later!).
-            return Ok(InstallationStage::InstalledReaper);
-        }
-        CompatibilityInfo::DbTooNew => {
-            bail!("This ReaBoot version is too old to handle your installed ReaPack database. Please download the latest ReaBoot version! If this already is the latest ReaBoot version, please send a quick message to info@helgoboss.org!");
-        }
-        _ => {}
-    }
-    // At this point, we can be sure that ReaPack is installed
     if !resolved_config.package_urls.is_empty() {
         return Ok(InstallationStage::InstalledReaper);
     }
     // No packages to be installed
     Ok(InstallationStage::Finished)
+}
+
+fn create_reapack_package_url() -> PackageUrl {
+    PackageUrl {
+        repository_url: Url::parse("https://reapack.com/index.xml").unwrap(),
+        package_version_ref: PackageVersionRef {
+            package_path: PackagePath {
+                category: "Extensions".to_string(),
+                package_name: "ReaPack.ext".to_string(),
+            },
+            version_ref: VersionRef::Latest,
+        },
+    }
 }

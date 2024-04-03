@@ -29,13 +29,13 @@ pub struct PackageUrl {
     /// Repository index URL.
     ///
     /// - Must not contain any `#` character.
-    repository_url: Url,
+    pub repository_url: Url,
     /// Package version reference.
     ///
     /// - This part is technically the [fragment ID](https://www.w3.org/Addressing/URL/4_2_Fragments.html)
     ///   of the URL.
     /// - See [`PackageVersionRef`]
-    package_version_ref: PackageVersionRef,
+    pub package_version_ref: PackageVersionRef,
 }
 
 /// A package version reference uniquely identifies a specific version of a package within
@@ -62,8 +62,8 @@ pub struct PackageUrl {
 #[derive(Clone, Eq, PartialEq, Hash, Debug, Serialize, TS)]
 #[ts(export)]
 pub struct PackageVersionRef {
-    package_path: PackagePath,
-    version_ref: VersionRef,
+    pub package_path: PackagePath,
+    pub version_ref: VersionRef,
 }
 
 /// A package path uniquely identifies a package within a repository index without referring to
@@ -81,9 +81,9 @@ pub struct PackageVersionRef {
 #[ts(export)]
 pub struct PackagePath {
     /// May contain `/` characters.
-    category: String,
+    pub category: String,
     /// The package name is a file name, so it must not contain any `/` characters.
-    package_name: String,
+    pub package_name: String,
 }
 
 impl PackageUrl {
