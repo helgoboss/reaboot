@@ -16,9 +16,9 @@ export function PhasePanel(props: Phase) {
     const colorClasses = () => {
         switch (props.status) {
             case "todo":
-                return props.darkMode ? "bg-base-300 text-info" : "bg-info text-info-content";
+                return props.darkMode ? "bg-base-300 text-base" : "bg-info text-info-base";
             case "in-progress":
-                return props.darkMode ? "bg-base-300 text-info" : "bg-info text-info-content";
+                return props.darkMode ? "bg-base-300 text-warning" : "bg-info text-info-warning";
             case "done":
                 return props.darkMode ? "bg-base-300 text-success" : "bg-success text-success-content";
         }
