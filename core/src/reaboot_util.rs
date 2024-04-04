@@ -18,8 +18,8 @@ use crate::reaper_util;
 pub fn collect_backend_info() -> ReabootBackendInfo {
     let (main_reaper_resource_dir, main_reaper_ini_exists) =
         if let Ok(dir) = reaper_util::get_default_main_reaper_resource_dir() {
-            let exists = dir.contains_reaper_ini();
-            (Some(dir.into_inner()), exists)
+            let ini_exists = dir.contains_reaper_ini();
+            (Some(dir.into_inner()), ini_exists)
         } else {
             (None, false)
         };

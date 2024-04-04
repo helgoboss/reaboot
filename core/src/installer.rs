@@ -689,7 +689,7 @@ impl<L: InstallerListener> Installer<L> {
         }
         self.listener
             .installation_stage_changed(InstallationStage::ExtractingReaper);
-        if self.resolved_config.portable {
+        if self.resolved_config.portable && !self.resolved_config.reaper_ini_exists {
             fs::File::create(self.temp_reaper_resource_dir.reaper_ini_file())?;
         }
         if cfg!(target_os = "windows") && !self.resolved_config.portable {
