@@ -41,20 +41,28 @@ use tempdir::TempDir;
 use thiserror::Error;
 use url::Url;
 
+const REABOOT_TEMP_DIR_PREFIX: &str = "reaboot-";
+
 /// Responsible for orchestrating and carrying out the actual installation.
 pub struct Installer<L> {
     resolved_config: ResolvedInstallerConfig,
     downloader: Downloader,
     multi_downloader: MultiDownloader,
+    /// Temporary directory used for most of the downloads.
+    ///
+    /// - The parent of this temp dir is user-customizable.
+    /// - It's possible to keep it after running.
+    /// - By default, this ends up in the final REAPER resource directory ("ReaBoot" dir).
     temp_dir: PathBuf,
     temp_reaper_resource_dir: ReaperResourceDir,
-    listener: L,
-    /// This is set if [`InstallerConfig::keep_temp_dir`] is `false`. It will cause
-    /// the temporary directory to be removed latest on drop.
+    /// A temporary directory just for REAPER download.
     ///
-    /// It's wrapped in a mutex because we might decide in the middle of the installation process
-    /// that it's better to keep the temporary directory.
-    temp_dir_guard: Mutex<Option<TempDir>>,
+    /// The consumer must decide how long-lived this is (important for potential manual REAPER
+    /// install).
+    temp_dir_for_reaper_download: PathBuf,
+    listener: L,
+    /// This will cause the temporary directory to be removed latest on drop.
+    _temp_dir_guard: Option<TempDir>,
 }
 
 impl<L: InstallerListener> Installer<L> {
@@ -62,7 +70,11 @@ impl<L: InstallerListener> Installer<L> {
     /// installation process.
     ///
     /// Creates a temporary directly already.
-    pub async fn new(config: InstallerConfig, listener: L) -> anyhow::Result<Self> {
+    pub async fn new(
+        config: InstallerConfig,
+        temp_dir_for_reaper_download: PathBuf,
+        listener: L,
+    ) -> anyhow::Result<Self> {
         let resolved_config = reaboot_util::resolve_config(config).await?;
         // Do some early sanity checks
         let dest_reapack_db_file = resolved_config
@@ -77,8 +89,9 @@ impl<L: InstallerListener> Installer<L> {
         }
         // Create some directories
         fs::create_dir_all(&resolved_config.temp_parent_dir)?;
-        let temp_dir_guard = TempDir::new_in(&resolved_config.temp_parent_dir, "reaboot-")
-            .context("couldn't create temp directory")?;
+        let temp_dir_guard =
+            TempDir::new_in(&resolved_config.temp_parent_dir, REABOOT_TEMP_DIR_PREFIX)
+                .context("couldn't create temp directory")?;
         let (temp_dir, temp_dir_guard) = if resolved_config.keep_temp_dir {
             (temp_dir_guard.into_path(), None)
         } else {
@@ -94,8 +107,9 @@ impl<L: InstallerListener> Installer<L> {
             downloader: Downloader::new(resolved_config.num_download_retries),
             temp_dir,
             temp_reaper_resource_dir: ReaperResourceDir::new(temp_reaper_resource_dir)?,
+            temp_dir_for_reaper_download,
             listener,
-            temp_dir_guard: Mutex::new(temp_dir_guard),
+            _temp_dir_guard: temp_dir_guard,
             resolved_config,
         };
         Ok(installer)
@@ -217,7 +231,6 @@ impl<L: InstallerListener> Installer<L> {
     }
 
     fn clean_up(self) {
-        let _ = self.take_temp_dir_guard_if_existing();
         // If the user didn't provide a custom temp parent dir, it's "REAPER_RESOURCE_DIR/ReaBoot".
         // This directory is going to be empty if the user or installer didn't decide to keep it.
         // In this case, we just delete it in order to not leave traces.
@@ -233,10 +246,6 @@ impl<L: InstallerListener> Installer<L> {
             .installation_stage_changed(InstallationStage::InstallingReaper);
         match reaper_installation_outcome {
             ReaperPreparationOutcome::InstallManuallyBecauseNoPortableInstall(d) => {
-                // TODO-high This shouldn't be a reason to keep the temp directory. We should
-                //  rather download REAPER to a real temp dir that's going to be deleted for
-                //  sure. Or to Downloads directory. For sure not REAPER resource dir.
-                self.keep_temp_directory();
                 Some(d.download.file.clone())
             }
             ReaperPreparationOutcome::InstallManuallyBecauseError(download, error) => {
@@ -258,7 +267,7 @@ impl<L: InstallerListener> Installer<L> {
                 let result = if self.resolved_config.portable {
                     self.apply_reaper_portable_by_moving(dir_containing_reaper)
                 } else {
-                    self.apply_reaper_main_by_moving(dir_containing_reaper)
+                    self.install_reaper_main_by_moving(dir_containing_reaper)
                 };
                 if let Err(e) = result {
                     self.install_manually_because_error(&download, &e)
@@ -274,7 +283,6 @@ impl<L: InstallerListener> Installer<L> {
         download: &ToolDownload,
         error: &Error,
     ) -> Option<PathBuf> {
-        self.keep_temp_directory();
         tracing::warn!("ReaBoot tried to install REAPER for you, but there was an error. Please install it manually. The installer is located here: {:?}\n\nError: {:#}", &download.download.file, &error);
         Some(download.download.file.clone())
     }
@@ -297,15 +305,17 @@ impl<L: InstallerListener> Installer<L> {
         Ok(())
     }
 
-    fn apply_reaper_main_by_moving(&self, dir_containing_reaper: &PathBuf) -> anyhow::Result<()> {
+    fn install_reaper_main_by_moving(
+        &self,
+        dir_containing_extracted_reaper: &PathBuf,
+    ) -> anyhow::Result<()> {
         if cfg!(target_os = "macos") {
-            let src_path = dir_containing_reaper.join("REAPER.app");
+            let src_path = dir_containing_extracted_reaper.join("REAPER.app");
             let dest_path = &self.resolved_config.reaper_exe;
             let mut command = runas::Command::new("mv");
             command.gui(true).show(true).arg(src_path).arg(dest_path);
             let status = command.status()?;
             if !status.success() {
-                self.keep_temp_directory();
                 bail!("Couldn't copy REAPER.app to /Applications directory (exist status: {status:?})");
             }
             Ok(())
@@ -314,22 +324,6 @@ impl<L: InstallerListener> Installer<L> {
         } else {
             bail!("main installation of REAPER via moving not supported on Windows");
         }
-    }
-
-    /// Makes sure the temp directory is kept, even if the user didn't choose manually to keep it.
-    fn keep_temp_directory(&self) {
-        if let Some(temp_dir) = self.take_temp_dir_guard_if_existing() {
-            // This drops the temp dir struct without deleting the temporary directory
-            temp_dir.into_path();
-        }
-    }
-
-    /// This explicitly drops the temp dir guard if one exists.
-    ///
-    /// If the return value is just dropped, this will effectively remove the temp dir.
-    #[must_use]
-    fn take_temp_dir_guard_if_existing(&self) -> Option<TempDir> {
-        self.temp_dir_guard.lock().unwrap().take()
     }
 
     async fn gather_already_installed_packages(
@@ -678,7 +672,9 @@ impl<L: InstallerListener> Installer<L> {
             &self.resolved_config.reaper_version,
         )
         .await?;
-        let file = self.temp_dir.join(installer_asset.file_name);
+        let file = self
+            .temp_dir_for_reaper_download
+            .join(installer_asset.file_name);
         let version = installer_asset.version;
         self.listener
             .installation_stage_changed(InstallationStage::DownloadingReaper {

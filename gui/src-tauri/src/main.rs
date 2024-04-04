@@ -7,6 +7,7 @@ use crate::app_handle::ReabootAppHandle;
 use reaboot_core::api::InstallerConfig;
 use tauri::Manager;
 use tauri_plugin_log::LogTarget;
+use tempdir::TempDir;
 use tracing::log::LevelFilter;
 
 use crate::state::ReabootAppState;
@@ -23,6 +24,8 @@ fn main() {
     let simple_command_state = ReabootAppState {
         worker_command_sender,
         installer_config: Mutex::new(InstallerConfig::default()),
+        temp_dir_for_reaper_download: TempDir::new("reaboot-")
+            .expect("couldn't create temporary directory for REAPER download"),
     };
     tauri::Builder::default()
         .plugin(

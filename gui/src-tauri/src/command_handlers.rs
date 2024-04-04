@@ -61,11 +61,12 @@ async fn configure(
 }
 
 async fn install(state: State<'_, ReabootAppState>) -> anyhow::Result<()> {
-    let current_config = state.installer_config.lock().unwrap().clone();
-    state
-        .worker_command_sender
-        .send(ReabootWorkerCommand::Install(current_config))
-        .await?;
+    let config = state.installer_config.lock().unwrap().clone();
+    let command = ReabootWorkerCommand::Install {
+        config,
+        temp_dir_for_reaper_download: state.temp_dir_for_reaper_download.path().to_path_buf(),
+    };
+    state.worker_command_sender.send(command).await?;
     Ok(())
 }
 

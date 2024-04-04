@@ -31,6 +31,8 @@ tracing.workspace = true
 ts-rs.workspace = true
 # For converting the Markdown installation report to HTML
 markdown.workspace = true
+# For getting a correctly removed temporary REAPER download directory
+tempdir.workspace = true
 
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!

@@ -10,6 +10,7 @@ use clap::Args;
 use reaboot_core::api::InstallerConfig;
 use reaboot_core::installer::{InstallError, Installer};
 use std::path::PathBuf;
+use tempdir::TempDir;
 
 #[derive(Debug, Args)]
 #[command(author, version, about, long_about = None)]
@@ -80,7 +81,14 @@ pub async fn install(args: InstallArgs) -> anyhow::Result<()> {
         skip_failed_packages: args.skip_failed_packages,
     };
     let listener = CliInstallerListener::new();
-    let installer = Installer::new(config, listener).await?;
+    let temp_dir_for_reaper_download = TempDir::new("reaboot-")
+        .context("couldn't create temporary directory for REAPER download")?;
+    let installer = Installer::new(
+        config,
+        temp_dir_for_reaper_download.path().to_path_buf(),
+        listener,
+    )
+    .await?;
     // Show REAPER EULA if necessary
     let skip_license_prompts = args.non_interactive || args.accept_licenses;
     if !skip_license_prompts && installer.reaper_is_installable() {
@@ -99,7 +107,9 @@ pub async fn install(args: InstallArgs) -> anyhow::Result<()> {
                 outcome.actually_installed_things,
             );
             if let Some(installer) = outcome.manual_reaper_install_path {
-                eprintln!("ReaBoot couldn't install REAPER automatically. Please do it manually instead! The installer is located here:\n\n{installer:?}");
+                // This makes the REAPER download temp directory survive.
+                temp_dir_for_reaper_download.into_path();
+                eprintln!("\nReaBoot couldn't install REAPER automatically. Please do it manually instead! The installer is located here:\n\n{installer:?}");
             }
         }
         Err(e) => match e {
