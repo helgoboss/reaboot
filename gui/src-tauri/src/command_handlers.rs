@@ -1,14 +1,13 @@
+use tauri::State;
+
+use reaboot_core::api::InstallerConfig;
+use reaboot_core::reaboot_util::resolve_config;
+use reaboot_core::{reaboot_util, reaper_util};
+
 use crate::api::{ReabootCommand, ReabootEvent};
 use crate::app_handle::ReabootAppHandle;
 use crate::worker::ReabootWorkerCommand;
 use crate::ReabootAppState;
-use anyhow::Context;
-use reaboot_core::api::InstallerConfig;
-use reaboot_core::reaboot_util::resolve_config;
-use reaboot_core::reaper_platform::ReaperPlatform;
-use reaboot_core::{reaboot_util, reaper_util};
-use reaboot_reapack::model::PackageUrl;
-use tauri::State;
 
 #[tauri::command]
 pub async fn reaper_eula() -> Result<String, String> {
@@ -29,7 +28,7 @@ pub async fn reaboot_command(
             configure(app_handle, config, state).await
         }
         ReabootCommand::StartInstallation => install(state).await,
-        ReabootCommand::StartReaper => start_reaper(state),
+        ReabootCommand::StartReaper => start_reaper(state).await,
         ReabootCommand::CancelInstallation => {
             todo!()
         }
@@ -68,12 +67,9 @@ async fn install(state: State<'_, ReabootAppState>) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn start_reaper(state: State<ReabootAppState>) -> anyhow::Result<()> {
-    let current_config = state.installer_config.lock().unwrap();
-    let platform = current_config
-        .custom_platform
-        .or(ReaperPlatform::BUILD)
-        .context("couldn't identify REAPER platform")?;
-    reaper_util::start_reaper(current_config.custom_reaper_resource_dir.as_ref(), platform)?;
+async fn start_reaper(state: State<'_, ReabootAppState>) -> anyhow::Result<()> {
+    let config = state.installer_config.lock().unwrap().clone();
+    let resolved_config = resolve_config(config).await?;
+    reaper_util::start_reaper(&resolved_config.reaper_exe)?;
     Ok(())
 }

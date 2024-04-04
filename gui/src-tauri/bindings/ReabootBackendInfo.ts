@@ -12,13 +12,27 @@ export type ReabootBackendInfo = {
  */
 main_reaper_resource_dir: string | null, 
 /**
- * Whether this resource directory exists already.
+ * Whether "reaper.ini" exists in that resource directory.
  */
-main_reaper_resource_dir_exists: boolean, 
+main_reaper_ini_exists: boolean, 
+/**
+ * Path of the executable belonging to this installation.
+ *
+ * If this is a portable installation, this corresponds to the REAPER executable in the
+ * portable directory (or `REAPER.app` bundle on macOS).
+ *
+ * If this is a main installation, this corresponds to the system-wide REAPER executable
+ * created by a default REAPER installation. On Linux, this first tries the system-wide
+ * location (`/opt/REAPER`) and then the user location (`$HOME/opt/reaper`).
+ * install locations.
+ */
+main_reaper_exe: string, 
+/**
+ * Whether the executable belonging to this installation exists.
+ */
+main_reaper_exe_exists: boolean, 
 /**
  * Targeted REAPER platform, derived from the OS and architecture for which ReaBoot itself
  * was compiled.
- *
- * If `None`, that means it couldn't be determined for some reason. Should be rare.
  */
-inherent_reaper_platform: ReaperPlatform | null, };
+inherent_reaper_platform: ReaperPlatform, };

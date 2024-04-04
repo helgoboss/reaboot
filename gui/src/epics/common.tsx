@@ -12,7 +12,7 @@ export async function navigateTo(pageId: PageId) {
     const destPage = getPage(pageId);
     if (destPage.requiresReaperEulaAgreement
         && !mainStore.state.agreedToReaperEula
-        && !mainStore.state.resolvedConfig?.reaper_resource_dir_exists) {
+        && !mainStore.state.resolvedConfig?.reaper_exe_exists) {
         const [eulaResource] = createResource(mainService.getReaperEula);
         const userAgreedToEula = await showDialog<boolean>({
             fullScreen: true,

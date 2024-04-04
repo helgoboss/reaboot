@@ -2,7 +2,7 @@ use tauri::async_runtime::Receiver;
 
 use reaboot_core::api::InstallerConfig;
 use reaboot_core::installer::{InstallError, Installer};
-use reaboot_core::{reaboot_util, PreparationReportAsMarkdown, PreparationReportMarkdownOptions};
+use reaboot_core::{PreparationReportAsMarkdown, PreparationReportMarkdownOptions};
 
 use crate::api::ReabootEvent;
 use crate::app_handle::ReabootAppHandle;
@@ -48,7 +48,7 @@ impl ReabootWorker {
             Ok(report) => (Some(report), true),
             Err(e) => match e {
                 InstallError::SomePackagesFailed(report) => (Some(report), false),
-                InstallError::Other(e) => (None, false),
+                InstallError::Other(_) => (None, false),
             },
         };
         if let Some(r) = report {

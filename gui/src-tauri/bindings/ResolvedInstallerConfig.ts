@@ -13,9 +13,25 @@ export type ResolvedInstallerConfig = {
  */
 reaper_resource_dir: ReaperResourceDir, 
 /**
- * Whether the resolved REAPER resource directory exists.
+ * Path of the executable belonging to this installation.
+ *
+ * If this is a portable installation, this corresponds to the REAPER executable in the
+ * portable directory (or `REAPER.app` bundle on macOS).
+ *
+ * If this is a main installation, this corresponds to the system-wide REAPER executable
+ * created by a default REAPER installation. On Linux, this first tries the system-wide
+ * location (`/opt/REAPER`) and then the user location (`$HOME/opt/reaper`).
+ * install locations.
  */
-reaper_resource_dir_exists: boolean, 
+reaper_exe: string, 
+/**
+ * Whether the resolved REAPER resource directory exists and has a "reaper.ini" file.
+ */
+reaper_ini_exists: boolean, 
+/**
+ * Whether the executable belonging to this installation exists.
+ */
+reaper_exe_exists: boolean, 
 /**
  * Whether the resolved REAPER resource directory belongs to the main REAPER installation
  * or to a portable REAPER installation.

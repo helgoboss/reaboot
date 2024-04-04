@@ -236,16 +236,7 @@ pub async fn get_reaper_eula() -> anyhow::Result<String> {
     Ok(body)
 }
 
-pub fn start_reaper(
-    custom_reaper_resource_dir: Option<impl AsRef<Path>>,
-    platform: ReaperPlatform,
-) -> anyhow::Result<()> {
-    let exe = if let Some(dir) = custom_reaper_resource_dir {
-        dir.as_ref()
-            .join(get_os_specific_reaper_exe_file_name(platform))
-    } else {
-        get_os_specific_main_reaper_exe_path(platform).into()
-    };
+pub fn start_reaper(exe: &Path) -> anyhow::Result<()> {
     if cfg!(target_os = "macos") {
         Command::new("open").arg("-a").arg(exe).spawn()?;
     } else {
@@ -264,18 +255,19 @@ pub fn get_os_specific_main_reaper_exe_path(platform: ReaperPlatform) -> String 
         ReaperPlatform::WindowsX86 => {
             let program_files_dir =
                 env::var("ProgramFiles(x86)").unwrap_or("C:\\Program Files (x86)".to_string());
-            format!("{program_files_dir}/REAPER/{exe_file_name}")
+            format!("{program_files_dir}\\REAPER\\{exe_file_name}")
         }
         ReaperPlatform::WindowsX64 => {
             let program_files_dir =
                 env::var("ProgramFiles").unwrap_or("C:\\Program Files".to_string());
-            format!("{program_files_dir}/REAPER (x64)/{exe_file_name}")
+            format!("{program_files_dir}\\REAPER (x64)\\{exe_file_name}")
         }
         ReaperPlatform::LinuxAarch64
         | ReaperPlatform::LinuxArmv7l
         | ReaperPlatform::LinuxI686
         | ReaperPlatform::LinuxX86_64 => {
             let relative_path = || format!("opt/REAPER/{exe_file_name}");
+            // Prefer user-specific install
             dirs::home_dir()
                 .map(|dir| dir.join(relative_path()))
                 .and_then(|p| {
@@ -285,12 +277,13 @@ pub fn get_os_specific_main_reaper_exe_path(platform: ReaperPlatform) -> String 
                         None
                     }
                 })
-                .unwrap_or_else(|| relative_path())
+                // Fallback to system-wide install
+                .unwrap_or_else(|| format!("/{}", relative_path()))
         }
     }
 }
 
-fn get_os_specific_reaper_exe_file_name(platform: ReaperPlatform) -> &'static str {
+pub fn get_os_specific_reaper_exe_file_name(platform: ReaperPlatform) -> &'static str {
     match platform {
         ReaperPlatform::MacOsArm64 | ReaperPlatform::MacOsX86_64 | ReaperPlatform::MacOsI386 => {
             "REAPER.app"

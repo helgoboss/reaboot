@@ -2,7 +2,6 @@ use reaboot_core::api::{
     InstallationStage, InstallerConfig, ReabootBackendInfo, ResolvedInstallerConfig,
 };
 use serde::{Deserialize, Serialize};
-use tauri::Url;
 use ts_rs::TS;
 
 /// A simple fire-and-forget command sent from the frontend to the backend.

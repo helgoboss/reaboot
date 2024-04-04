@@ -27,7 +27,7 @@ fn main() {
     tauri::Builder::default()
         .plugin(
             tauri_plugin_log::Builder::default()
-                .level(LevelFilter::Debug)
+                .level(LevelFilter::Info)
                 .targets([LogTarget::Stdout])
                 .build(),
         )

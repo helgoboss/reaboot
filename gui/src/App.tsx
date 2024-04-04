@@ -41,7 +41,7 @@ export function App() {
                         <div class="font-mono">
                             {conf().reaper_resource_dir}
                         </div>
-                        <Show when={!conf().reaper_resource_dir_exists}>
+                        <Show when={!conf().reaper_exe_exists}>
                             <div class="badge badge-secondary badge-sm">new</div>
                         </Show>
                     </footer>

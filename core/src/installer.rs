@@ -27,14 +27,12 @@ use reaboot_reapack::database::Database;
 use reaboot_reapack::index::{Index, IndexSection, NormalIndexSection};
 use reaboot_reapack::model::{
     Config, InstalledFile, InstalledPackage, InstalledPackageType, InstalledVersionName,
-    LightPackageId, LightVersionId, PackageUrl, ParsePackageUrlError, Remote, Section, VersionRef,
+    LightPackageId, LightVersionId, Remote, Section,
 };
 use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
 
-use crate::reaper_platform::ReaperPlatform;
 use std::fs;
-use std::future::Future;
 use std::io::BufReader;
 use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
@@ -270,8 +268,7 @@ impl<L: InstallerListener> Installer<L> {
     fn apply_reaper_main_by_moving(&self, dir_containing_reaper: &PathBuf) -> anyhow::Result<()> {
         if cfg!(target_os = "macos") {
             let src_path = dir_containing_reaper.join("REAPER.app");
-            let dest_path =
-                reaper_util::get_os_specific_main_reaper_exe_path(self.resolved_config.platform);
+            let dest_path = &self.resolved_config.reaper_exe;
             let mut command = std::process::Command::new("mv");
             command
                 // .gui(true).show(true)

@@ -20,7 +20,7 @@ export function PickReaperPage() {
         <Page>
             <p class="text-center font-bold">
                 <Switch>
-                    <Match when={backendInfo.main_reaper_resource_dir_exists}>
+                    <Match when={backendInfo.main_reaper_exe_exists}>
                         Which REAPER installation do you want to modify?
                     </Match>
                     <Match when={true}>
@@ -38,7 +38,7 @@ export function PickReaperPage() {
                     </h2>
                     <p class="text-base-content/50">
                         <Switch>
-                            <Match when={backendInfo.main_reaper_resource_dir_exists}>
+                            <Match when={backendInfo.main_reaper_exe_exists}>
                                 Add packages to your existing main REAPER installation.
                             </Match>
                             <Match when={true}>

@@ -18,13 +18,23 @@ pub struct ReabootBackendInfo {
     ///
     /// If `None`, that means it couldn't be determined for some reason. Should be rare.
     pub main_reaper_resource_dir: Option<PathBuf>,
-    /// Whether this resource directory exists already.
-    pub main_reaper_resource_dir_exists: bool,
+    /// Whether "reaper.ini" exists in that resource directory.
+    pub main_reaper_ini_exists: bool,
+    /// Path of the executable belonging to this installation.
+    ///
+    /// If this is a portable installation, this corresponds to the REAPER executable in the
+    /// portable directory (or `REAPER.app` bundle on macOS).
+    ///
+    /// If this is a main installation, this corresponds to the system-wide REAPER executable
+    /// created by a default REAPER installation. On Linux, this first tries the system-wide
+    /// location (`/opt/REAPER`) and then the user location (`$HOME/opt/reaper`).
+    /// install locations.
+    pub main_reaper_exe: PathBuf,
+    /// Whether the executable belonging to this installation exists.
+    pub main_reaper_exe_exists: bool,
     /// Targeted REAPER platform, derived from the OS and architecture for which ReaBoot itself
     /// was compiled.
-    ///
-    /// If `None`, that means it couldn't be determined for some reason. Should be rare.
-    pub inherent_reaper_platform: Option<ReaperPlatform>,
+    pub inherent_reaper_platform: ReaperPlatform,
 }
 
 /// Data structure for configuring the installer from the frontend.
@@ -85,8 +95,20 @@ pub struct InstallerConfig {
 pub struct ResolvedInstallerConfig {
     /// Resolved REAPER resource directory.
     pub reaper_resource_dir: ReaperResourceDir,
-    /// Whether the resolved REAPER resource directory exists.
-    pub reaper_resource_dir_exists: bool,
+    /// Path of the executable belonging to this installation.
+    ///
+    /// If this is a portable installation, this corresponds to the REAPER executable in the
+    /// portable directory (or `REAPER.app` bundle on macOS).
+    ///
+    /// If this is a main installation, this corresponds to the system-wide REAPER executable
+    /// created by a default REAPER installation. On Linux, this first tries the system-wide
+    /// location (`/opt/REAPER`) and then the user location (`$HOME/opt/reaper`).
+    /// install locations.
+    pub reaper_exe: PathBuf,
+    /// Whether the resolved REAPER resource directory exists and has a "reaper.ini" file.
+    pub reaper_ini_exists: bool,
+    /// Whether the executable belonging to this installation exists.
+    pub reaper_exe_exists: bool,
     /// Whether the resolved REAPER resource directory belongs to the main REAPER installation
     /// or to a portable REAPER installation.
     pub portable: bool,

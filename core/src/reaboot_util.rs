@@ -1,5 +1,7 @@
-use anyhow::{bail, Context};
 use std::env;
+use std::path::PathBuf;
+
+use anyhow::bail;
 use url::Url;
 
 use reaboot_reapack::database::{CompatibilityInfo, Database};
@@ -14,21 +16,28 @@ use crate::reaper_resource_dir::ReaperResourceDir;
 use crate::reaper_util;
 
 pub fn collect_backend_info() -> ReabootBackendInfo {
-    let (main_reaper_resource_dir, exists) =
+    let (main_reaper_resource_dir, main_reaper_ini_exists) =
         if let Ok(dir) = reaper_util::get_default_main_reaper_resource_dir() {
             let exists = dir.contains_reaper_ini();
             (Some(dir.into_inner()), exists)
         } else {
             (None, false)
         };
+    let inherent_reaper_platform = ReaperPlatform::from_reaboot_build();
+    let main_reaper_exe: PathBuf =
+        reaper_util::get_os_specific_main_reaper_exe_path(inherent_reaper_platform).into();
+
     ReabootBackendInfo {
         main_reaper_resource_dir,
-        main_reaper_resource_dir_exists: exists,
-        inherent_reaper_platform: ReaperPlatform::BUILD,
+        main_reaper_ini_exists,
+        main_reaper_exe_exists: main_reaper_exe.exists(),
+        main_reaper_exe,
+        inherent_reaper_platform,
     }
 }
 
 pub async fn resolve_config(config: InstallerConfig) -> anyhow::Result<ResolvedInstallerConfig> {
+    // Check if this is the main REAPER resource directory
     let main_reaper_resource_dir = reaper_util::get_default_main_reaper_resource_dir()?;
     let (reaper_resource_dir, portable) = if let Some(d) = config.custom_reaper_resource_dir {
         let d = ReaperResourceDir::new(d)?;
@@ -37,12 +46,17 @@ pub async fn resolve_config(config: InstallerConfig) -> anyhow::Result<ResolvedI
     } else {
         (main_reaper_resource_dir, false)
     };
-    let exists = reaper_resource_dir.contains_reaper_ini();
     // Determine platform
     let reaper_platform = config
         .custom_platform
-        .or(ReaperPlatform::BUILD)
-        .context("ReaBoot is running on a platform that's not supported by REAPER. It's still possible do do an install for a supported platform but you need to choose it manually.")?;
+        .unwrap_or(ReaperPlatform::from_reaboot_build());
+    // Determine corresponding REAPER executable
+    let reaper_exe = if portable {
+        let exe_file_name = reaper_util::get_os_specific_reaper_exe_file_name(reaper_platform);
+        reaper_resource_dir.join(exe_file_name)
+    } else {
+        reaper_util::get_os_specific_main_reaper_exe_path(reaper_platform).into()
+    };
     // Check ReaPack DB
     complain_if_reapack_db_too_new(&reaper_resource_dir).await?;
     // Prefer a sub dir of the destination REAPER resource dir as location for all temporary
@@ -78,8 +92,10 @@ pub async fn resolve_config(config: InstallerConfig) -> anyhow::Result<ResolvedI
     package_urls.push(create_reapack_package_url());
     // Create config value
     let resolved = ResolvedInstallerConfig {
+        reaper_ini_exists: reaper_resource_dir.contains_reaper_ini(),
+        reaper_exe_exists: reaper_exe.exists(),
         reaper_resource_dir,
-        reaper_resource_dir_exists: exists,
+        reaper_exe,
         portable,
         platform: reaper_platform,
         package_urls,
@@ -115,7 +131,7 @@ pub async fn complain_if_reapack_db_too_new(
 pub async fn determine_initial_installation_stage(
     resolved_config: &ResolvedInstallerConfig,
 ) -> anyhow::Result<InstallationStage> {
-    let reaper_installed = resolved_config.reaper_resource_dir.contains_reaper_ini();
+    let reaper_installed = resolved_config.reaper_exe_exists;
     if !reaper_installed {
         return Ok(InstallationStage::NothingInstalled);
     };

@@ -10,7 +10,6 @@ use clap::Args;
 use reaboot_core::api::InstallerConfig;
 use reaboot_core::installer::{InstallError, Installer};
 use std::path::PathBuf;
-use url::Url;
 
 #[derive(Debug, Args)]
 #[command(author, version, about, long_about = None)]

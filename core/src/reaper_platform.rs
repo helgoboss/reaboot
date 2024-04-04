@@ -71,9 +71,15 @@ pub enum ReaperOs {
 }
 
 impl ReaperPlatform {
-    pub const BUILD: Option<Self> = Self::from_reaboot_build();
+    pub const fn from_reaboot_build() -> Self {
+        if let Some(p) = Self::from_reaboot_build_checked() {
+            p
+        } else {
+            panic!("You are building ReaBoot on an unsupported platform");
+        }
+    }
 
-    const fn from_reaboot_build() -> Option<Self> {
+    const fn from_reaboot_build_checked() -> Option<Self> {
         let target = if cfg!(target_os = "macos") {
             if cfg!(target_arch = "aarch64") {
                 Self::MacOsArm64
