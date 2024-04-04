@@ -137,8 +137,9 @@ function derivePhases(stage: InstallationStage, config: ResolvedInstallerConfig)
             index: 0,
             todoLabel: "Prepare REAPER",
             inProgressLabel: "Preparing REAPER",
-            doneLabel: "REAPER is installed",
-            status: getTaskStatus(actualTaskPos, PREPARE_REAPER_POS),
+            doneLabel: "REAPER is prepared",
+            unnecessaryLabel: "REAPER is installed",
+            status: stage.kind === "InstalledReaper" ? "unnecessary" : getTaskStatus(actualTaskPos, PREPARE_REAPER_POS),
         },
     ];
     if (config.package_urls.length > 0) {
@@ -146,7 +147,8 @@ function derivePhases(stage: InstallationStage, config: ResolvedInstallerConfig)
             index: 1,
             todoLabel: "Prepare packages",
             inProgressLabel: "Preparing packages",
-            doneLabel: "Packages are installed",
+            doneLabel: "Packages are prepared",
+            unnecessaryLabel: "Packages are installed",
             status: getTaskStatus(actualTaskPos, PREPARE_PACKAGES_POS),
         });
     }
@@ -155,6 +157,7 @@ function derivePhases(stage: InstallationStage, config: ResolvedInstallerConfig)
         todoLabel: "Install everything",
         inProgressLabel: "Installing everything",
         doneLabel: "Everything is installed",
+        unnecessaryLabel: "Everything is installed",
         status: getTaskStatus(actualTaskPos, INSTALL_EVERYTHING_POS),
     });
     return phases;

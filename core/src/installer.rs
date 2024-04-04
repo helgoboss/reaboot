@@ -117,8 +117,9 @@ impl<L: InstallerListener> Installer<L> {
 
     /// Returns whether ReaBoot is capable of installing REAPER automatically.
     pub fn reaper_is_installable(&self) -> bool {
+        true
         // TODO-high
-        self.resolved_config.portable || !cfg!(target_os = "macos")
+        // // self.resolved_config.portable || !cfg!(target_os = "macos")
     }
 
     pub async fn determine_initial_installation_stage(&self) -> anyhow::Result<InstallationStage> {

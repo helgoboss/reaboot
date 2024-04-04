@@ -1,4 +1,4 @@
-import {FaRegularCircle, FaRegularCircleCheck} from "solid-icons/fa";
+import {FaRegularCircleCheck} from "solid-icons/fa";
 import {Match, Switch} from "solid-js";
 
 export type Phase = {
@@ -6,11 +6,12 @@ export type Phase = {
     todoLabel: string,
     doneLabel: string,
     inProgressLabel: string,
+    unnecessaryLabel: string,
     darkMode: boolean,
     status: PhaseStatus
 };
 
-export type PhaseStatus = "todo" | "in-progress" | "done";
+export type PhaseStatus = "todo" | "in-progress" | "done" | "unnecessary";
 
 export function PhasePanel(props: Phase) {
     const colorClasses = () => {
@@ -20,6 +21,7 @@ export function PhasePanel(props: Phase) {
             case "in-progress":
                 return props.darkMode ? "bg-base-300 text-warning" : "bg-info text-info-warning";
             case "done":
+            case "unnecessary":
                 return props.darkMode ? "bg-base-300 text-success" : "bg-success text-success-content";
         }
     };
@@ -36,12 +38,12 @@ export function PhasePanel(props: Phase) {
                 <Match when={props.status === "done"}>
                     {props.doneLabel}
                 </Match>
+                <Match when={props.status === "unnecessary"}>
+                    {props.unnecessaryLabel}
+                </Match>
             </Switch>
         </div>
         <Switch>
-            <Match when={props.status === "todo"}>
-                <FaRegularCircle size={24}/>
-            </Match>
             <Match when={props.status === "in-progress"}>
                 <span class="loading loading-ball loading-md"></span>
             </Match>
