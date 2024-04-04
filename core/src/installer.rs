@@ -32,6 +32,7 @@ use reaboot_reapack::model::{
 use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
 
+use crate::recipe::Recipe;
 use std::fs;
 use std::io::BufReader;
 use std::marker::PhantomData;
@@ -71,10 +72,11 @@ impl<L: InstallerListener> Installer<L> {
     /// Creates a temporary directly already.
     pub async fn new(
         config: InstallerConfig,
+        recipe: Option<Recipe>,
         temp_dir_for_reaper_download: PathBuf,
         listener: L,
     ) -> anyhow::Result<Self> {
-        let resolved_config = reaboot_util::resolve_config(config).await?;
+        let resolved_config = reaboot_util::resolve_config(config, recipe).await?;
         // Do some early sanity checks
         let dest_reapack_db_file = resolved_config
             .reaper_resource_dir

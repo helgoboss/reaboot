@@ -1,4 +1,6 @@
 import {navigateTo} from "../epics/common.tsx";
+import {mainStore} from "../globals.ts";
+import {Show} from "solid-js";
 
 export function WelcomePage() {
     return (
@@ -25,6 +27,16 @@ export function WelcomePage() {
                         </span>
                         &#32;of your choice.
                     </p>
+                    <Show when={mainStore.state.recipeId}>
+                        <p class="pb-6">
+                            Today we are going to install:&nbsp;
+                            <Show when={mainStore.state.resolvedConfig?.recipe} fallback={
+                                <span class="loading loading-ball loading-lg"></span>
+                            }>
+                                {recipe => recipe().name}
+                            </Show>
+                        </p>
+                    </Show>
                     <button class="btn btn-primary"
                             onClick={() => navigateTo("pick-reaper")}>
                         Let's go!

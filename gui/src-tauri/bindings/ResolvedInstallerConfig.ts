@@ -2,6 +2,7 @@
 import type { PackageUrl } from "./PackageUrl";
 import type { ReaperPlatform } from "./ReaperPlatform";
 import type { ReaperResourceDir } from "./ReaperResourceDir";
+import type { Recipe } from "./Recipe";
 import type { VersionRef } from "./VersionRef";
 
 /**
@@ -44,4 +45,4 @@ platform: ReaperPlatform,
 /**
  * Resolved package URLs (includes URLs of packages that will be installed anyway).
  */
-package_urls: Array<PackageUrl>, num_download_retries: number, temp_parent_dir: string, keep_temp_dir: boolean, concurrent_downloads: number, dry_run: boolean, reaper_version: VersionRef, skip_failed_packages: boolean, };
+package_urls: Array<PackageUrl>, num_download_retries: number, temp_parent_dir: string, keep_temp_dir: boolean, concurrent_downloads: number, dry_run: boolean, reaper_version: VersionRef, skip_failed_packages: boolean, recipe?: Recipe, };

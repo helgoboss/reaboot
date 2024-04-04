@@ -5,9 +5,17 @@ use std::fmt::Display;
 use tauri::{AppHandle, Manager};
 
 #[derive(Clone)]
-pub struct ReabootAppHandle(pub AppHandle);
+pub struct ReabootAppHandle(AppHandle);
 
 impl ReabootAppHandle {
+    pub fn new(inner: AppHandle) -> Self {
+        Self(inner)
+    }
+
+    pub fn get(&self) -> &AppHandle {
+        &self.0
+    }
+
     pub fn emit_generic_error(&self, error: impl Display) {
         self.emit_reaboot_event(ReabootEvent::Error {
             display_msg: format!("{error:#}"),

@@ -57,6 +57,9 @@ function keepSyncingStateFromBackendToStore() {
     debug("Subscribing to ReaBoot events...");
     mainService.getNormalEvents().subscribe((evt) => {
         switch (evt.kind) {
+            case "RecipeIdDetected":
+                mainStore.setRecipeId(evt.recipe_id);
+                break;
             case "BackendInfoChanged":
                 mainStore.setBackendInfo(evt.info);
                 break;

@@ -3,6 +3,7 @@ use crate::reaper_platform::ReaperPlatform;
 use serde::{Deserialize, Serialize};
 
 use crate::reaper_resource_dir::ReaperResourceDir;
+use crate::recipe::Recipe;
 use reaboot_reapack::model::{PackageUrl, VersionRef};
 use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
@@ -124,6 +125,8 @@ pub struct ResolvedInstallerConfig {
     pub dry_run: bool,
     pub reaper_version: VersionRef,
     pub skip_failed_packages: bool,
+    #[ts(optional)]
+    pub recipe: Option<Recipe>,
 }
 
 /// Status of the installation process.

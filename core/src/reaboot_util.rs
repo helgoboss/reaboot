@@ -1,7 +1,7 @@
 use std::env;
 use std::path::PathBuf;
 
-use anyhow::bail;
+use anyhow::{bail, Context};
 use url::Url;
 
 use reaboot_reapack::database::{CompatibilityInfo, Database};
@@ -14,6 +14,7 @@ use crate::file_util::file_or_dir_is_writable_or_creatable;
 use crate::reaper_platform::ReaperPlatform;
 use crate::reaper_resource_dir::ReaperResourceDir;
 use crate::reaper_util;
+use crate::recipe::Recipe;
 
 pub fn collect_backend_info() -> ReabootBackendInfo {
     let (main_reaper_resource_dir, main_reaper_ini_exists) =
@@ -36,7 +37,10 @@ pub fn collect_backend_info() -> ReabootBackendInfo {
     }
 }
 
-pub async fn resolve_config(config: InstallerConfig) -> anyhow::Result<ResolvedInstallerConfig> {
+pub async fn resolve_config(
+    config: InstallerConfig,
+    recipe: Option<Recipe>,
+) -> anyhow::Result<ResolvedInstallerConfig> {
     // Check if this is the main REAPER resource directory
     let main_reaper_resource_dir = reaper_util::get_default_main_reaper_resource_dir()?;
     let (reaper_resource_dir, portable) = if let Some(d) = config.custom_reaper_resource_dir {
@@ -81,15 +85,17 @@ pub async fn resolve_config(config: InstallerConfig) -> anyhow::Result<ResolvedI
         }
     };
     // Parse user-defined package URLs
-    let package_urls: Result<Vec<_>, ParsePackageUrlError> = config
-        .package_urls
-        .into_iter()
-        .map(PackageUrl::parse)
-        .collect();
-    let mut package_urls = package_urls?;
+    let mut package_urls = parse_package_urls(&config.package_urls)
+        .context("couldn't parse user-provided package URLs")?;
     // Add ReaPack package (this is good to have for updates within REAPER and also necessary
     // for scripts being registered at runtime)
     package_urls.push(create_reapack_package_url());
+    // Add recipe package URLs
+    if let Some(r) = recipe.as_ref() {
+        let recipe_package_urls = parse_package_urls(r.package_urls.iter())
+            .context("couldn't parse recipe package URls")?;
+        package_urls.extend(recipe_package_urls);
+    }
     // Create config value
     let resolved = ResolvedInstallerConfig {
         reaper_ini_exists: reaper_resource_dir.contains_reaper_ini(),
@@ -106,8 +112,15 @@ pub async fn resolve_config(config: InstallerConfig) -> anyhow::Result<ResolvedI
         dry_run: config.dry_run,
         reaper_version: config.reaper_version.unwrap_or_default(),
         skip_failed_packages: config.skip_failed_packages,
+        recipe,
     };
     Ok(resolved)
+}
+
+fn parse_package_urls(
+    urls: impl IntoIterator<Item = impl AsRef<str>>,
+) -> Result<Vec<PackageUrl>, ParsePackageUrlError> {
+    urls.into_iter().map(PackageUrl::parse).collect()
 }
 
 pub async fn complain_if_reapack_db_too_new(

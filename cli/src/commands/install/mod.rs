@@ -88,6 +88,7 @@ pub async fn install(args: InstallArgs) -> anyhow::Result<()> {
         .context("couldn't create temporary directory for REAPER download")?;
     let installer = Installer::new(
         config,
+        None,
         temp_dir_for_reaper_download.path().to_path_buf(),
         listener,
     )

@@ -57,7 +57,7 @@ hex = "0.4.3"
 sha2 = "0.10.8"
 termimad = "0.29.1"
 markdown = "1.0.0-alpha.16"
-runas = "1.2.0"
+plist = "1"
 
 [profile.release]
 # Those are the settings recommended on https://tauri.app/v1/guides/building/app-size/.

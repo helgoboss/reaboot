@@ -22,6 +22,7 @@ export type MainStoreState = {
     // Installer config.
     // Dictated by frontend.
     installerConfig: InstallerConfig,
+    recipeId?: string,
     // Basic info from the backend.
     // If undefined, it means the backend hasn't sent its info yet.
     // Set in response to event from backend.
@@ -68,6 +69,10 @@ export class MainStore {
 
     setCurrentPageId(pageId: PageId) {
         this.setState("currentPageId", pageId);
+    }
+
+    setRecipeId(value: string) {
+        this.setState("recipeId", value);
     }
 
     setBackendInfo(value: ReabootBackendInfo) {

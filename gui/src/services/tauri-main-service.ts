@@ -34,7 +34,7 @@ export class TauriMainService implements MainService {
     }
 
     async getReaperEula() {
-        const eula = await invoke('reaper_eula', {});
+        const eula = await invoke('get_reaper_eula', {});
         return eula as string;
     }
 

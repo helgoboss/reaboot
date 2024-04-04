@@ -25,6 +25,7 @@ export class DummyMainService implements MainService {
                 reaper_version: config.reaper_version ?? "latest",
                 skip_failed_packages: config.skip_failed_packages,
                 temp_parent_dir: config.temp_parent_dir ?? "/tmp",
+                recipe: undefined,
                 platform: "linux-aarch64",
             }
         });

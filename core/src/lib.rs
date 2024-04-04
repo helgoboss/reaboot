@@ -11,6 +11,7 @@ pub mod reaboot_util;
 pub mod reaper_platform;
 pub mod reaper_resource_dir;
 pub mod reaper_util;
+pub mod recipe;
 pub mod task_tracker;
 
 pub use preparation_report::*;

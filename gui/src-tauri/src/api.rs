@@ -36,6 +36,9 @@ pub enum ReabootEvent {
     Info {
         display_msg: String,
     },
+    RecipeIdDetected {
+        recipe_id: String,
+    },
     BackendInfoChanged {
         info: ReabootBackendInfo,
     },

@@ -561,6 +561,9 @@ name = "camino"
 version = "1.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c59e92b5a388f549b863a7bea62612c09f24c8393560709a54558a9abdfb3b9c"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "cargo_toml"
@@ -3844,8 +3847,8 @@ dependencies = [
  "reqwest",
  "reqwest-middleware",
  "reqwest-retry",
- "runas",
  "serde",
+ "serde_json",
  "sha2",
  "strum",
  "tempdir",
@@ -3861,7 +3864,9 @@ name = "reaboot-gui"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "camino",
  "markdown",
+ "plist",
  "reaboot-core",
  "reaboot-reapack",
  "serde",
@@ -4214,18 +4219,6 @@ dependencies = [
  "spki",
  "subtle",
  "zeroize",
-]
-
-[[package]]
-name = "runas"
-version = "1.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b96d6b6c505282b007a9b009f2aa38b2fd0359b81a0430ceacc60f69ade4c6a0"
-dependencies = [
- "libc",
- "security-framework-sys",
- "which",
- "windows-sys 0.48.0",
 ]
 
 [[package]]
@@ -6473,18 +6466,6 @@ name = "weezl"
 version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "53a85b86a771b1c87058196170769dd264f66c0782acf1ae6cc51bfd64b39082"
-
-[[package]]
-name = "which"
-version = "4.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "87ba24419a2078cd2b0f2ede2691b6c66d8e47836da3b6db8265ebad47afbfc7"
-dependencies = [
- "either",
- "home",
- "once_cell",
- "rustix",
-]
 
 [[package]]
 name = "whoami"
