@@ -272,7 +272,6 @@ impl<L: InstallerListener> Installer<L> {
             let src_path = dir_containing_reaper.join("REAPER.app");
             let dest_path =
                 reaper_util::get_os_specific_main_reaper_exe_path(self.resolved_config.platform);
-            dbg!(&src_path, &dest_path);
             let mut command = std::process::Command::new("mv");
             command
                 // .gui(true).show(true)

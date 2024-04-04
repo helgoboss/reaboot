@@ -30,7 +30,7 @@ ormlite = { workspace = true, features = ["sqlite"] }
 # For easy reading and modification of ReaPack's registry database
 sqlx.workspace = true
 # For supporting generation of TypeScript type definitions from some ReaPack types
-ts-rs.workspace = true
+ts-rs = { workspace = true, features = ["url-impl"] }
 # For parsing repository and package URLs
 url = { workspace = true, features = ["serde"] }
 # In its database, ReaPack represents enum variants as numbers, so we have to convert back and forth
