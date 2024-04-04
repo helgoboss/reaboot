@@ -102,7 +102,7 @@ pub async fn install(args: InstallArgs) -> anyhow::Result<()> {
         }
     }
     // Install everything
-    println!("\nStarting installation process...\n");
+    println!("Starting installation process...\n");
     match installer.install().await {
         Ok(outcome) => {
             print_report(
@@ -112,7 +112,7 @@ pub async fn install(args: InstallArgs) -> anyhow::Result<()> {
             if let Some(installer) = outcome.manual_reaper_install_path {
                 // This makes the REAPER download temp directory survive.
                 temp_dir_for_reaper_download.into_path();
-                eprintln!("\nReaBoot couldn't install REAPER automatically. Please do it manually instead! The installer is located here:\n\n{installer:?}");
+                eprintln!("\nReaBoot couldn't install REAPER automatically. Please do it manually instead! The installer is located here:\n{installer:?}");
             }
         }
         Err(e) => match e {

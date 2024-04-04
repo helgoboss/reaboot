@@ -11,8 +11,10 @@ async fn main() -> anyhow::Result<()> {
     let _ = init_tracing();
     let app = App::parse();
     match app.command {
-        Command::Install(args) => install(args).await,
+        Command::Install(args) => install(args).await?,
     }
+    println!("");
+    Ok(())
 }
 
 fn init_tracing() -> anyhow::Result<()> {

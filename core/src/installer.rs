@@ -21,7 +21,7 @@ use crate::reaper_resource_dir::{
 use crate::reaper_util::extract_reaper_to_dir;
 use crate::task_tracker::{TaskSummary, TaskTrackerListener};
 use crate::{reaboot_util, reaper_util, ToolDownload, ToolingChange};
-use anyhow::{bail, ensure, Context, Error};
+use anyhow::{anyhow, bail, ensure, Context, Error};
 use enumset::EnumSet;
 use reaboot_reapack::database::Database;
 use reaboot_reapack::index::{Index, IndexSection, NormalIndexSection};
@@ -116,7 +116,8 @@ impl<L: InstallerListener> Installer<L> {
 
     /// Returns whether ReaBoot is capable of installing REAPER automatically.
     pub fn reaper_is_installable(&self) -> bool {
-        self.resolved_config.portable || !cfg!(target_os = "macos")
+        // An automated main installation is only possible on Windows
+        self.resolved_config.portable || cfg!(target_os = "windows")
     }
 
     pub async fn determine_initial_installation_stage(&self) -> anyhow::Result<InstallationStage> {
@@ -180,7 +181,7 @@ impl<L: InstallerListener> Installer<L> {
         let mut tooling_changes = vec![];
         if let Some(
             ReaperPreparationOutcome::InstallByMovingFromExtractedReaper { download, .. }
-            | ReaperPreparationOutcome::InstallMainViaInstaller(download),
+            | ReaperPreparationOutcome::InstallWindowsMainViaInstaller(download),
         ) = reaper_preparation_outcome.as_ref()
         {
             tooling_changes.push(ToolingChange::new("REAPER".to_string(), download.clone()));
@@ -238,20 +239,20 @@ impl<L: InstallerListener> Installer<L> {
     /// Returns path to REAPER installer in order to request manual installation.
     fn install_reaper(
         &self,
-        reaper_installation_outcome: &ReaperPreparationOutcome,
+        preparation_outcome: &ReaperPreparationOutcome,
     ) -> Option<PathBuf> {
         self.listener
             .installation_stage_changed(InstallationStage::InstallingReaper);
-        match reaper_installation_outcome {
+        match preparation_outcome {
             ReaperPreparationOutcome::InstallManually(d) => Some(d.download.file.clone()),
             ReaperPreparationOutcome::InstallManuallyDueToError(download, error) => {
-                self.install_manually_because_error(download, error)
+                self.install_manually_due_to_error(download, error)
             }
-            ReaperPreparationOutcome::InstallMainViaInstaller(download) => {
+            ReaperPreparationOutcome::InstallWindowsMainViaInstaller(download) => {
                 if let Err(e) =
                     reaper_util::install_reaper_for_windows_main(&download.download.file)
                 {
-                    self.install_manually_because_error(&download, &e)
+                    self.install_manually_due_to_error(&download, &e)
                 } else {
                     None
                 }
@@ -260,13 +261,9 @@ impl<L: InstallerListener> Installer<L> {
                 dir_containing_reaper,
                 download,
             } => {
-                let result = if self.resolved_config.portable {
-                    self.apply_reaper_portable_by_moving(dir_containing_reaper)
-                } else {
-                    self.install_reaper_main_by_moving(dir_containing_reaper)
-                };
-                if let Err(e) = result {
-                    self.install_manually_because_error(&download, &e)
+                debug_assert!(self.resolved_config.portable, "Installing main REAPER by moving not supported for any OS");
+                if let Err(e) = self.apply_reaper_portable_by_moving(dir_containing_reaper) {
+                    self.install_manually_due_to_error(&download, &e)
                 } else {
                     None
                 }
@@ -274,7 +271,7 @@ impl<L: InstallerListener> Installer<L> {
         }
     }
 
-    fn install_manually_because_error(
+    fn install_manually_due_to_error(
         &self,
         download: &ToolDownload,
         error: &Error,
@@ -299,19 +296,6 @@ impl<L: InstallerListener> Installer<L> {
             false,
         );
         Ok(())
-    }
-
-    fn install_reaper_main_by_moving(
-        &self,
-        _dir_containing_extracted_reaper: &PathBuf,
-    ) -> anyhow::Result<()> {
-        if cfg!(target_os = "macos") {
-            bail!("main installation of REAPER via moving not supported on macOS (due to security constraints)");
-        } else if cfg!(target_os = "linux") {
-            todo!()
-        } else {
-            bail!("main installation of REAPER via moving not supported on Windows (it's done via installer instead)");
-        }
     }
 
     async fn gather_already_installed_packages(
@@ -705,7 +689,7 @@ impl<L: InstallerListener> Installer<L> {
             fs::File::create(self.temp_reaper_resource_dir.reaper_ini_file())?;
         }
         if cfg!(target_os = "windows") && !self.resolved_config.portable {
-            Ok(ReaperPreparationOutcome::InstallMainViaInstaller(
+            Ok(ReaperPreparationOutcome::InstallWindowsMainViaInstaller(
                 reaper_download,
             ))
         } else {
@@ -935,7 +919,7 @@ enum ReaperPreparationOutcome {
         dir_containing_reaper: PathBuf,
     },
     /// This happens on main REAPER install on Windows.
-    InstallMainViaInstaller(ToolDownload),
+    InstallWindowsMainViaInstaller(ToolDownload),
 }
 
 #[derive(Default)]
