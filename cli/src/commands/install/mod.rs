@@ -1,16 +1,19 @@
-mod license_agreement;
-mod listener;
-mod report;
+use std::path::PathBuf;
+
+use anyhow::Context;
+use clap::Args;
+use tempdir::TempDir;
+
+use reaboot_core::api::InstallerConfig;
+use reaboot_core::installer::{InstallError, Installer};
 
 use crate::commands::install::license_agreement::confirm_license;
 use crate::commands::install::listener::CliInstallerListener;
 use crate::commands::install::report::print_report;
-use anyhow::{bail, Context};
-use clap::Args;
-use reaboot_core::api::InstallerConfig;
-use reaboot_core::installer::{InstallError, Installer};
-use std::path::PathBuf;
-use tempdir::TempDir;
+
+mod license_agreement;
+mod listener;
+mod report;
 
 #[derive(Debug, Args)]
 #[command(author, version, about, long_about = None)]

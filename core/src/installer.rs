@@ -36,7 +36,6 @@ use std::fs;
 use std::io::BufReader;
 use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
 use tempdir::TempDir;
 use thiserror::Error;
 use url::Url;
@@ -304,7 +303,7 @@ impl<L: InstallerListener> Installer<L> {
 
     fn install_reaper_main_by_moving(
         &self,
-        dir_containing_extracted_reaper: &PathBuf,
+        _dir_containing_extracted_reaper: &PathBuf,
     ) -> anyhow::Result<()> {
         if cfg!(target_os = "macos") {
             bail!("main installation of REAPER via moving not supported on macOS (due to security constraints)");
