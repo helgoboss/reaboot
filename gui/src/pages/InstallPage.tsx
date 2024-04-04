@@ -43,26 +43,23 @@ export function InstallPage() {
                                     <progress class="progress" value={mainProgressInPercent()} max="100"/>
                                 </div>
                                 <Show when={mainStore.state.current_tasks.length > 0}>
-                                    <div class="divider"></div>
-                                    <div>
-                                        <table class="table table-xs table-fixed">
-                                            <tbody>
-                                            <For each={mainStore.state.current_tasks}>
-                                                {task =>
-                                                    <tr class="border-none">
-                                                        <td class="w-1/2 whitespace-nowrap overflow-hidden p-0">
-                                                            {task.label}
-                                                        </td>
-                                                        <td class="w-1/2 pl-4 pr-0">
-                                                            <progress class="progress" value={task.progress * 100}
-                                                                      max="100"/>
-                                                        </td>
-                                                    </tr>
-                                                }
-                                            </For>
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                    <table class="table table-xs table-fixed">
+                                        <tbody>
+                                        <For each={mainStore.state.current_tasks}>
+                                            {task =>
+                                                <tr class="border-none">
+                                                    <td class="w-1/2 whitespace-nowrap overflow-hidden p-0">
+                                                        {task.label}
+                                                    </td>
+                                                    <td class="w-1/2 pl-4 pr-0">
+                                                        <progress class="progress" value={task.progress * 100}
+                                                                  max="100"/>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </For>
+                                        </tbody>
+                                    </table>
                                 </Show>
                             </Match>
                             <Match when={true}>
@@ -138,21 +135,28 @@ function derivePhases(stage: InstallationStage, config: ResolvedInstallerConfig)
     const phases = [
         {
             index: 0,
-            todoLabel: "Install REAPER",
-            inProgressLabel: "Installing REAPER",
+            todoLabel: "Prepare REAPER",
+            inProgressLabel: "Preparing REAPER",
             doneLabel: "REAPER is installed",
-            status: getTaskStatus(actualTaskPos, INSTALL_REAPER_POS),
+            status: getTaskStatus(actualTaskPos, PREPARE_REAPER_POS),
         },
     ];
     if (config.package_urls.length > 0) {
         phases.push({
             index: 1,
-            todoLabel: "Install packages",
-            inProgressLabel: "Installing packages",
+            todoLabel: "Prepare packages",
+            inProgressLabel: "Preparing packages",
             doneLabel: "Packages are installed",
-            status: getTaskStatus(actualTaskPos, INSTALL_PACKAGES_POS),
+            status: getTaskStatus(actualTaskPos, PREPARE_PACKAGES_POS),
         });
     }
+    phases.push({
+        index: 2,
+        todoLabel: "Install everything",
+        inProgressLabel: "Installing everything",
+        doneLabel: "Everything is installed",
+        status: getTaskStatus(actualTaskPos, INSTALL_EVERYTHING_POS),
+    });
     return phases;
 }
 
@@ -172,8 +176,8 @@ function getTaskPos(stage: InstallationStage) {
             return NOTHING_INSTALLED_POS;
         case "CheckingLatestReaperVersion":
         case "DownloadingReaper":
-        case "ExtractingReaper":
-            return INSTALL_REAPER_POS;
+        case "PreparingReaper":
+            return PREPARE_REAPER_POS;
         case "InstalledReaper":
             return INSTALLED_REAPER_POS;
         case "PreparingTempDirectory":
@@ -181,10 +185,12 @@ function getTaskPos(stage: InstallationStage) {
         case "ParsingRepositoryIndexes":
         case "PreparingPackageDownloading":
         case "DownloadingPackageFiles":
-        case "UpdatingReaPackState":
+        case "PreparingReaPackState":
+            return PREPARE_PACKAGES_POS;
         case "ApplyingReaPackState":
-        case "ApplyingPackage":
-            return INSTALL_PACKAGES_POS;
+        case "InstallingPackage":
+        case "InstallingReaper":
+            return INSTALL_EVERYTHING_POS;
         case "Finished":
             return FINISHED_POS;
         case "Failed":
@@ -194,7 +200,8 @@ function getTaskPos(stage: InstallationStage) {
 
 const FAILED_POS = 0;
 const NOTHING_INSTALLED_POS = 1;
-const INSTALL_REAPER_POS = 2;
+const PREPARE_REAPER_POS = 2;
 const INSTALLED_REAPER_POS = 3;
-const INSTALL_PACKAGES_POS = 4;
-const FINISHED_POS = 5;
+const PREPARE_PACKAGES_POS = 4;
+const INSTALL_EVERYTHING_POS = 5;
+const FINISHED_POS = 6;

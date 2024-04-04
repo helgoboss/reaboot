@@ -57,7 +57,7 @@ hex.workspace = true
 sha2.workspace = true
 # For dealing with ReaPack source file names (which are always UTF-8)
 camino.workspace = true
-# For being able to make a REAPER main installation
+# For being able to make a REAPER main installation TODO On Windows not necessary, on macOS not working, on Linux todo
 runas.workspace = true
 
 [target.'cfg(target_os = "macos")'.dependencies]

@@ -17,6 +17,7 @@ pub struct ReabootBackendInfo {
     /// Resource directory of the main REAPER installation.
     ///
     /// If `None`, that means it couldn't be determined for some reason. Should be rare.
+    #[ts(optional)]
     pub main_reaper_resource_dir: Option<PathBuf>,
     /// Whether "reaper.ini" exists in that resource directory.
     pub main_reaper_ini_exists: bool,
@@ -139,9 +140,9 @@ pub enum InstallationStage {
     /// Downloading REAPER.
     #[strum(serialize = "Downloading REAPER")]
     DownloadingReaper { download: DownloadInfo },
-    /// Installing REAPER (to a temporary directory at first).
-    #[strum(serialize = "Extracting REAPER")]
-    ExtractingReaper,
+    /// Preparing REAPER (e.g. install to a temporary directory at first).
+    #[strum(serialize = "Preparing REAPER")]
+    PreparingReaper,
     /// REAPER is already installed.
     ///
     /// This means that the desired REAPER resource directory already exists.
@@ -176,17 +177,20 @@ pub enum InstallationStage {
     DownloadingPackageFiles { download: MultiDownloadInfo },
     /// Creating/updating ReaPack INI file and registry database.
     #[strum(serialize = "Updating ReaPack state")]
-    UpdatingReaPackState,
+    PreparingReaPackState,
 
     // ===========================================================
     // === Everything below is not done if it's just a dry run ===
     // ===========================================================
+    /// Move/install REAPER.
+    #[strum(serialize = "Installing REAPER")]
+    InstallingReaper,
     /// Moving ReaPack INI file, registry database and cached indexes to the final destination.
     #[strum(serialize = "Applying ReaPack state")]
     ApplyingReaPackState,
     /// Moving the files of each package to its final destination and updating the database.
-    #[strum(serialize = "Applying package")]
-    ApplyingPackage { package: PackageInfo },
+    #[strum(serialize = "Installing package")]
+    InstallingPackage { package: PackageInfo },
     #[strum(serialize = "Installation failed")]
     Failed { display_msg: String },
     /// Installation has errored or is finished.
@@ -248,7 +252,7 @@ impl Display for InstallationStage {
                     write!(f, " ({error_count} errors)")?;
                 }
             }
-            InstallationStage::ApplyingPackage { package } => {
+            InstallationStage::InstallingPackage { package } => {
                 write!(f, "{simple_name}: {}", &package.name)?;
             }
             InstallationStage::Failed {

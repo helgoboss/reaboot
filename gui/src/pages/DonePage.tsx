@@ -1,9 +1,9 @@
 import {ButtonRow} from "../components/ButtonRow.tsx";
 import {mainStore} from "../globals.ts";
 import {FaSolidCircleCheck, FaSolidFaceSadTear, FaSolidRocket} from "solid-icons/fa";
-import {Show} from "solid-js";
-import {startReaperAndQuit} from "../epics/done.ts";
+import {Match, Show, Switch} from "solid-js";
 import {showDialog} from "../components/GlobalDialog.tsx";
+import {startReaperAndQuit, startReaperInstaller} from "../epics/done.ts";
 
 export function DonePage() {
     return <div class="grow hero">
@@ -38,11 +38,30 @@ export function DonePage() {
                                         <p class="py-6">
                                             Installation successful
                                         </p>
-                                        <button class="btn btn-primary"
-                                                onClick={() => startReaperAndQuit()}>
-                                            <FaSolidRocket/>
-                                            Launch REAPER!
-                                        </button>
+                                        <Switch>
+                                            <Match when={mainStore.state.manualReaperInstallPath}>
+                                                {path =>
+                                                    <>
+                                                        <p class="pb-3">
+                                                            ReaBoot was not able to install REAPER automatically. Please
+                                                            install it manually and close ReaBoot when you are done.
+                                                        </p>
+                                                        <button class="btn btn-primary"
+                                                                onClick={() => startReaperInstaller(path())}>
+                                                            <FaSolidRocket/>
+                                                            Launch REAPER installer!
+                                                        </button>
+                                                    </>
+                                                }
+                                            </Match>
+                                            <Match when={true}>
+                                                <button class="btn btn-primary"
+                                                        onClick={() => startReaperAndQuit()}>
+                                                    <FaSolidRocket/>
+                                                    Launch REAPER and quit!
+                                                </button>
+                                            </Match>
+                                        </Switch>
                                     </>;
                                 default:
                                     return <></>;

@@ -24,4 +24,6 @@ export type MainService = {
     cancelInstallation: () => Promise<void>,
     // Starts the REAPER installation associated with the current configuration.
     startReaper: () => Promise<void>,
+    // Starts the given REAPER installer.
+    startReaperInstaller: (path: string) => Promise<void>,
 }

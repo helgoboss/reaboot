@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use tauri::State;
 
 use reaboot_core::api::InstallerConfig;
@@ -32,6 +33,7 @@ pub async fn reaboot_command(
         ReabootCommand::CancelInstallation => {
             todo!()
         }
+        ReabootCommand::StartReaperInstaller { path } => start_reaper_installer(path),
     };
     result.map_err(|r| r.to_string())?;
     Ok(())
@@ -71,5 +73,10 @@ async fn start_reaper(state: State<'_, ReabootAppState>) -> anyhow::Result<()> {
     let config = state.installer_config.lock().unwrap().clone();
     let resolved_config = resolve_config(config).await?;
     reaper_util::start_reaper(&resolved_config.reaper_exe)?;
+    Ok(())
+}
+
+fn start_reaper_installer(path: PathBuf) -> anyhow::Result<()> {
+    reaper_util::start_reaper_installer(&path)?;
     Ok(())
 }

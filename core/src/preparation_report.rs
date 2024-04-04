@@ -282,7 +282,7 @@ pub struct PreparationReportAsMarkdown<'a> {
 pub struct PreparationReportMarkdownOptions {
     /// Whether the packages have actually been installed (`true`) or if installation failed
     /// or this was just a dry run (`false`).
-    pub packages_have_been_installed: bool,
+    pub actually_installed_things: bool,
     /// Whether to optimize markdown output for [Termimad](https://github.com/Canop/termimad).
     pub optimize_for_termimad: bool,
 }
@@ -366,7 +366,7 @@ impl<'a> Display for PreparationReportAsMarkdown<'a> {
                 }
             }
         }
-        let skipped_suffix = if self.options.packages_have_been_installed {
+        let skipped_suffix = if self.options.actually_installed_things {
             ""
         } else {
             " **[SKIPPED]**"

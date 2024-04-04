@@ -63,6 +63,13 @@ export class TauriMainService implements MainService {
         });
     }
 
+    async startReaperInstaller(path: string) {
+        await this.invokeCommand({
+            kind: "StartReaperInstaller",
+            path
+        });
+    }
+
     private async invokeCommand(command: ReabootCommand) {
         await invoke('reaboot_command', {
             command

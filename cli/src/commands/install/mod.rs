@@ -93,13 +93,19 @@ pub async fn install(args: InstallArgs) -> anyhow::Result<()> {
     // Install everything
     println!("\nStarting installation process...\n");
     match installer.install().await {
-        Ok(r) => {
-            print_report(r, !args.dry_run);
+        Ok(outcome) => {
+            print_report(
+                &outcome.preparation_report,
+                outcome.actually_installed_things,
+            );
+            if let Some(installer) = outcome.manual_reaper_install_path {
+                eprintln!("ReaBoot couldn't install REAPER automatically. Please do it manually instead! The installer is located here:\n\n{installer:?}");
+            }
         }
         Err(e) => match e {
             InstallError::SomePackagesFailed(r) => {
-                print_report(r, false);
-                bail!("Installed nothing due to package failures!");
+                print_report(&r, false);
+                Err(InstallError::SomePackagesFailed(r))?;
             }
             InstallError::Other(e) => {
                 Err(e.context("Installation failed"))?;

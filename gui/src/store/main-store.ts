@@ -33,9 +33,13 @@ export type MainStoreState = {
     // Current installation stage.
     // Set in response to event from backend.
     installationStage: InstallationStageContainer,
-    // Installation report, HTML-formatted
+    // Installation report, HTML-formatted.
     // Set in response to event from backend.
     installationReportHtml?: string,
+    // If set, it means that the installer couldn't install REAPER automatically and this contains the path of
+    // the installer.
+    // Set in response to event from backend.
+    manualReaperInstallPath?: string,
     // Currently running tasks
     // Set in response to event from backend.
     current_tasks: ReabootTask[],
@@ -88,6 +92,10 @@ export class MainStore {
 
     setInstallationReportHtml(value: string | undefined) {
         this.setState("installationReportHtml", value);
+    }
+
+    setManualReaperInstallPath(value: string | undefined) {
+        this.setState("manualReaperInstallPath", value);
     }
 
     agreeToEula() {

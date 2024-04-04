@@ -44,24 +44,35 @@ impl ReabootWorker {
     async fn process_install(&self, config: InstallerConfig) -> anyhow::Result<()> {
         let listener = self.app_handle.clone();
         let installer = Installer::new(config, listener).await?;
-        let (report, packages_have_been_installed) = match installer.install().await {
-            Ok(report) => (Some(report), true),
-            Err(e) => match e {
-                InstallError::SomePackagesFailed(report) => (Some(report), false),
-                InstallError::Other(_) => (None, false),
-            },
-        };
-        if let Some(r) = report {
+        let (report, actually_installed_things, manual_reaper_install_path) =
+            match installer.install().await {
+                Ok(outcome) => (
+                    Some(outcome.preparation_report),
+                    outcome.actually_installed_things,
+                    outcome.manual_reaper_install_path,
+                ),
+                Err(e) => match e {
+                    InstallError::SomePackagesFailed(report) => (Some(report), false, None),
+                    InstallError::Other(_) => (None, false, None),
+                },
+            };
+        let preparation_report_html = if let Some(r) = report {
             let options = PreparationReportMarkdownOptions {
-                packages_have_been_installed,
+                actually_installed_things,
                 optimize_for_termimad: false,
             };
             let markdown = PreparationReportAsMarkdown::new(&r, options).to_string();
             let html = markdown::to_html_with_options(&markdown, &markdown::Options::gfm())
                 .unwrap_or_default();
-            self.app_handle
-                .emit_reaboot_event(ReabootEvent::InstallationReportReady { html });
-        }
+            Some(html)
+        } else {
+            None
+        };
+        let done_event = ReabootEvent::InstallationDone {
+            preparation_report_html,
+            manual_reaper_install_path,
+        };
+        self.app_handle.emit_reaboot_event(done_event);
         Ok(())
     }
 }

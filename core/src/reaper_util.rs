@@ -236,6 +236,15 @@ pub async fn get_reaper_eula() -> anyhow::Result<String> {
     Ok(body)
 }
 
+pub fn start_reaper_installer(installer_path: &Path) -> anyhow::Result<()> {
+    if cfg!(target_os = "macos") {
+        Command::new("open").arg(installer_path).spawn()?;
+    } else {
+        Command::new(installer_path).spawn()?;
+    }
+    Ok(())
+}
+
 pub fn start_reaper(exe: &Path) -> anyhow::Result<()> {
     if cfg!(target_os = "macos") {
         Command::new("open").arg("-a").arg(exe).spawn()?;

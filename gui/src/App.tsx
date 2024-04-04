@@ -5,7 +5,7 @@ import {Match, onMount, Show, Switch} from "solid-js";
 import {Toaster} from "solid-toast";
 import {configureInstaller} from "./epics/install.ts";
 import {MainInstallationIcon, PortableInstallationIcon} from "./components/icons.tsx";
-import {navigateTo, showError, showInfo, showWarning} from "./epics/common.tsx";
+import {navigateTo, showError, showWarning} from "./epics/common.tsx";
 import {GlobalDialog} from "./components/GlobalDialog.tsx";
 
 export function App() {
@@ -71,8 +71,9 @@ function keepSyncingStateFromBackendToStore() {
                     }
                 }
                 break;
-            case "InstallationReportReady":
-                mainStore.setInstallationReportHtml(evt.html);
+            case "InstallationDone":
+                mainStore.setInstallationReportHtml(evt.preparation_report_html);
+                mainStore.setManualReaperInstallPath(evt.manual_reaper_install_path);
                 break;
             case "TaskStarted":
                 mainStore.addTask(evt.task_id, evt.label);

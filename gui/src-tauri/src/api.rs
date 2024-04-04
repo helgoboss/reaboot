@@ -2,6 +2,7 @@ use reaboot_core::api::{
     InstallationStage, InstallerConfig, ReabootBackendInfo, ResolvedInstallerConfig,
 };
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 use ts_rs::TS;
 
 /// A simple fire-and-forget command sent from the frontend to the backend.
@@ -17,6 +18,8 @@ pub enum ReabootCommand {
     CancelInstallation,
     /// Starts REAPER.
     StartReaper,
+    /// Start REAPER installer.
+    StartReaperInstaller { path: PathBuf },
 }
 
 /// Event emitted by the backend.
@@ -54,8 +57,11 @@ pub enum ReabootEvent {
     TaskFinished {
         task_id: u32,
     },
-    InstallationReportReady {
-        html: String,
+    InstallationDone {
+        #[ts(optional)]
+        preparation_report_html: Option<String>,
+        #[ts(optional)]
+        manual_reaper_install_path: Option<PathBuf>,
     },
 }
 

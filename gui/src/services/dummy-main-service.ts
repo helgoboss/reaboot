@@ -51,6 +51,9 @@ export class DummyMainService implements MainService {
 
     async startReaper() {
     }
+
+    async startReaperInstaller(_path: string) {
+    }
 }
 
 function timeout(value: number) {

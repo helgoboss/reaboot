@@ -10,7 +10,7 @@ export type ReabootBackendInfo = {
  *
  * If `None`, that means it couldn't be determined for some reason. Should be rare.
  */
-main_reaper_resource_dir: string | null, 
+main_reaper_resource_dir?: string, 
 /**
  * Whether "reaper.ini" exists in that resource directory.
  */
