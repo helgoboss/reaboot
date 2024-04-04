@@ -6,9 +6,9 @@ This template should help get you started developing with Tauri, Solid and Types
 
 - [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
 
-# Setup
+## Prerequisites
 
-## Install NodeJS
+### Install NodeJS
 
 Install the latest NodeJS LTS version!
 
@@ -17,3 +17,7 @@ Install the latest NodeJS LTS version!
     1. Install nvm
     2. `nvm install --lts`
     3. `nvm use --lts`
+
+## Build release
+
+`npm run tauri build`

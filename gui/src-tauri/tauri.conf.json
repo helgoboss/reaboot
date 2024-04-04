@@ -13,7 +13,6 @@
     "allowlist": {
       "all": false,
       "shell": {
-        "all": false,
         "open": true
       },
       "dialog": {
