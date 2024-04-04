@@ -11,7 +11,7 @@ impl ReabootAppHandle {
     pub fn emit_generic_error(&self, error: impl Display) {
         self.emit_reaboot_event(ReabootEvent::Error {
             display_msg: format!("{error:#}"),
-        })
+        });
     }
 
     pub fn emit_reaboot_event(&self, evt: ReabootEvent) {
@@ -47,9 +47,19 @@ impl InstallerListener for ReabootAppHandle {
         self.emit_reaboot_event(ReabootEvent::TaskFinished { task_id });
     }
 
-    fn warn(&self, message: impl Display) {}
+    fn warn(&self, message: impl Display) {
+        self.emit_reaboot_event(ReabootEvent::Warn {
+            display_msg: message.to_string(),
+        });
+    }
 
-    fn info(&self, message: impl Display) {}
+    fn info(&self, message: impl Display) {
+        self.emit_reaboot_event(ReabootEvent::Info {
+            display_msg: message.to_string(),
+        });
+    }
 
-    fn debug(&self, message: impl Display) {}
+    fn debug(&self, message: impl Display) {
+        tracing::debug!(%message);
+    }
 }

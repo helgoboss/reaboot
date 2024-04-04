@@ -5,7 +5,7 @@ import {Match, onMount, Show, Switch} from "solid-js";
 import {Toaster} from "solid-toast";
 import {configureInstaller} from "./epics/install.ts";
 import {MainInstallationIcon, PortableInstallationIcon} from "./components/icons.tsx";
-import {navigateTo, showError} from "./epics/common.tsx";
+import {navigateTo, showError, showInfo, showWarning} from "./epics/common.tsx";
 import {GlobalDialog} from "./components/GlobalDialog.tsx";
 
 export function App() {
@@ -82,6 +82,12 @@ function keepSyncingStateFromBackendToStore() {
                 break;
             case "TaskFinished":
                 mainStore.removeTask(evt.task_id);
+                break;
+            case "Info":
+                // showInfo(evt.display_msg);
+                break;
+            case "Warn":
+                showWarning(evt.display_msg);
                 break;
             case "Error":
                 showError(evt.display_msg);

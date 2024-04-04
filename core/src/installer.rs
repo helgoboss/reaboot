@@ -269,11 +269,8 @@ impl<L: InstallerListener> Installer<L> {
         if cfg!(target_os = "macos") {
             let src_path = dir_containing_reaper.join("REAPER.app");
             let dest_path = &self.resolved_config.reaper_exe;
-            let mut command = std::process::Command::new("mv");
-            command
-                // .gui(true).show(true)
-                .arg(src_path)
-                .arg(dest_path);
+            let mut command = runas::Command::new("mv");
+            command.gui(true).show(true).arg(src_path).arg(dest_path);
             let status = command.status()?;
             if !status.success() {
                 self.keep_temp_directory();

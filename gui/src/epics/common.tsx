@@ -8,6 +8,14 @@ export function showError(message: any) {
     toast.error(message);
 }
 
+export function showInfo(message: any) {
+    toast.success(message);
+}
+
+export function showWarning(message: any) {
+    toast.error(message);
+}
+
 export async function navigateTo(pageId: PageId) {
     const destPage = getPage(pageId);
     if (destPage.requiresReaperEulaAgreement

@@ -27,6 +27,12 @@ pub enum ReabootEvent {
     Error {
         display_msg: String,
     },
+    Warn {
+        display_msg: String,
+    },
+    Info {
+        display_msg: String,
+    },
     BackendInfoChanged {
         info: ReabootBackendInfo,
     },
