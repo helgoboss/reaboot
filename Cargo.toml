@@ -60,4 +60,10 @@ markdown = "1.0.0-alpha.16"
 runas = "1.2.0"
 
 [profile.release]
-strip = true
+# Those are the settings recommended on https://tauri.app/v1/guides/building/app-size/.
+# At least on macOS, they have quite a high impact on binary size.
+panic = "abort" # Strip expensive panic clean-up logic
+codegen-units = 1 # Compile crates one after another so the compiler can optimize better
+lto = true # Enables link to optimizations
+opt-level = "s" # Optimize for binary size
+strip = true # Remove debug symbols
