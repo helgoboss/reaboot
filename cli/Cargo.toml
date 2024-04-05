@@ -31,3 +31,7 @@ tracing-subscriber = { workspace = true, features = ["env-filter"] }
 termimad.workspace = true
 # For getting a correctly removed temporary REAPER download directory
 tempdir.workspace = true
+
+[[bin]]
+name = "reaboot"
+path = "src/main.rs"
