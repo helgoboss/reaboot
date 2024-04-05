@@ -60,7 +60,7 @@ async function addPackageUrlsFromClipboard() {
 
 async function addPackageUrls(text: string) {
     // Parse lines
-    const newPackageUrls = text.split("\n").map(line => line.trim());
+    const newPackageUrls = text.split("\n").map(line => line.trim()).filter(line => line.length !== 0);
     // Merge with existing package URLs and deduplicate
     const allPackages = new Set([...mainStore.state.installerConfig.package_urls, ...newPackageUrls]);
     // Configure
