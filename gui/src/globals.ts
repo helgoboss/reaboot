@@ -18,7 +18,6 @@ export const themeSignal = createThemeSignal();
 
 export const mainStore = new MainStore({
     currentPageId: "welcome",
-    resolvedConfig: undefined,
     agreedToReaperEula: false,
     installerConfig: {
         custom_reaper_resource_dir: undefined,
@@ -34,7 +33,7 @@ export const mainStore = new MainStore({
         },
         label: "",
     },
-    current_tasks: []
+    current_tasks: [],
 });
 
 export const pages: PageDescriptor[] = [

@@ -6,8 +6,11 @@ use ts_rs::TS;
 #[ts(export)]
 pub struct Recipe {
     pub name: String,
+    #[ts(optional)]
     pub website: Option<String>,
+    #[ts(optional)]
     pub manufacturer: Option<String>,
+    #[ts(optional)]
     pub logo: Option<String>,
     pub package_urls: Vec<String>,
 }
