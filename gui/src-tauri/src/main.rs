@@ -27,8 +27,8 @@ mod state;
 mod worker;
 
 fn main() {
-    let recipe_id = extract_recipe_id_from_current_exe();
-    // let recipe_id = Some("realearn".to_string());
+    // let recipe_id = extract_recipe_id_from_current_exe();
+    let recipe_id = Some("realearn".to_string());
     let (worker_command_sender, worker_command_receiver) = tauri::async_runtime::channel(1);
     let app_state = ReabootAppState {
         worker_command_sender,
