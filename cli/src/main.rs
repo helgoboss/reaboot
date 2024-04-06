@@ -13,7 +13,7 @@ async fn main() -> anyhow::Result<()> {
     match app.command {
         Command::Install(args) => install(args).await?,
     }
-    println!("");
+    println!();
     Ok(())
 }
 

@@ -303,7 +303,7 @@ impl<'a> PreparationReportAsMarkdown<'a> {
         if count > 1 {
             f.write_str("s")?;
         }
-        write!(f, "{suffix}\n")?;
+        writeln!(f, "{suffix}")?;
         Ok(())
     }
 

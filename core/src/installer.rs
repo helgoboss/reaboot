@@ -21,7 +21,7 @@ use crate::reaper_resource_dir::{
 use crate::reaper_util::extract_reaper_to_dir;
 use crate::task_tracker::{TaskSummary, TaskTrackerListener};
 use crate::{reaboot_util, reaper_util, ToolDownload, ToolingChange};
-use anyhow::{anyhow, bail, ensure, Context, Error};
+use anyhow::{bail, ensure, Context, Error};
 use enumset::EnumSet;
 use reaboot_reapack::database::Database;
 use reaboot_reapack::index::{Index, IndexSection, NormalIndexSection};
@@ -239,10 +239,7 @@ impl<L: InstallerListener> Installer<L> {
     }
 
     /// Returns path to REAPER installer in order to request manual installation.
-    fn install_reaper(
-        &self,
-        preparation_outcome: &ReaperPreparationOutcome,
-    ) -> Option<PathBuf> {
+    fn install_reaper(&self, preparation_outcome: &ReaperPreparationOutcome) -> Option<PathBuf> {
         self.listener
             .installation_stage_changed(InstallationStage::InstallingReaper);
         match preparation_outcome {
@@ -254,7 +251,7 @@ impl<L: InstallerListener> Installer<L> {
                 if let Err(e) =
                     reaper_util::install_reaper_for_windows_main(&download.download.file)
                 {
-                    self.install_manually_due_to_error(&download, &e)
+                    self.install_manually_due_to_error(download, &e)
                 } else {
                     None
                 }
@@ -263,9 +260,12 @@ impl<L: InstallerListener> Installer<L> {
                 dir_containing_reaper,
                 download,
             } => {
-                debug_assert!(self.resolved_config.portable, "Installing main REAPER by moving not supported for any OS");
+                debug_assert!(
+                    self.resolved_config.portable,
+                    "Installing main REAPER by moving not supported for any OS"
+                );
                 if let Err(e) = self.apply_reaper_portable_by_moving(dir_containing_reaper) {
-                    self.install_manually_due_to_error(&download, &e)
+                    self.install_manually_due_to_error(download, &e)
                 } else {
                     None
                 }
@@ -908,6 +908,7 @@ fn convert_index_section_to_model(index_section: &IndexSection) -> Option<EnumSe
     }
 }
 
+#[allow(clippy::enum_variant_names)]
 enum ReaperPreparationOutcome {
     /// It's a main REAPER install, and we don't support automatic REAPER installation for that.
     InstallManually(ToolDownload),

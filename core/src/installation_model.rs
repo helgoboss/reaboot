@@ -158,7 +158,7 @@ impl<'a> QualifiedSource<'a> {
             .source
             .file
             .as_ref()
-            .unwrap_or_else(|| &self.version.package.package.name);
+            .unwrap_or(&self.version.package.package.name);
         let path = Utf8Path::new(file_name);
         path.file_name().unwrap_or("")
     }
