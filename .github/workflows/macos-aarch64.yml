@@ -23,6 +23,7 @@ jobs:
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
       - name: install frontend dependencies
+        working-directory: gui
         run: npm install
       - name: cargo build
         run: cargo build
