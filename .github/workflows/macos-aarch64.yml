@@ -1,3 +1,5 @@
+name: macOS aarch64
+
 on:
   push:
     branches:
@@ -6,31 +8,35 @@ on:
     branches:
       - main
 
-name: macOS aarch64
-
 jobs:
   build:
     name: Build
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: setup node
         uses: actions/setup-node@v4
         with:
           node-version: lts/*
           cache: 'npm'
           cache-dependency-path: gui/package-lock.json
+
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-apple-darwin
+
       - name: Rust cache
         uses: swatinem/rust-cache@v2
+
       - name: install frontend dependencies
         working-directory: gui
         run: npm install
+
       - name: cargo build
         run: cargo build
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
