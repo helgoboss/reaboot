@@ -12,10 +12,6 @@ impl ReabootAppHandle {
         Self(inner)
     }
 
-    pub fn get(&self) -> &AppHandle {
-        &self.0
-    }
-
     pub fn emit_generic_error(&self, error: impl Display) {
         self.emit_reaboot_event(ReabootEvent::Error {
             display_msg: format!("{error:#}"),

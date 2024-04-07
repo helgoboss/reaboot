@@ -90,6 +90,9 @@ pub struct InstallerConfig {
     pub reaper_version: Option<VersionRef>,
     /// If `true`, the installer will succeed even if there are failed packages.
     pub skip_failed_packages: bool,
+    /// An optional recipe.
+    #[ts(optional)]
+    pub recipe: Option<Recipe>,
 }
 
 /// Resolved installer configuration (derived from the frontend installer config).

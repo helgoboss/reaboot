@@ -51,12 +51,6 @@ export class TauriMainService implements MainService {
         });
     }
 
-    async cancelInstallation() {
-        await this.invokeCommand({
-            kind: "CancelInstallation",
-        });
-    }
-
     async startReaper() {
         await this.invokeCommand({
             kind: "StartReaper",

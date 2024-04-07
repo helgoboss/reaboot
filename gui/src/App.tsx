@@ -1,20 +1,21 @@
 import {Stepper} from "./components/Stepper.tsx";
 import {mainService, mainStore, pages} from "./globals.ts";
 import {debug} from "tauri-plugin-log-api";
-import {Match, onMount, Show, Switch} from "solid-js";
+import {Match, Show, Switch} from "solid-js";
 import {Toaster} from "solid-toast";
 import {configureInstaller} from "./epics/install.ts";
 import {MainInstallationIcon, PortableInstallationIcon} from "./components/icons.tsx";
 import {navigateTo, showError, showWarning} from "./epics/common.tsx";
 import {GlobalDialog} from "./components/GlobalDialog.tsx";
+import {clipboard} from "@tauri-apps/api";
+import {Recipe} from "../../core/bindings/Recipe.ts";
 
 export function App() {
     keepSyncingStateFromBackendToStore();
-    onMount(() => {
-        // Right at the beginning, we configure the installer exactly once with default values.
-        // This makes the backend give us all necessary data.
-        configureInstaller({});
-    });
+    // Right at the beginning, we configure the installer exactly once with default values.
+    // This makes the backend give us all necessary data.
+    void configureInstaller({});
+    void detectInitialRecipe();
     const resolvedConfig = () => mainStore.state.resolvedConfig;
     return <div class="w-screen h-screen flex flex-col min-h-0">
         <header class="flex-none p-4">
@@ -57,9 +58,6 @@ function keepSyncingStateFromBackendToStore() {
     debug("Subscribing to ReaBoot events...");
     mainService.getNormalEvents().subscribe((evt) => {
         switch (evt.kind) {
-            case "RecipeIdDetected":
-                mainStore.setRecipeId(evt.recipe_id);
-                break;
             case "BackendInfoChanged":
                 mainStore.setBackendInfo(evt.info);
                 break;
@@ -98,4 +96,75 @@ function keepSyncingStateFromBackendToStore() {
                 break;
         }
     });
+}
+
+async function detectInitialRecipe() {
+    const text = await clipboard.readText();
+    if (text == null) {
+        return;
+    }
+    const recipe = await extractRecipe(text);
+    if (!recipe) {
+        return;
+    }
+    await configureInstaller({recipe});
+}
+
+async function extractRecipe(text: string): Promise<Recipe | undefined> {
+    // At first, check if the text itself represents a recipe (= is JSON)
+    const recipe = parseRecipe(text);
+    if (recipe) {
+        return recipe;
+    }
+    // If not, check if it's a URL and fetch it as recipe
+    const recipeUrl = extractUrl(text);
+    if (recipeUrl == null) {
+        return;
+    }
+    return fetchRecipe(recipeUrl);
+}
+
+async function fetchRecipe(url: URL): Promise<Recipe | undefined> {
+    // Send request
+    const response = await fetch(url);
+    if (!response.ok) {
+        return;
+    }
+    // Don't continue if response contains too much data
+    const maxContentLength = 100 * 1024;
+    const contentLength = response.headers.get("Content-Length");
+    if (contentLength === null || parseInt(contentLength) > maxContentLength) {
+        return;
+    }
+    // Try to read response as text
+    const text = await response.text().catch(() => undefined);
+    if (!text) {
+        return;
+    }
+    // Parse response text as recipe
+    return parseRecipe(text);
+}
+
+function parseRecipe(text: string): Recipe | undefined {
+    try {
+        return JSON.parse(text);
+    } catch {
+        return;
+    }
+}
+
+function extractUrl(text: string): URL | undefined {
+    const lines = text.split("\n");
+    if (lines.length !== 1) {
+        return;
+    }
+    return parseUrl(lines[0]);
+}
+
+function parseUrl(text: string): URL | undefined {
+    try {
+        return new URL(text);
+    } catch {
+        return;
+    }
 }

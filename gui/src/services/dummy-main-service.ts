@@ -37,9 +37,6 @@ export class DummyMainService implements MainService {
         });
     }
 
-    async cancelInstallation() {
-    }
-
     getNormalEvents(): Observable<ReabootEvent> {
         return this.normalEventsSubject;
     }

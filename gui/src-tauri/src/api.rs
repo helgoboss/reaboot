@@ -14,8 +14,6 @@ pub enum ReabootCommand {
     ConfigureInstallation { config: InstallerConfig },
     /// Starts the installation process.
     StartInstallation,
-    /// Cancels the installation process.
-    CancelInstallation,
     /// Starts REAPER.
     StartReaper,
     /// Start REAPER installer.
@@ -35,9 +33,6 @@ pub enum ReabootEvent {
     },
     Info {
         display_msg: String,
-    },
-    RecipeIdDetected {
-        recipe_id: String,
     },
     BackendInfoChanged {
         info: ReabootBackendInfo,

@@ -1,9 +1,9 @@
 use std::path::PathBuf;
+
 use tauri::async_runtime::Receiver;
 
 use reaboot_core::api::InstallerConfig;
 use reaboot_core::installer::{InstallError, Installer};
-use reaboot_core::recipe::Recipe;
 use reaboot_core::{PreparationReportAsMarkdown, PreparationReportMarkdownOptions};
 
 use crate::api::ReabootEvent;
@@ -17,7 +17,6 @@ pub struct ReabootWorker {
 pub enum ReabootWorkerCommand {
     Install {
         config: InstallerConfig,
-        recipe: Option<Recipe>,
         temp_dir_for_reaper_download: PathBuf,
     },
 }
@@ -42,10 +41,9 @@ impl ReabootWorker {
         match command {
             ReabootWorkerCommand::Install {
                 config,
-                recipe,
                 temp_dir_for_reaper_download,
             } => {
-                self.process_install(config, recipe, temp_dir_for_reaper_download)
+                self.process_install(config, temp_dir_for_reaper_download)
                     .await?;
             }
         }
@@ -55,12 +53,10 @@ impl ReabootWorker {
     async fn process_install(
         &self,
         config: InstallerConfig,
-        recipe: Option<Recipe>,
         temp_dir_for_reaper_download: PathBuf,
     ) -> anyhow::Result<()> {
         let listener = self.app_handle.clone();
-        let installer =
-            Installer::new(config, recipe, temp_dir_for_reaper_download, listener).await?;
+        let installer = Installer::new(config, temp_dir_for_reaper_download, listener).await?;
         let (report, actually_installed_things, manual_reaper_install_path) =
             match installer.install().await {
                 Ok(outcome) => (

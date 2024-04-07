@@ -82,13 +82,13 @@ pub async fn install(args: InstallArgs) -> anyhow::Result<()> {
         dry_run: args.dry_run,
         reaper_version: Some(reaper_version),
         skip_failed_packages: args.skip_failed_packages,
+        recipe: None,
     };
     let listener = CliInstallerListener::new();
     let temp_dir_for_reaper_download = TempDir::new("reaboot-")
         .context("couldn't create temporary directory for REAPER download")?;
     let installer = Installer::new(
         config,
-        None,
         temp_dir_for_reaper_download.path().to_path_buf(),
         listener,
     )

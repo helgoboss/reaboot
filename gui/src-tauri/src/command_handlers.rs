@@ -32,9 +32,6 @@ pub async fn reaboot_command(
         }
         ReabootCommand::StartInstallation => install(state).await,
         ReabootCommand::StartReaper => start_reaper(state).await,
-        ReabootCommand::CancelInstallation => {
-            todo!()
-        }
         ReabootCommand::StartReaperInstaller { path } => start_reaper_installer(path),
     };
     result.map_err(|r| r.to_string())?;
@@ -47,13 +44,7 @@ async fn configure(
     state: State<'_, ReabootAppState>,
 ) -> anyhow::Result<()> {
     // Resolve config
-    resolve_config_and_send_events(
-        config.clone(),
-        state.recipe_id.clone(),
-        state.extract_recipe(),
-        app_handle,
-    )
-    .await?;
+    resolve_config_and_send_events(config.clone(), app_handle).await?;
     // Only write config if that was successful
     *state.installer_config.lock().unwrap() = config;
     Ok(())
@@ -62,7 +53,6 @@ async fn configure(
 async fn install(state: State<'_, ReabootAppState>) -> anyhow::Result<()> {
     let command = ReabootWorkerCommand::Install {
         config: state.extract_installer_config(),
-        recipe: state.extract_recipe(),
         temp_dir_for_reaper_download: state.temp_dir_for_reaper_download.path().to_path_buf(),
     };
     state.worker_command_sender.send(command).await?;
@@ -70,8 +60,7 @@ async fn install(state: State<'_, ReabootAppState>) -> anyhow::Result<()> {
 }
 
 async fn start_reaper(state: State<'_, ReabootAppState>) -> anyhow::Result<()> {
-    let resolved_config =
-        resolve_config(state.extract_installer_config(), state.extract_recipe()).await?;
+    let resolved_config = resolve_config(state.extract_installer_config()).await?;
     reaper_util::start_reaper(&resolved_config.reaper_exe)?;
     Ok(())
 }

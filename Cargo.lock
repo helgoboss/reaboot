@@ -561,9 +561,6 @@ name = "camino"
 version = "1.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c59e92b5a388f549b863a7bea62612c09f24c8393560709a54558a9abdfb3b9c"
-dependencies = [
- "serde",
-]
 
 [[package]]
 name = "cargo_toml"
@@ -3864,9 +3861,7 @@ name = "reaboot-gui"
 version = "0.0.0"
 dependencies = [
  "anyhow",
- "camino",
  "markdown",
- "plist",
  "reaboot-core",
  "reaboot-reapack",
  "serde",

@@ -15,15 +15,12 @@ pub struct Recipe {
     pub package_urls: Vec<String>,
 }
 
-pub async fn find_and_parse_public_recipe(id: &str) -> Option<Recipe> {
-    let json = find_public_recipe_json(id).await.ok()??;
+pub async fn fetch_and_parse_recipe(url: &str) -> Option<Recipe> {
+    let json = fetch_recipe_json(url).await.ok()??;
     serde_json::from_str(&json).ok()
 }
 
-async fn find_public_recipe_json(id: &str) -> anyhow::Result<Option<String>> {
-    let url = format!(
-        "https://raw.githubusercontent.com/helgoboss/reaboot-recipes/main/recipes/{id}.json"
-    );
+async fn fetch_recipe_json(url: &str) -> anyhow::Result<Option<String>> {
     let response = reqwest::get(url).await?;
     if response.status() == StatusCode::NOT_FOUND {
         return Ok(None);

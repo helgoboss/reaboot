@@ -14,7 +14,6 @@ use crate::file_util::file_or_dir_is_writable_or_creatable;
 use crate::reaper_platform::ReaperPlatform;
 use crate::reaper_resource_dir::ReaperResourceDir;
 use crate::reaper_util;
-use crate::recipe::Recipe;
 
 pub fn collect_backend_info() -> ReabootBackendInfo {
     let (main_reaper_resource_dir, main_reaper_ini_exists) =
@@ -37,10 +36,7 @@ pub fn collect_backend_info() -> ReabootBackendInfo {
     }
 }
 
-pub async fn resolve_config(
-    config: InstallerConfig,
-    recipe: Option<Recipe>,
-) -> anyhow::Result<ResolvedInstallerConfig> {
+pub async fn resolve_config(config: InstallerConfig) -> anyhow::Result<ResolvedInstallerConfig> {
     // Check if this is the main REAPER resource directory
     let main_reaper_resource_dir = reaper_util::get_default_main_reaper_resource_dir()?;
     let (reaper_resource_dir, portable) = if let Some(d) = config.custom_reaper_resource_dir {
@@ -91,7 +87,7 @@ pub async fn resolve_config(
     // for scripts being registered at runtime)
     package_urls.push(create_reapack_package_url());
     // Add recipe package URLs
-    if let Some(r) = recipe.as_ref() {
+    if let Some(r) = config.recipe.as_ref() {
         let recipe_package_urls = parse_package_urls(r.package_urls.iter())
             .context("couldn't parse recipe package URls")?;
         package_urls.extend(recipe_package_urls);
@@ -112,7 +108,7 @@ pub async fn resolve_config(
         dry_run: config.dry_run,
         reaper_version: config.reaper_version.unwrap_or_default(),
         skip_failed_packages: config.skip_failed_packages,
-        recipe,
+        recipe: config.recipe,
     };
     Ok(resolved)
 }

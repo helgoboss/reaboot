@@ -16,7 +16,8 @@ export function WelcomePage() {
                 <div class="max-w-md">
                     <h1 class="text-5xl font-bold">Welcome!</h1>
                     <p class="pt-6">
-                        ReaBoot is a convenient all-in-one online installer for&#32;
+                        <a href="https://www.helgoboss.org/projects/reaboot" target="_blank" class="link">ReaBoot</a>
+                        &#32;is a convenient all-in-one online installer for&#32;
                         <span class="whitespace-nowrap">
                             <a href="https://reaper.fm/" target="_blank"
                                class="tooltip tooltip-success underline"
@@ -33,11 +34,11 @@ export function WelcomePage() {
                             </span>
                         </span>.
                     </p>
-                    <Show when={mainStore.state.recipeId || mainStore.state.resolvedConfig?.recipe}>
+                    <Show when={mainStore.state.resolvedConfig?.recipe}>
                         <div>
                             <div class="divider"></div>
                             <p>Today we are going to install the package</p>
-                            <div class="pb-6">
+                            <div>
                                 <Show when={mainStore.state.resolvedConfig?.recipe} fallback={
                                     <span class="loading loading-ball loading-lg"></span>
                                 }>
@@ -66,7 +67,7 @@ export function WelcomePage() {
                             </div>
                         </div>
                     </Show>
-                    <button class="btn btn-primary"
+                    <button class="btn btn-primary mt-6"
                             onClick={() => navigateTo("pick-reaper")}>
                         Let's go!
                     </button>
