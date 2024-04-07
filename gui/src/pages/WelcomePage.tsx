@@ -37,7 +37,7 @@ export function WelcomePage() {
                     <Show when={mainStore.state.resolvedConfig?.recipe}>
                         <div>
                             <div class="divider"></div>
-                            <p>Today we are going to install the package</p>
+                            <p>Today we are going to install</p>
                             <div>
                                 <Show when={mainStore.state.resolvedConfig?.recipe} fallback={
                                     <span class="loading loading-ball loading-lg"></span>
