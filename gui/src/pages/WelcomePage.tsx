@@ -16,12 +16,14 @@ export function WelcomePage() {
                 <div class="max-w-md">
                     <h1 class="text-5xl font-bold">Welcome!</h1>
                     <p class="pt-6">
-                        <a href="https://www.helgoboss.org/projects/reaboot" target="_blank" class="link">ReaBoot</a>
+                        <a href="https://www.reaboot.com/" target="_blank" class="link">ReaBoot</a>
                         &#32;is a convenient all-in-one online installer for&#32;
                         <span class="whitespace-nowrap">
                             <a href="https://reaper.fm/" target="_blank"
                                class="tooltip tooltip-success underline"
-                               data-tip="The DAW we all love">REAPER</a>,&#32;
+                               data-tip="The DAW we all love">
+                                REAPER
+                            </a>,&#32;
                             <a href="https://reapack.com/" target="_blank"
                                class="tooltip tooltip-success underline"
                                data-tip="The standard package manager for REAPER">
@@ -45,11 +47,6 @@ export function WelcomePage() {
                                     {recipe =>
                                         <a href={recipe().website ?? undefined} target="_blank">
                                             <Switch>
-                                                {/*<Match when={recipe().logo}>*/}
-                                                {/*    {logo =>*/}
-                                                {/*        <img src={logo()} alt={recipe().name} class="h-20 m-auto"/>*/}
-                                                {/*    }*/}
-                                                {/*</Match>*/}
                                                 <Match when={true}>
                                                     <div class="text-3xl font-bold">
                                                         {recipe().name}

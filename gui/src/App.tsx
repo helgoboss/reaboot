@@ -8,7 +8,7 @@ import {MainInstallationIcon, PortableInstallationIcon} from "./components/icons
 import {navigateTo, showError, showWarning} from "./epics/common.tsx";
 import {GlobalDialog} from "./components/GlobalDialog.tsx";
 import {clipboard} from "@tauri-apps/api";
-import {Recipe} from "../../core/bindings/Recipe.ts";
+import {tryExtractRecipe} from "../../commons/src/recipe-util.ts";
 
 export function App() {
     keepSyncingStateFromBackendToStore();
@@ -17,7 +17,7 @@ export function App() {
     void configureInstaller({});
     void detectInitialRecipe();
     const resolvedConfig = () => mainStore.state.resolvedConfig;
-    return <div class="w-screen h-screen flex flex-col min-h-0">
+    return <div class="w-screen h-screen flex flex-col min-h-0 select-none">
         <header class="flex-none p-4">
             <Stepper pages={pages} currentPageId={mainStore.currentPage().id}/>
         </header>
@@ -103,68 +103,9 @@ async function detectInitialRecipe() {
     if (text == null) {
         return;
     }
-    const recipe = await extractRecipe(text);
+    const recipe = await tryExtractRecipe(text);
     if (!recipe) {
         return;
     }
     await configureInstaller({recipe});
-}
-
-async function extractRecipe(text: string): Promise<Recipe | undefined> {
-    // At first, check if the text itself represents a recipe (= is JSON)
-    const recipe = parseRecipe(text);
-    if (recipe) {
-        return recipe;
-    }
-    // If not, check if it's a URL and fetch it as recipe
-    const recipeUrl = extractUrl(text);
-    if (recipeUrl == null) {
-        return;
-    }
-    return fetchRecipe(recipeUrl);
-}
-
-async function fetchRecipe(url: URL): Promise<Recipe | undefined> {
-    // Send request
-    const response = await fetch(url);
-    if (!response.ok) {
-        return;
-    }
-    // Don't continue if response contains too much data
-    const maxContentLength = 100 * 1024;
-    const contentLength = response.headers.get("Content-Length");
-    if (contentLength === null || parseInt(contentLength) > maxContentLength) {
-        return;
-    }
-    // Try to read response as text
-    const text = await response.text().catch(() => undefined);
-    if (!text) {
-        return;
-    }
-    // Parse response text as recipe
-    return parseRecipe(text);
-}
-
-function parseRecipe(text: string): Recipe | undefined {
-    try {
-        return JSON.parse(text);
-    } catch {
-        return;
-    }
-}
-
-function extractUrl(text: string): URL | undefined {
-    const lines = text.split("\n");
-    if (lines.length !== 1) {
-        return;
-    }
-    return parseUrl(lines[0]);
-}
-
-function parseUrl(text: string): URL | undefined {
-    try {
-        return new URL(text);
-    } catch {
-        return;
-    }
 }
