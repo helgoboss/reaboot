@@ -9,7 +9,8 @@ export default function Faq() {
                 </dt>
                 <dd>
                     It's ReaBoot's highest priority to create installations that are not different from what you
-                    would get by installing everything by hand. The result should be exactly the same. Nice and clean!
+                    would get by installing everything by hand. The result should be exactly the same. Nice and clean.
+                    If you discover an exception, please report it as a bug!
                 </dd>
                 <dt>
                     Can I use this to update existing REAPER installations?
@@ -22,7 +23,7 @@ export default function Faq() {
                 </dt>
                 <dd>
                     Not at all! ReaBoot embraces ReaPack and installs all packages in a way that's 100% compatible
-                    with it. The main idea is to use ReaBoot to make the initial installation much easier. After that,
+                    with it. The main idea is to use ReaBoot to make the initial installation easier. After that,
                     you can use ReaPack to install new packages. Or you can continue using ReaBoot. The choice is
                     yours! You can even use them interchangeably, it shouldn't make any difference.
                 </dd>

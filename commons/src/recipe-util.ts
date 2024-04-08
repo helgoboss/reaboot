@@ -13,7 +13,15 @@ async function tryGetRecipeFromUrl(url: URL): Promise<Recipe | null> {
     return packageUrl ? buildRecipeFromPackageUrl(url, packageUrl) : await tryFetchRecipeFromUrl(url);
 }
 
-function tryParsePackageUrl(url: URL): PackageUrl | null {
+export function tryParsePackageUrlFromRaw(text: string): PackageUrl | null {
+    const url = tryParseUrl(text);
+    if (!url) {
+        return null;
+    }
+    return tryParsePackageUrl(url);
+}
+
+export function tryParsePackageUrl(url: URL): PackageUrl | null {
     const fragmentId = url.hash.substring(1);
     if (fragmentId.length === 0) {
         return null;
