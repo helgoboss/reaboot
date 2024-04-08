@@ -3,6 +3,7 @@ import type {RouteDefinition} from '@solidjs/router';
 
 import Install from './pages/install';
 import Faq from './pages/faq';
+import Share from "./pages/share";
 
 export const routes: RouteDefinition[] = [
     {
@@ -12,6 +13,10 @@ export const routes: RouteDefinition[] = [
     {
         path: '/faq',
         component: Faq,
+    },
+    {
+        path: '/share',
+        component: Share,
     },
     {
         path: '**',

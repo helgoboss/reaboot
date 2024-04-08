@@ -1,7 +1,7 @@
 export default function Faq() {
     return (
         <div class="prose">
-            <h1>Frequently Asked Questions</h1>
+            <h1 class="text-center">Frequently Asked Questions</h1>
             <dl>
                 <dt>
                     I'm afraid that ReaBoot creates dirty installations. Is it safer to install REAPER and ReaPack by
@@ -44,6 +44,14 @@ export default function Faq() {
                 </dt>
                 <dd>
                     Yes. If not, let me know!
+                </dd>
+                <dt>
+                    I would like to share not just packages but also apply user settings. Is that supported by
+                    ReaBoot?
+                </dt>
+                <dd>
+                    No. Neither ReaPack nor ReaBoot touch user settings, because this would quickly lead to conflicts.
+                    Please consider creating, zipping and sharing a portable REAPER installation instead.
                 </dd>
             </dl>
         </div>

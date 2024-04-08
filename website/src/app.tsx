@@ -38,17 +38,14 @@ export function App(props: RouteSectionProps) {
                                 </span>.
                             </p>
                             <p class="py-6">
-                                Do you want to share REAPER extensions, scripts or other packages and make it easy
-                                to install them, even for beginners?
+                                Do you want to share REAPER packages or even complete REAPER distributions and make
+                                them installable in seconds (even for beginners)?
                             </p>
-                            <button class="btn btn-primary">Here's how!</button>
+                            <A href="/share" class="btn btn-primary">Here's how!</A>
                         </div>
                     </div>
                 </div>
                 <footer class="footer items-center p-4 bg-base-300">
-                    {/*<aside class="items-center grid-flow-col">*/}
-                    {/*    <p>Copyright © 2024 - All right reserved</p>*/}
-                    {/*</aside>*/}
                     <A href="/faq" class="link">FAQ</A>
                     <nav class="grid-flow-col gap-4 md:place-self-center md:justify-self-end">
                         <a href="https://github.com/helgoboss/reaboot">
