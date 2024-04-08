@@ -12,96 +12,92 @@ export default function Install() {
     const primaryDownload = getOptimalReabootDownload();
     const otherDownloads = reabootDownloads.filter(d => d.label !== primaryDownload?.label);
     return (
-        <div class="grow flex flex-col max-w-2xl items-center">
+        <div class="grow flex flex-col max-w-lg items-stretch gap-4">
             <Switch>
                 <Match when={recipeResource.loading}>
                     <span class="loading loading-ball loading-md"/>
                 </Match>
                 <Match when={recipeResource()}>
                     {recipe => <>
-                        <h1 class="text-center text-4xl font-bold">
+                        <h1 class="text-center text-3xl font-bold">
                             Let's install {displayRecipeHeading(recipe())}!
                         </h1>
                         <div role="tablist" class="tabs tabs-boxed m-4">
                             <a role="tab" class="tab tab-active">Via ReaBoot</a>
                             <a role="tab" class="tab">Via ReaPack</a>
                         </div>
-                        <div class="text-center max-w-md">
+                        <div class="text-center">
                             Using ReaBoot is the easiest way to install {displayRecipeNormal(recipe())}, especially if
                             you
                             don't have
                             ReaPack yet.
                         </div>
-                        <div class="grow flex flex-col justify-center items-stretch gap-8">
-                            <Step index={0} title="Download ReaBoot">
-                                <div>
-                                    ReaBoot is the installer that takes care of&#32;
-                                    <span class="underline tooltip tooltip-right"
-                                          data-tip="It even installs REAPER and ReaPack, if you don't have those yet!">
+                        <Step index={0} title="Download ReaBoot">
+                            <div>
+                                ReaBoot is an installer that takes care of&#32;
+                                <span class="underline tooltip tooltip-right"
+                                      data-tip="It even installs REAPER and ReaPack, if you don't have those yet!">
                             everything
                         </span>.
-                                </div>
-                                <Switch>
-                                    <Match when={primaryDownload}>
-                                        {d =>
-                                            <a href={buildDownloadUrl(d())} class="btn btn-accent">
-                                                <FaSolidDownload/>
-                                                ReaBoot for {d().label}
-                                            </a>
-                                        }
-                                    </Match>
-                                    <Match when={true}>
-                                        <a class="btn btn-primary disabled">
+                            </div>
+                            <Switch>
+                                <Match when={primaryDownload}>
+                                    {d =>
+                                        <a href={buildDownloadUrl(d())} class="btn btn-accent">
                                             <FaSolidDownload/>
-                                            OS probably unsupported
+                                            ReaBoot for {d().label}
                                         </a>
-                                    </Match>
-                                </Switch>
-                                <div class="text-xs">
-                                    <div class="divider">Looking for another download?</div>
-                                    <div class="flex flex-wrap justify-center gap-3">
-                                        <For each={otherDownloads}>
-                                            {d => <a href={buildDownloadUrl(d)} class="btn btn-xs">{d.label}</a>}
-                                        </For>
-                                    </div>
+                                    }
+                                </Match>
+                                <Match when={true}>
+                                    <a class="btn btn-primary disabled">
+                                        <FaSolidDownload/>
+                                        OS probably unsupported
+                                    </a>
+                                </Match>
+                            </Switch>
+                            <div class="text-xs">
+                                <div class="divider">Looking for another download?</div>
+                                <div class="flex flex-wrap justify-center gap-3">
+                                    <For each={otherDownloads}>
+                                        {d => <a href={buildDownloadUrl(d)} class="btn btn-xs">{d.label}</a>}
+                                    </For>
                                 </div>
-                            </Step>
-                            <Step index={1} title="Start ReaBoot">
-                                <div>
-                                    <div>
-                                        Start the installer and follow the instructions.
-                                    </div>
-                                    <div class="divider"/>
-                                    <div class="prose prose-sm">
-                                        <dl class="text-sm">
-                                            <dt>
-                                                Does the installer ask you for a recipe?
-                                            </dt>
-                                            <dd>
-                                                If you start ReaBoot directly after downloading it, it should be already
-                                                pre-configured for the installation of {displayRecipeNormal(recipe())}.
-                                                If
-                                                not, it will
-                                                ask
-                                                you for a recipe on the welcome page. In that case, press&#32;
-                                                <button class="btn btn-xs btn-accent">
-                                                    <FaRegularClipboard/>
-                                                    Copy recipe
-                                                </button>
-                                                &#32;and then&#32; paste the recipe in ReaBoot!
-                                            </dd>
-                                            <dt>
-                                                Doesn't it work on your system?
-                                            </dt>
-                                            <dd>
-                                                Install {displayRecipeNormal(recipe())} <a href="" class="link">via
-                                                ReaPack</a> instead!
-                                            </dd>
-                                        </dl>
-                                    </div>
+                            </div>
+                        </Step>
+                        <Step index={1} title="Start ReaBoot">
+                            <div>
+                                Start the installer and follow its instructions.
+                            </div>
+                            <div class="collapse collapse-arrow bg-base-300">
+                                <input type="checkbox"/>
+                                <div class="collapse-title text-xl">
+                                    Having issues?
                                 </div>
-                            </Step>
-                        </div>
+                                <div class="collapse-content prose prose-sm">
+                                    <dl>
+                                        <dt>
+                                            Does the installer ask you for a recipe?
+                                        </dt>
+                                        <dd>
+                                            In that case, press&#32;
+                                            <button class="btn btn-xs btn-accent">
+                                                <FaRegularClipboard/>
+                                                Copy recipe
+                                            </button>
+                                            &#32;and then&#32; paste the recipe in ReaBoot!
+                                        </dd>
+                                        <dt>
+                                            Doesn't it work on your system?
+                                        </dt>
+                                        <dd>
+                                            Install {displayRecipeNormal(recipe())} <a href="" class="link">via
+                                            ReaPack</a> instead!
+                                        </dd>
+                                    </dl>
+                                </div>
+                            </div>
+                        </Step>
                     </>
                     }
                 </Match>

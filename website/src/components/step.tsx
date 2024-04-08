@@ -14,7 +14,7 @@ export function Step(props: Props) {
                 {props.index + 1}
             </div>
         </div>
-        <div class="card w-full bg-base-200">
+        <div class="card card-compact w-full bg-base-200">
             <div class="card-body">
                 <h2 class="card-title">{props.title}</h2>
                 <div class="flex flex-col gap-3">
