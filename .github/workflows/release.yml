@@ -82,7 +82,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p release-assets
-          mv "${{ matrix.settings.src }}" "./release-assets/${{ matrix.settings.dest }}"
+          mv ${{ matrix.settings.src }} "./release-assets/${{ matrix.settings.dest }}"
 
 
       #      - name: Create release
