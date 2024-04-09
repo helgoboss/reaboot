@@ -1,12 +1,13 @@
 import {createResource, createSignal, Match, Switch} from "solid-js";
 import {tryExtractRecipe} from "../../../commons/src/recipe-util";
 import {CopyField} from "../components/copy-field";
+import {NormalPage} from "../components/normal-page";
 
 export default function Share() {
     const [payload, setPayload] = createSignal("");
     const [recipeResource] = createResource(payload, tryExtractRecipe);
     const installationUrl = () => createReabootInstallationUrl(payload());
-    return (
+    return <NormalPage>
         <div class="prose">
             <h1>Share a recipe via ReaBoot</h1>
 
@@ -79,7 +80,7 @@ export default function Share() {
 }`}</pre>
             <p>
                 At startup, the installer checks whether the clipboard contains such a recipe. If yes, it
-                pre-configures itself with the data in the recipe. It also accepts a package URL or an URL
+                pre-configures itself with the data in the recipe. As an alternative, it accepts a package URL or an URL
                 that points to a recipe.
             </p>
 
@@ -101,7 +102,7 @@ https://github.com/helgoboss/reaper-packages/raw/master/index.xml#p=Extensions/R
 https://github.com/ReaTeam/ReaScripts/raw/master/index.xml#p=Various/rodilab_Color%20palette.lua&v=latest`}</pre>
 
         </div>
-    );
+    </NormalPage>;
 }
 
 function createReabootInstallationUrl(payload: string): string {

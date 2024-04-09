@@ -10,6 +10,7 @@ import {VersionRef} from "../../../reapack/bindings/VersionRef";
 import {Collapsible, Tabs} from "@kobalte/core";
 import {copyTextToClipboard} from "../util/clipboard-util";
 import {CopyField} from "../components/copy-field";
+import {Welcome} from "../components/welcome";
 
 export default function Install() {
     const params = useParams();
@@ -25,36 +26,43 @@ export default function Install() {
     };
 
     return (
-        <div class="grow flex flex-col">
-            <Switch>
-                <Match when={recipeResource.loading}>
-                    <span class="loading loading-ball loading-md"/>
-                </Match>
-                <Match when={recipeResource()}>
-                    {recipe => <>
-                        <h1 class="text-center text-4xl font-bold">
-                            Let's install {displayRecipeHeading(recipe())}!
-                        </h1>
-                        <Tabs.Root value={via()} onChange={setVia} class="flex flex-col items-center">
-                            <Tabs.List class="tabs tabs-boxed m-4">
-                                <Tabs.Trigger value="reaboot" class="tab data-[selected]:tab-active">
-                                    Via ReaBoot
-                                </Tabs.Trigger>
-                                <Tabs.Trigger value="reapack" class="tab data-[selected]:tab-active">
-                                    Via ReaPack
-                                </Tabs.Trigger>
-                            </Tabs.List>
-                            <Tabs.Content value="reaboot">
-                                <InstallViaReaboot recipe={recipe()}/>
-                            </Tabs.Content>
-                            <Tabs.Content value="reapack">
-                                <InstallViaReapack recipe={recipe()}/>
-                            </Tabs.Content>
-                        </Tabs.Root>
-                    </>
-                    }
-                </Match>
-            </Switch>
+        <div class="w-screen h-screen flex flex-row">
+            <main class="grow flex flex-col items-center p-6 overflow-y-auto">
+                <div class="grow flex flex-col">
+                    <Switch>
+                        <Match when={recipeResource.loading}>
+                            <span class="loading loading-ball loading-md"/>
+                        </Match>
+                        <Match when={recipeResource()}>
+                            {recipe => <>
+                                <h1 class="text-center text-4xl font-bold">
+                                    Let's install {displayRecipeHeading(recipe())}!
+                                </h1>
+                                <Tabs.Root value={via()} onChange={setVia} class="flex flex-col items-center">
+                                    <Tabs.List class="tabs tabs-boxed m-4">
+                                        <Tabs.Trigger value="reaboot" class="tab data-[selected]:tab-active">
+                                            Via ReaBoot
+                                        </Tabs.Trigger>
+                                        <Tabs.Trigger value="reapack" class="tab data-[selected]:tab-active">
+                                            Via ReaPack
+                                        </Tabs.Trigger>
+                                    </Tabs.List>
+                                    <Tabs.Content value="reaboot">
+                                        <InstallViaReaboot recipe={recipe()}/>
+                                    </Tabs.Content>
+                                    <Tabs.Content value="reapack">
+                                        <InstallViaReapack recipe={recipe()}/>
+                                    </Tabs.Content>
+                                </Tabs.Root>
+                            </>
+                            }
+                        </Match>
+                    </Switch>
+                </div>
+            </main>
+            <header class="max-w-sm bg-base-200 flex flex-col overflow-y-auto">
+                <Welcome poweredBy={true} examples={false}/>
+            </header>
         </div>
     );
 }

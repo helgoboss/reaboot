@@ -4,8 +4,13 @@ import type {RouteDefinition} from '@solidjs/router';
 import Install from './pages/install';
 import Faq from './pages/faq';
 import Share from "./pages/share";
+import Home from "./pages/home";
 
 export const routes: RouteDefinition[] = [
+    {
+        path: '/',
+        component: Home,
+    },
     {
         path: '/install/:thing',
         component: Install,
