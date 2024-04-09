@@ -72,38 +72,32 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: npm run tauri build -- ${{ matrix.settings.args }}
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.settings.dest }}
-          path: ${{ matrix.settings.src }}
-      #
-      #      - name: Create Release
-      #        uses: actions/github-script@v4
+      #      - name: Upload artifact
+      #        uses: actions/upload-artifact@v4
       #        with:
-      #          github-token: ${{ secrets.GITHUB_TOKEN }}
-      #          script: |
-      #            const { data } = await github.repos.createRelease({
-      #              owner: context.repo.owner,
-      #              repo: context.repo.repo,
-      #              tag_name: 'v1.0.0',  // Specify your tag name here
-      #              name: 'Version 1.0.0 Release',  // Specify your release name here
-      #              body: 'Release notes for version 1.0.0',  // Specify your release notes here
-      #              draft: false,  // Change to true if you want to create a draft release
-      #              prerelease: false  // Change to true if this is a pre-release
-      #            });
-      #            console.log('Created release:', data.html_url);
+      #          name: ${{ matrix.settings.dest }}
+      #          path: ${{ matrix.settings.src }}
 
-      - name: List dir
+      - name: Prepare asset
         shell: bash
-        run: ls -al
+        run: |
+          mkdir -p release-assets
+          mv "${{ matrix.settings.src }}" "./release-assets/${{ matrix.settings.dest }}"
 
-#      - name: Create release
-#        shell: bash
-#        env:
-#          GITHUB_TOKEN: ${{ github.TOKEN }}
-#        run: |
-#          gh release create --draft --prerelease --target v0.0.0 *
+
+      #      - name: Create release
+      #        shell: bash
+      #        env:
+      #          GITHUB_TOKEN: ${{ github.TOKEN }}
+      #        run: |
+      #          gh release create --draft --prerelease --target v0.0.0
+
+      - name: Upload asset
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.TOKEN }}
+        run: |
+          gh release upload v0.0.0 --clobber ./release-assets/*
 
 #      - uses: tauri-apps/tauri-action@v0
 #        env:
