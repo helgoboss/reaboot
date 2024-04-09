@@ -83,6 +83,7 @@ export function DonePage() {
 
 async function showInstallationReport() {
     await showDialog<boolean>({
+        title: "Installation Report",
         content: <div class="prose prose-sm overflow-y-auto" innerHTML={mainStore.state.installationReportHtml}/>,
         buildButtons: (close) => {
             return <>

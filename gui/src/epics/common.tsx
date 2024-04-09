@@ -23,9 +23,9 @@ export async function navigateTo(pageId: PageId) {
         && !mainStore.state.resolvedConfig?.reaper_exe_exists) {
         const [eulaResource] = createResource(mainService.getReaperEula);
         const userAgreedToEula = await showDialog<boolean>({
+            title: "REAPER license agreement",
             fullScreen: true,
             content: <div class="flex flex-col min-h-0 gap-4">
-                <h3 class="font-bold text-lg text-center">REAPER license agreement</h3>
                 <div class="text-center">
                     ReaBoot is going to download and install REAPER because it's not yet installed at the location of
                     your choice. In order to continue, you need to accept the REAPER license agreement.

@@ -4,6 +4,7 @@ import {Dialog, DialogProps} from "./Dialog.tsx";
 const [globalDialogProps, setGlobalDialogProps] = createSignal<DialogProps | undefined>(undefined);
 
 export type ShowDialogArgs<T> = {
+    title: string,
     content: JSX.Element,
     fullScreen?: boolean,
     buildButtons: (close: (value: T) => void) => JSX.Element,
@@ -17,6 +18,7 @@ export function showDialog<T>(args: ShowDialogArgs<T>): Promise<T> {
         }
 
         const dialogProps: DialogProps = {
+            title: args.title,
             content: args.content,
             fullScreen: args.fullScreen ?? false,
             buttons: args.buildButtons(close),

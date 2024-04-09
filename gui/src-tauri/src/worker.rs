@@ -71,6 +71,7 @@ impl ReabootWorker {
             };
         let preparation_report_html = if let Some(r) = report {
             let options = PreparationReportMarkdownOptions {
+                include_main_heading: false,
                 actually_installed_things,
                 optimize_for_termimad: false,
             };

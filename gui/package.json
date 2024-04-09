@@ -12,6 +12,7 @@
   },
   "license": "MIT",
   "dependencies": {
+    "@kobalte/core": "^0.12.6",
     "@tauri-apps/api": "^1",
     "rxjs": "^7.8.1",
     "solid-icons": "^1.1.0",

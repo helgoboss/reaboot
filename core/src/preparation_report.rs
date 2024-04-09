@@ -280,6 +280,8 @@ pub struct PreparationReportAsMarkdown<'a> {
 
 #[derive(Copy, Clone)]
 pub struct PreparationReportMarkdownOptions {
+    /// Whether to include the main heading.
+    pub include_main_heading: bool,
     /// Whether the packages have actually been installed (`true`) or if installation failed
     /// or this was just a dry run (`false`).
     pub actually_installed_things: bool,
@@ -354,7 +356,9 @@ impl<'a> PreparationReportAsMarkdown<'a> {
 impl<'a> Display for PreparationReportAsMarkdown<'a> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let summary = self.report.summary();
-        writeln!(f, "\n# Installation report")?;
+        if self.options.include_main_heading {
+            writeln!(f, "\n# Installation report")?;
+        }
         let mut heading_count = 0;
         if summary.failures > 0 {
             heading_count += 1;
