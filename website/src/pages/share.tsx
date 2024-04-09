@@ -11,8 +11,6 @@ export default function Share() {
         <div class="prose">
             <h1>Share a recipe via ReaBoot</h1>
 
-            <p><a href="#explanations">Scroll down</a> to learn more about recipes.</p>
-
             <h2>ReaBoot installation link builder</h2>
 
             <p>Let's create a link, so that you can easily share REAPER packages or complete REAPER distributions!</p>
@@ -21,6 +19,8 @@ export default function Share() {
                 1. Enter the <a href="#reaboot-recipe">recipe</a>, an URL to a recipe or just a <a href="#package-url">package
                 URL</a>
             </h3>
+
+            <p><a href="#explanations">Scroll down</a> to learn more about recipes.</p>
 
             <div>
                 <textarea class="textarea textarea-bordered h-56 font-mono text-xs w-full"
