@@ -3,7 +3,7 @@ import {mainService, mainStore, pages} from "../globals.ts";
 import {showDialog} from "../components/GlobalDialog.tsx";
 import {createResource, Match, Switch} from "solid-js";
 import {Toast, toaster} from "@kobalte/core";
-import {FaSolidX, FaSolidXmark} from "solid-icons/fa";
+import {FaSolidX} from "solid-icons/fa";
 
 export function showError(message: any) {
     showToast("error", message);
