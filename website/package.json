@@ -20,6 +20,7 @@
     "vite-plugin-solid": "^2.8.2"
   },
   "dependencies": {
+    "@kobalte/core": "^0.12.6",
     "@solidjs/router": "^0.13.1",
     "@types/ua-parser-js": "^0.7.39",
     "solid-icons": "^1.1.0",

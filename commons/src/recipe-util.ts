@@ -30,9 +30,10 @@ export function tryParsePackageUrl(url: URL): PackageUrl | null {
     if (!packageVersionRef) {
         return null;
     }
-    url.hash = "";
+    const repositoryUrl = new URL(url);
+    repositoryUrl.hash = "";
     return {
-        repository_url: url.toString(),
+        repository_url: repositoryUrl.toString(),
         package_version_ref: packageVersionRef
     }
 }

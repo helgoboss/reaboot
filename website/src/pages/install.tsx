@@ -1,27 +1,28 @@
-import {createMemo, createResource, For, Match, Show, Switch} from 'solid-js';
+import {createMemo, createResource, createSignal, For, Match, Show, Switch} from 'solid-js';
 import {Step} from "../components/step";
-import {FaRegularClipboard, FaSolidDownload} from "solid-icons/fa";
+import {FaRegularClipboard, FaSolidCheck, FaSolidDownload} from "solid-icons/fa";
 import {UAParser} from 'ua-parser-js';
 import {Params, useParams, useSearchParams} from "@solidjs/router";
 import {Recipe} from "../../../core/bindings/Recipe";
 import {tryExtractRecipe, tryParsePackageUrlFromRaw} from "../../../commons/src/recipe-util";
 import {PackageUrl} from "../../../reapack/bindings/PackageUrl";
 import {VersionRef} from "../../../reapack/bindings/VersionRef";
+import {Collapsible, Tabs} from "@kobalte/core";
+import {copyTextToClipboard} from "../util/clipboard-util";
+import {CopyField} from "../components/copy-field";
 
 export default function Install() {
     const params = useParams();
     const [searchParams, setSearchParams] = useSearchParams();
     const [recipeResource] = createResource(params, tryGetRecipeFromParams);
 
-    function via() {
-        return searchParams.via;
-    }
+    const via = () => searchParams.via ?? "reaboot";
 
-    function setVia(via: string) {
+    const setVia = (via: string) => {
         setSearchParams({
             via
         });
-    }
+    };
 
     return (
         <div class="grow flex flex-col">
@@ -31,21 +32,25 @@ export default function Install() {
                 </Match>
                 <Match when={recipeResource()}>
                     {recipe => <>
-                        <h1 class="text-center text-3xl font-bold">
+                        <h1 class="text-center text-4xl font-bold">
                             Let's install {displayRecipeHeading(recipe())}!
                         </h1>
-                        <div role="tablist" class="tabs tabs-boxed m-4">
-                            <a role="tab" class="tab tab-active" onClick={() => setVia("reaboot")}>Via ReaBoot</a>
-                            <a role="tab" class="tab" onClick={() => setVia("reapack")}>Via ReaPack</a>
-                        </div>
-                        <Switch>
-                            <Match when={searchParams.via === "reapack"}>
-                                <InstallViaReapack recipe={recipe()}/>
-                            </Match>
-                            <Match when={true}>
+                        <Tabs.Root value={via()} onChange={setVia} class="flex flex-col items-center">
+                            <Tabs.List class="tabs tabs-boxed m-4">
+                                <Tabs.Trigger value="reaboot" class="tab data-[selected]:tab-active">
+                                    Via ReaBoot
+                                </Tabs.Trigger>
+                                <Tabs.Trigger value="reapack" class="tab data-[selected]:tab-active">
+                                    Via ReaPack
+                                </Tabs.Trigger>
+                            </Tabs.List>
+                            <Tabs.Content value="reaboot">
                                 <InstallViaReaboot recipe={recipe()}/>
-                            </Match>
-                        </Switch>
+                            </Tabs.Content>
+                            <Tabs.Content value="reapack">
+                                <InstallViaReapack recipe={recipe()}/>
+                            </Tabs.Content>
+                        </Tabs.Root>
                     </>
                     }
                 </Match>
@@ -121,15 +126,20 @@ function InstallViaReapack(props: InstallViaProps) {
                 <ul>
                     <For each={packageUrls()}>
                         {purl =>
-                            <li>
-                                Search for&#32;
-                                <span class="font-mono">
+                            <>
+                                <li>
+                                    Search for&#32;
+                                    <span class="font-mono">
                                     {purl.package_version_ref.package_path.package_name}
-                                </span>,
-                                right-click the corresponding package and
-                                choose&#32;
-                                <em>{getReapackMenuEntry(purl.package_version_ref.version_ref)}</em>.
-                            </li>
+                                </span> or something similar-sounding (the package description might be different
+                                    from the package name)
+                                </li>
+                                <li>
+                                    Right-click the corresponding package and
+                                    choose&#32;
+                                    <em>{getReapackMenuEntry(purl.package_version_ref.version_ref)}</em>
+                                </li>
+                            </>
                         }
                     </For>
                 </ul>
@@ -160,21 +170,30 @@ function getReapackMenuEntry(versionRef: VersionRef): string {
 function InstallViaReaboot(props: InstallViaProps) {
     const primaryDownload = getOptimalReabootDownload();
     const otherDownloads = reabootDownloads.filter(d => d.label !== primaryDownload?.label);
+    const [mainCopyState, setMainCopyState] = createSignal(false);
+    const getRecipeAsJson = () => JSON.stringify(props.recipe, null, "    ");
+    const copyRecipeMain = async () => {
+        setMainCopyState(await copyTextToClipboard(getRecipeAsJson()));
+    };
+
     return <div class="grow flex flex-col max-w-lg items-stretch gap-6">
         <div class="text-center">
             ReaBoot is the easiest way to install {displayRecipeNormal(props.recipe)}.
-            It automatically installs REAPER and ReaPack, if you don't have those yet!
+            It automatically installs REAPER and ReaPack if necessary.
         </div>
         <Step index={0} title="Download ReaBoot">
             <div>
-                Here's the download matching your current system:
+                Here's the download for your system:
             </div>
             <Switch>
                 <Match when={primaryDownload}>
                     {d =>
-                        <a href={buildDownloadUrl(d())} class="btn btn-accent">
+                        <a href={buildDownloadUrl(d())}
+                           onclick={() => copyRecipeMain()}
+                           class="btn btn-accent">
                             <FaSolidDownload/>
                             ReaBoot for {d().label}
+                            {mainCopyState() && <FaSolidCheck/>}
                         </a>
                     }
                 </Match>
@@ -189,7 +208,13 @@ function InstallViaReaboot(props: InstallViaProps) {
                 <div class="divider">Looking for another download?</div>
                 <div class="flex flex-wrap justify-center gap-3">
                     <For each={otherDownloads}>
-                        {d => <a href={buildDownloadUrl(d)} class="btn btn-xs">{d.label}</a>}
+                        {d =>
+                            <a href={buildDownloadUrl(d)}
+                               onclick={() => copyRecipeMain()}
+                               class="btn btn-xs">
+                                {d.label}
+                            </a>
+                        }
                     </For>
                 </div>
             </div>
@@ -198,34 +223,30 @@ function InstallViaReaboot(props: InstallViaProps) {
             <div>
                 Start the installer and follow its instructions.
             </div>
-            <div class="collapse collapse-arrow bg-base-300">
-                <input type="checkbox"/>
-                <div class="collapse-title text-xl">
+            <Collapsible.Root class="collapse collapse-arrow data-[expanded]:collapse-open bg-base-300 ">
+                <Collapsible.Trigger class="collapse-title">
                     Having issues?
-                </div>
-                <div class="collapse-content prose prose-sm">
+                </Collapsible.Trigger>
+                <Collapsible.Content class="p-4 prose prose-sm">
                     <dl>
                         <dt>
                             Does the installer ask you for a recipe?
                         </dt>
-                        <dd>
+                        <dd class="p-0">
                             In that case, press&#32;
-                            <button class="btn btn-xs btn-accent">
-                                <FaRegularClipboard/>
-                                Copy recipe
-                            </button>
-                            &#32;and then&#32; paste the recipe in ReaBoot!
+                            <CopyField text={getRecipeAsJson}>Copy recipe</CopyField>
+                            &#32;and then&#32; paste the recipe into ReaBoot!
                         </dd>
                         <dt>
                             Doesn't work on your system?
                         </dt>
-                        <dd>
+                        <dd class="p-0">
                             It's possible that your system is not modern enough to run ReaBoot.
                             Try installation via ReaPack instead!
                         </dd>
                     </dl>
-                </div>
-            </div>
+                </Collapsible.Content>
+            </Collapsible.Root>
         </Step>
     </div>
 }

@@ -19,8 +19,7 @@ export function App(props: RouteSectionProps) {
                                 <span class="text-2xl font-bold">ReaBoot</span>
                             </h1>
                             <p class="py-6">
-                                <a href="https://www.reaboot.com/" target="_blank" class="link">ReaBoot</a>
-                                &#32;is a convenient all-in-one online installer for&#32;
+                                ReaBoot is a convenient all-in-one online installer for&#32;
                                 <a href="https://reaper.fm/" target="_blank"
                                    class="tooltip tooltip-success underline"
                                    data-tip="The DAW we all love">

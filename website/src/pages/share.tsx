@@ -1,18 +1,20 @@
 import {createResource, createSignal, Match, Switch} from "solid-js";
 import {tryExtractRecipe} from "../../../commons/src/recipe-util";
+import {CopyField} from "../components/copy-field";
 
 export default function Share() {
     const [payload, setPayload] = createSignal("");
     const [recipeResource] = createResource(payload, tryExtractRecipe);
     const installationUrl = () => createReabootInstallationUrl(payload());
     return (
-        <div class="max-w-3xl prose">
-            <h1>How to share recipes via ReaBoot</h1>
+        <div class="prose">
+            <h1>Share a recipe via ReaBoot</h1>
 
-            <h2>ReaBoot Installation URL builder</h2>
+            <p><a href="#explanations">Scroll down</a> to learn more about recipes.</p>
 
-            Let's create a <a href="#reaboot-installation-url">ReaBoot installation URL</a>, so that you can easily
-            share REAPER packages or complete REAPER distributions!
+            <h2>ReaBoot installation link builder</h2>
+
+            <p>Let's create a link, so that you can easily share REAPER packages or complete REAPER distributions!</p>
 
             <h3>
                 1. Enter the <a href="#reaboot-recipe">recipe</a>, an URL to a recipe or just a <a href="#package-url">package
@@ -26,23 +28,25 @@ export default function Share() {
                 </textarea>
             </div>
 
-
-            <h3>
-                2. Copy what you need
-            </h3>
             <Switch>
                 <Match when={recipeResource()}>
                     {recipe =>
                         <>
-                            <div>
-                                Raw installation URL:
-                                <pre>{installationUrl()}</pre>
-                            </div>
-                            <div>
-                                REAPER forum link:
-                                <pre>[url={installationUrl()}]{recipe().name}[/url]</pre>
-                            </div>
+                            <h3>2. Give it a try</h3>
                             <a href={installationUrl()} target="_blank">Try it!</a>
+
+                            <h3>3. Copy what you need</h3>
+                            <div class="flex flex-wrap gap-4">
+                                <CopyField text={installationUrl}>
+                                    Raw installation URL
+                                </CopyField>
+                                <CopyField text={() => `[url=${installationUrl()}]${recipe().name}[/url]`}>
+                                    REAPER forum link
+                                </CopyField>
+                                <CopyField text={() => `<a href="${installationUrl()}">${recipe().name}</a>`}>
+                                    HTML link (for website embedding)
+                                </CopyField>
+                            </div>
                         </>
                     }
                 </Match>
@@ -53,24 +57,7 @@ export default function Share() {
                 </Match>
             </Switch>
 
-            <h2 id="glossary">Glossary</h2>
-
-            <h3 id="package-url">Package URL</h3>
-            <p>
-                A package URL is a URL that uniquely identifies a ReaPack package. It has the following structure:
-            </p>
-            <pre>
-                {`REPOSITORY_URL#p=PACKAGE_CATEGORY/PACKAGE_NAME&v=VERSION_REF`}
-            </pre>
-            <p>
-                <span class="font-mono">VERSION_REF</span> can be <span class="font-mono">latest</span>,&#32;
-                <span class="font-mono">latest-pre</span> or a specific version name.
-                This part is optional and defaults to <span class="font-mono">latest</span>.
-            </p>
-            <p>Examples:</p>
-            <pre>{`
-https://github.com/helgoboss/reaper-packages/raw/master/index.xml#p=Extensions/ReaLearn-x64
-https://github.com/ReaTeam/ReaScripts/raw/master/index.xml#p=Various/rodilab_Color%20palette.lua&v=latest`}</pre>
+            <h2 id="explanations">Explanations</h2>
 
             <h3 id="reaboot-recipe">ReaBoot Recipe</h3>
             <p>
@@ -96,12 +83,23 @@ https://github.com/ReaTeam/ReaScripts/raw/master/index.xml#p=Various/rodilab_Col
                 that points to a recipe.
             </p>
 
-            <h3 id="reaboot-installation-url">ReaBoot Installation URL</h3>
+            <h3 id="package-url">Package URL</h3>
             <p>
-                This is the URL you share with your users. When clicking on a link to such a URL, the user ends
-                up on this website and will be prompted to download the installer. The download button doesn't just
-                download the installer, it also copies the recipe, recipe URL or package URL to the clipboard.
+                A package URL is a URL that uniquely identifies a ReaPack package. It has the following structure:
             </p>
+            <pre>
+                {`REPOSITORY_URL#p=PACKAGE_CATEGORY/PACKAGE_NAME&v=VERSION_REF`}
+            </pre>
+            <p>
+                <span class="font-mono">VERSION_REF</span> can be <span class="font-mono">latest</span>,&#32;
+                <span class="font-mono">latest-pre</span> or a specific version name.
+                This part is optional and defaults to <span class="font-mono">latest</span>.
+            </p>
+            <p>Examples:</p>
+            <pre>{`
+https://github.com/helgoboss/reaper-packages/raw/master/index.xml#p=Extensions/ReaLearn-x64
+https://github.com/ReaTeam/ReaScripts/raw/master/index.xml#p=Various/rodilab_Color%20palette.lua&v=latest`}</pre>
+
         </div>
     );
 }

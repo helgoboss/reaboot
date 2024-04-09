@@ -14,9 +14,9 @@ export function Step(props: Props) {
                 {props.index + 1}
             </div>
         </div>
-        <div class="card card-compact w-full bg-base-200">
-            <div class="card-body text-center items-center">
-                <h2 class="card-title">{props.title}</h2>
+        <div class="card card-compact bg-base-200">
+            <div class="card-body text-center items-stretch">
+                <h2 class="card-title self-center">{props.title}</h2>
                 <div class="flex flex-col gap-3">
                     {props.children}
                 </div>
