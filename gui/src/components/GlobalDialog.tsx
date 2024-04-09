@@ -1,34 +1,58 @@
-import {createSignal, JSX, Show} from "solid-js";
-import {Dialog, DialogProps} from "./Dialog.tsx";
+import {createSignal, JSX} from "solid-js";
+import {Dialog, DialogContentProps, DialogProps} from "./Dialog.tsx";
 
-const [globalDialogProps, setGlobalDialogProps] = createSignal<DialogProps | undefined>(undefined);
+const [globalDialogContentProps, setGlobalDialogContentProps] = createSignal<DialogContentProps | undefined>(undefined);
 
 export type ShowDialogArgs<T> = {
     title: string,
     content: JSX.Element,
     fullScreen?: boolean,
-    buildButtons: (close: (value: T) => void) => JSX.Element,
+    buildButtons: (close: (value: T | undefined) => void) => JSX.Element,
 }
 
-export function showDialog<T>(args: ShowDialogArgs<T>): Promise<T> {
+export function showDialog<T>(args: ShowDialogArgs<T>): Promise<T | undefined> {
     return new Promise(resolve => {
-        function close(value: T) {
+        function close(value: T | undefined) {
             resolve(value);
-            setGlobalDialogProps(undefined);
+            setGlobalDialogContentProps(undefined);
         }
 
-        const dialogProps: DialogProps = {
+        const dialogProps: DialogContentProps = {
             title: args.title,
-            content: args.content,
+            body: args.content,
             fullScreen: args.fullScreen ?? false,
             buttons: args.buildButtons(close),
         };
-        setGlobalDialogProps(dialogProps);
+        setGlobalDialogContentProps(dialogProps);
     });
 }
 
 export function GlobalDialog() {
-    return <Show when={globalDialogProps()}>
-        {props => <Dialog {...props()} />}
-    </Show>;
+    const props = (): DialogProps => {
+        const content = globalDialogContentProps();
+        if (content) {
+            return {
+                open: true,
+                setOpen: (value) => {
+                    if (!value) {
+                        setGlobalDialogContentProps(undefined);
+                    }
+                },
+                content,
+            };
+        } else {
+            return {
+                open: false,
+                setOpen: (_) => {
+                },
+                content: {
+                    title: "Not set",
+                    body: "Not set",
+                    buttons: [],
+                    fullScreen: false,
+                }
+            }
+        }
+    };
+    return <Dialog {...props()} />;
 }
