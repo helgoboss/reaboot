@@ -2,13 +2,14 @@ import {Stepper} from "./components/Stepper.tsx";
 import {mainService, mainStore, pages} from "./globals.ts";
 import {debug} from "tauri-plugin-log-api";
 import {Match, Show, Switch} from "solid-js";
-import {Toaster} from "solid-toast";
 import {configureInstaller} from "./epics/install.ts";
 import {MainInstallationIcon, PortableInstallationIcon} from "./components/icons.tsx";
 import {navigateTo, showError, showWarning} from "./epics/common.tsx";
 import {GlobalDialog} from "./components/GlobalDialog.tsx";
 import {clipboard} from "@tauri-apps/api";
 import {tryExtractRecipe} from "../../commons/src/recipe-util.ts";
+import {Portal} from "solid-js/web";
+import {Toast} from "@kobalte/core";
 
 export function App() {
     keepSyncingStateFromBackendToStore();
@@ -50,7 +51,11 @@ export function App() {
             </Show>
         </Show>
         <GlobalDialog/>
-        <Toaster/>
+        <Portal>
+            <Toast.Region>
+                <Toast.List class="toast toast-top toast-end z-50"/>
+            </Toast.Region>
+        </Portal>
     </div>
 }
 

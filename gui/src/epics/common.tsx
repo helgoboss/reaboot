@@ -1,20 +1,38 @@
-import {toast} from "solid-toast";
 import {PageId} from "../model/page.ts";
 import {mainService, mainStore, pages} from "../globals.ts";
 import {showDialog} from "../components/GlobalDialog.tsx";
 import {createResource, Match, Switch} from "solid-js";
+import {Toast, toaster} from "@kobalte/core";
+import {FaSolidX, FaSolidXmark} from "solid-icons/fa";
 
 export function showError(message: any) {
-    toast.error(message);
+    showToast("error", message);
 }
 
 export function showInfo(message: any) {
-    toast.success(message);
+    showToast("info", message);
 }
 
 export function showWarning(message: any) {
-    toast.error(message);
+    showToast("warning", message);
 }
+
+function showToast(purpose: string, message: string) {
+    toaster.show(props => (
+        <Toast.Root toastId={props.toastId} class={`alert alert-${purpose}`} duration={4000}>
+            <div class="flex flex-row">
+                <div>
+                    <Toast.Description>
+                        {message}
+                    </Toast.Description>
+                </div>
+                <Toast.CloseButton class="ml-5">
+                    <FaSolidX/>
+                </Toast.CloseButton>
+            </div>
+        </Toast.Root>
+    ));
+};
 
 export async function navigateTo(pageId: PageId) {
     const destPage = getPage(pageId);
