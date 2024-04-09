@@ -162,18 +162,12 @@ function InstallViaReaboot(props: InstallViaProps) {
     const otherDownloads = reabootDownloads.filter(d => d.label !== primaryDownload?.label);
     return <div class="grow flex flex-col max-w-lg items-stretch gap-6">
         <div class="text-center">
-            Using ReaBoot is the easiest way to install {displayRecipeNormal(props.recipe)}, especially if
-            you
-            don't have
-            ReaPack yet.
+            ReaBoot is the easiest way to install {displayRecipeNormal(props.recipe)}.
+            It automatically installs REAPER and ReaPack, if you don't have those yet!
         </div>
         <Step index={0} title="Download ReaBoot">
             <div>
-                ReaBoot is an installer that takes care of&#32;
-                <span class="underline tooltip tooltip-right"
-                      data-tip="It even installs REAPER and ReaPack, if you don't have those yet!">
-                                    everything
-                                </span>.
+                Here's the download matching your current system:
             </div>
             <Switch>
                 <Match when={primaryDownload}>
@@ -223,11 +217,11 @@ function InstallViaReaboot(props: InstallViaProps) {
                             &#32;and then&#32; paste the recipe in ReaBoot!
                         </dd>
                         <dt>
-                            Doesn't it work on your system?
+                            Doesn't work on your system?
                         </dt>
                         <dd>
-                            Install {displayRecipeNormal(props.recipe)} <a href="" class="link">via
-                            ReaPack</a> instead!
+                            It's possible that your system is not modern enough to run ReaBoot.
+                            Try installation via ReaPack instead!
                         </dd>
                     </dl>
                 </div>

@@ -38,8 +38,8 @@ export function App(props: RouteSectionProps) {
                                 </span>.
                             </p>
                             <p class="py-6">
-                                Do you want to share REAPER packages or even complete REAPER distributions and make
-                                them installable in seconds (even for beginners)?
+                                Want to share REAPER packages or complete REAPER "distributions" and make
+                                them installable in seconds - even for beginners?
                             </p>
                             <A href="/share" class="btn btn-primary">Here's how!</A>
                         </div>

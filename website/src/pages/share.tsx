@@ -30,17 +30,20 @@ export default function Share() {
             <h3>
                 2. Copy what you need
             </h3>
-            <div>
-                Raw installation URL:
-                <pre>{installationUrl()}</pre>
-            </div>
             <Switch>
                 <Match when={recipeResource()}>
                     {recipe =>
-                        <div>
-                            REAPER forum link:
-                            <pre>[url={installationUrl()}]{recipe().name}[/url]</pre>
-                        </div>
+                        <>
+                            <div>
+                                Raw installation URL:
+                                <pre>{installationUrl()}</pre>
+                            </div>
+                            <div>
+                                REAPER forum link:
+                                <pre>[url={installationUrl()}]{recipe().name}[/url]</pre>
+                            </div>
+                            <a href={installationUrl()} target="_blank">Try it!</a>
+                        </>
                     }
                 </Match>
                 <Match when={true}>
@@ -49,13 +52,11 @@ export default function Share() {
                     </div>
                 </Match>
             </Switch>
-            <a href={installationUrl()} target="_blank">Try it!</a>
 
             <h2 id="glossary">Glossary</h2>
 
             <h3 id="package-url">Package URL</h3>
             <p>
-                The installer has multiple places where it accepts so-called <em>package URLs</em>.
                 A package URL is a URL that uniquely identifies a ReaPack package. It has the following structure:
             </p>
             <pre>
@@ -73,7 +74,7 @@ https://github.com/ReaTeam/ReaScripts/raw/master/index.xml#p=Various/rodilab_Col
 
             <h3 id="reaboot-recipe">ReaBoot Recipe</h3>
             <p>
-                The installer can be customized with a so-called <em>recipe</em>. A recipe mainly describes which
+                The installer can be customized with a so-called <em>recipe</em>. A recipe describes which
                 packages
                 should be installed and gives the installer a sort of branding.
             </p>
