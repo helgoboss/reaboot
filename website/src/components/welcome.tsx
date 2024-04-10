@@ -11,7 +11,7 @@ export function Welcome(props: Props) {
     return <div class="grow hero">
         <div class="hero-content text-center">
             <div class="flex flex-col items-center max-w-md">
-                <ReabootLogo class="fill-base opacity-30 mb-6"/>
+                <A href="/"><ReabootLogo class="fill-base opacity-30 mb-6"/></A>
                 {props.poweredBy && <h1>
                     <span class="italic">Powered by</span>
                     &#32;
@@ -42,7 +42,7 @@ export function Welcome(props: Props) {
                         <Index each={examples}>
                             {example =>
                                 <a href={example()[2]} class="badge badge-outline"
-                                   classList={{[`bg-${example()[1]}-200`]: true}}>
+                                   classList={{[`${example()[1]}`]: true}}>
                                     Install {example()[0]}
                                 </a>
                             }
@@ -60,7 +60,7 @@ export function Welcome(props: Props) {
 }
 
 const examples = [
-    ["ReaLearn", "lime", "http://localhost:3000/install/https%3A%2F%2Fraw.githubusercontent.com%2Fhelgoboss%2Freaboot-recipes%2Fmain%2Frecipes%2Frealearn.json"],
-    ["Rodilab Color Palette", "sky", "http://localhost:3000/install/https%3A%2F%2Fgithub.com%2FReaTeam%2FReaScripts%2Fraw%2Fmaster%2Findex.xml%23p%3DVarious%2Frodilab_Color%2520palette.lua%26v%3Dlatest"],
-    ["ReaPack", "amber", "http://localhost:3000/install/%7B%0A%20%20%20%20%22name%22%3A%20%22ReaPack%22%2C%0A%20%20%20%20%22website%22%3A%20%22https%3A%2F%2Freapack.com%2F%22%2C%0A%20%20%20%20%22manufacturer%22%3A%20%22Christian%20Fillion%22%2C%0A%20%20%20%20%22package_urls%22%3A%20%5B%0A%22https%3A%2F%2Fraw.githubusercontent.com%2Fcfillion%2Freapack%2Fmaster%2Findex.xml%23p%3DExtensions%2FReaPack.ext%22%0A%20%20%20%20%5D%0A%7D"],
+    ["ReaLearn", "bg-lime-200", "http://localhost:3000/install/https%3A%2F%2Fraw.githubusercontent.com%2Fhelgoboss%2Freaboot-recipes%2Fmain%2Frecipes%2Frealearn.json"],
+    ["Rodilab Color Palette", "bg-sky-200", "http://localhost:3000/install/https%3A%2F%2Fgithub.com%2FReaTeam%2FReaScripts%2Fraw%2Fmaster%2Findex.xml%23p%3DVarious%2Frodilab_Color%2520palette.lua%26v%3Dlatest"],
+    ["ReaPack", "bg-amber-200", "http://localhost:3000/install/%7B%0A%20%20%20%20%22name%22%3A%20%22ReaPack%22%2C%0A%20%20%20%20%22website%22%3A%20%22https%3A%2F%2Freapack.com%2F%22%2C%0A%20%20%20%20%22author%22%3A%20%22Christian%20Fillion%22%2C%0A%20%20%20%20%22required_packages%22%3A%20%5B%0A%22https%3A%2F%2Fraw.githubusercontent.com%2Fcfillion%2Freapack%2Fmaster%2Findex.xml%23p%3DExtensions%2FReaPack.ext%22%0A%20%20%20%20%5D%0A%7D"],
 ];
