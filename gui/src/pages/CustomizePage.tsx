@@ -22,12 +22,12 @@ export function CustomizePage() {
             <p class="text-center font-bold">
                 Optional: Customize installation
             </p>
-            <div class="grow flex flex-row items-stretch justify-stretch gap-5 min-h-0 pt-3">
+            <div class="grow flex flex-row items-stretch justify-stretch gap-5 min-h-0 min-w-0 pt-3">
                 <Show when={showFeaturePane()}>
-                    <div class="basis-1/2 card card-compact bg-base-200 min-h-0">
-                        <div class="card-body min-h-0">
+                    <div class="basis-1/2 card card-compact bg-base-200 min-h-0 min-w-0">
+                        <div class="card-body min-h-0 overflow-x-hidden">
                             <h2 class="card-title text-base">Toggle features on/off</h2>
-                            <div class="grow overflow-y-auto">
+                            <div class="basis-3/4 overflow-y-auto">
                                 <ul class="flex flex-wrap gap-2">
                                     <For each={mainStore.parsedRecipeFeatures()}>
                                         {([id, feature]) => {
@@ -46,7 +46,7 @@ export function CustomizePage() {
                                     </For>
                                 </ul>
                             </div>
-                            <div>
+                            <div class="basis-1/4 overflow-y-auto">
                                 {featureHelp()}
                             </div>
                         </div>
@@ -83,8 +83,7 @@ export function CustomizePage() {
                 </NavButton>
             </ButtonRow>
         </Page>
-    )
-        ;
+    );
 }
 
 async function addPackageUrlsFromClipboard() {
