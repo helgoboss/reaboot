@@ -233,7 +233,7 @@ function InstallViaReaboot(props: InstallViaProps) {
                                        onclick={() => copyRecipeMain()}
                                        class="btn btn-accent">
                                         <FaSolidDownload/>
-                                        ReaBoot for {d.label}
+                                        {d.label}
                                     </a>
                                 }
                             </For>
