@@ -1,0 +1,89 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Recipe",
+  "type": "object",
+  "required": [
+    "name"
+  ],
+  "properties": {
+    "author": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "description": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "features": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": {
+        "$ref": "#/definitions/Feature"
+      }
+    },
+    "name": {
+      "type": "string"
+    },
+    "required_packages": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "string"
+      }
+    },
+    "skip_additional_packages": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "website": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "definitions": {
+    "Feature": {
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "default": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "packages": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

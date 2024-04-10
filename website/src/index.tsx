@@ -5,6 +5,7 @@ import {render} from 'solid-js/web';
 import {Router} from '@solidjs/router';
 import {routes} from "./routes";
 import {App} from "./app";
+import {ErrorBoundary} from "solid-js";
 
 const root = document.getElementById('root')!;
 
@@ -16,9 +17,11 @@ if (import.meta.env.DEV && !(root instanceof HTMLElement)) {
 
 render(
     () => (
-        <Router root={App}>
-            {routes}
-        </Router>
+        <ErrorBoundary fallback={(err, reset) => <div onClick={reset}>Error: {err.toString()}</div>}>
+            <Router root={App}>
+                {routes}
+            </Router>
+        </ErrorBoundary>
     ),
     root,
 );

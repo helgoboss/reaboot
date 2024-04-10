@@ -2,7 +2,7 @@ import {Recipe} from "../../core/bindings/Recipe";
 import {PackageUrl} from "../../reapack/bindings/PackageUrl";
 import {PackageVersionRef} from "../../reapack/bindings/PackageVersionRef";
 import {PackagePath} from "../../reapack/bindings/PackagePath";
-import typia from "typia";
+import {Convert, Recipe as JsonSchemaRecipe} from "./recipe-parser";
 
 export async function tryExtractRecipe(text: string): Promise<Recipe | null> {
     return nullOnErrorAsync(() => extractRecipe(text));
@@ -19,7 +19,24 @@ async function getRecipeFromUrl(url: URL): Promise<Recipe> {
     return packageUrl ? buildRecipeFromPackageUrl(url, packageUrl) : await fetchRecipeFromUrl(url);
 }
 
+export function parseRawPackageUrl(raw: string): PackageUrl {
+    try {
+        const url = new URL(raw);
+        return parsePackageUrlInternal(url);
+    } catch (cause) {
+        throw new Error(`"${raw}" is not a valid package URL:\n${cause}`);
+    }
+}
+
 export function parsePackageUrl(url: URL): PackageUrl {
+    try {
+        return parsePackageUrlInternal(url);
+    } catch (cause) {
+        throw new Error(`"${url}" is not a valid package URL:\n${cause}`);
+    }
+}
+
+function parsePackageUrlInternal(url: URL): PackageUrl {
     const fragmentId = url.hash.substring(1);
     if (fragmentId.length === 0) {
         throw new Error("Fragment identifier missing");
@@ -89,9 +106,24 @@ async function fetchRecipeFromUrl(url: URL): Promise<Recipe> {
 }
 
 function parseRecipe(text: string): Recipe {
-    // TODO-high Add more error reporting
-    typia.validate<T>()
-    return JSON.parse(text);
+    const recipe = Convert.toRecipe(text);
+    validatePackageUrls(recipe.required_packages);
+    if (!recipe.features) {
+        return recipe;
+    }
+    for (const feature of Object.values(recipe.features)) {
+        validatePackageUrls(feature.packages);
+    }
+    return recipe;
+}
+
+function validatePackageUrls(packageUrls: string[] | null | undefined) {
+    if (!packageUrls) {
+        return;
+    }
+    for (const url of packageUrls) {
+        parseRawPackageUrl(url);
+    }
 }
 
 function nullOnError<R>(f: () => R): R | null {

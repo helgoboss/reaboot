@@ -2,6 +2,6 @@
 
 ## Development
 
-### Regenerate TypeScript type definitions
+### Regenerate TypeScript and JsonSchema type definitions
 
 `cargo test`

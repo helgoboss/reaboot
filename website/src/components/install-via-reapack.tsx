@@ -1,5 +1,5 @@
 import {createMemo, For, Show} from "solid-js";
-import {parsePackageUrl} from "../../../commons/src/recipe-util";
+import {parsePackageUrl, parseRawPackageUrl} from "../../../commons/src/recipe-util";
 import {PackageUrl} from "../../../reapack/bindings/PackageUrl";
 import {Recipe} from "../../../core/bindings/Recipe";
 import {VersionRef} from "../../../reapack/bindings/VersionRef";
@@ -10,7 +10,7 @@ export function InstallViaReapack(props: { recipe: Recipe }) {
         if (!required_packages) {
             return [];
         }
-        return required_packages.map(raw => parsePackageUrl(new URL(raw)))
+        return required_packages.map(raw => parseRawPackageUrl(raw))
     });
     const remotes = createMemo(() => [...new Set(requiredPackageUrls().map(u => u.repository_url))]);
     const nonDefaultRemotes = createMemo(() => remotes().filter(r => !defaultRemotes.has(r)));

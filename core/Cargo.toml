@@ -59,6 +59,8 @@ sha2.workspace = true
 camino.workspace = true
 # For parsing recipes
 serde_json.workspace = true
+# For generating JSON schema for the recipe type
+schemars.workspace = true
 
 [target.'cfg(target_os = "macos")'.dependencies]
 # For converting the REAPER DMG file to a hfs+ IMG file. The DMG file itself can't be mounted silently.

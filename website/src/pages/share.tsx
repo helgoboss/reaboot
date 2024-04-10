@@ -1,11 +1,11 @@
 import {createResource, createSignal, Match, Show, Switch} from "solid-js";
 import {extractRecipe} from "../../../commons/src/recipe-util";
-import {CopyField} from "../components/copy-field";
 import {NormalPage} from "../components/normal-page";
+import {CopyField} from "../components/copy-field";
 
 const MAX_URL_LENGTH = 2000;
 
-export default function Share() {
+export function Share() {
     const [payload, setPayload] = createSignal("");
     const [recipeResource] = createResource(payload, extractRecipe);
     const installationUrl = () => createReabootInstallationUrl(payload());
@@ -23,21 +23,25 @@ export default function Share() {
 
             <p><a href="#explanations">Scroll down</a> to learn more about these terms.</p>
 
-            <div>
-                <textarea class="textarea textarea-bordered h-56 font-mono text-xs w-full"
-                          oninput={evt => setPayload(evt.currentTarget.value)}>
+            <textarea class="textarea textarea-bordered h-56 font-mono text-xs w-full mb-3"
+                      oninput={evt => setPayload(evt.currentTarget.value)}>
                     {payload()}
-                </textarea>
-            </div>
-
+            </textarea>
             <Switch>
+                <Match when={recipeResource.loading}>
+                    <div>Loading...</div>
+                </Match>
                 <Match when={recipeResource.error}>
-                    {error =>
-                        <div class="alert alert-error">
-                            Looks like you haven't entered a valid recipe, recipe URL or package URL:
-                            {error()}
+                    <div class="alert alert-error">
+                        <div>
+                            <h3 class="text-error-content">
+                                You must enter a valid recipe, recipe URL or package URL!
+                            </h3>
+                            <div class="text-xs">
+                                <pre>{recipeResource.error.toString()}</pre>
+                            </div>
                         </div>
-                    }
+                    </div>
                 </Match>
                 <Match when={recipeResource()}>
                     {recipe =>
@@ -47,7 +51,7 @@ export default function Share() {
                                     The generated URL contains more than {MAX_URL_LENGTH} characters. This could become
                                     a problem in some browsers! Please consider putting the recipe somewhere online
                                     (e.g. in a GitHub repository or as a GitHub Gist) and providing an URL to the raw
-                                    content of that recipe instead.
+                                    content of that recipe.
                                 </div>
                             </Show>
 
