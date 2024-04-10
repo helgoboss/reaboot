@@ -1,4 +1,4 @@
-import {createResource, createSignal, Match, Show, Switch} from "solid-js";
+import {createMemo, createResource, createSignal, Match, Show, Switch} from "solid-js";
 import {extractRecipe} from "../../../commons/src/recipe-util";
 import {NormalPage} from "../components/normal-page";
 import {CopyField} from "../components/copy-field";
@@ -8,6 +8,12 @@ const MAX_URL_LENGTH = 2000;
 export function Share() {
     const [payload, setPayload] = createSignal("");
     const [recipeResource] = createResource(payload, extractRecipe);
+    const features = createMemo(() => {
+        if (recipeResource.state !== "ready") {
+            return [];
+        }
+        return Object.values(recipeResource()!);
+    });
     const installationUrl = () => createReabootInstallationUrl(payload());
     return <NormalPage>
         <div class="prose">
@@ -47,6 +53,11 @@ export function Share() {
                     {recipe =>
                         <>
                             <Show when={installationUrl().length > MAX_URL_LENGTH}>
+                                <div class="alert alert-success mb-3">
+                                    You are sharing a recipe named "{recipe().raw.name}" with&#32;
+                                    {recipe().requiredPackages.length} required packages and&#32;
+                                    {features().length} features.
+                                </div>
                                 <div class="alert alert-warning">
                                     The generated URL contains more than {MAX_URL_LENGTH} characters. This could become
                                     a problem in some browsers! If you want to be on the safe side, consider putting the

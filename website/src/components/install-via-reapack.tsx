@@ -6,9 +6,10 @@ import {VersionRef} from "../../../reapack/bindings/VersionRef";
 
 
 export function InstallViaReapack(props: { recipe: ParsedRecipe }) {
+    const features = createMemo(() => Object.values(props.recipe.features));
     const allPackageUrls = createMemo(() => [
         ...props.recipe.requiredPackages,
-        ...(Object.values(props.recipe.features).flatMap(f => f.packages))
+        ...(features().flatMap(f => f.packages))
     ]);
     const remotes = createMemo(() => [...new Set(allPackageUrls().map(u => u.repository_url))]);
     const nonDefaultRemotes = createMemo(() => remotes().filter(r => !defaultRemotes.has(r)));
@@ -57,7 +58,7 @@ export function InstallViaReapack(props: { recipe: ParsedRecipe }) {
                     Paste the following text and press OK:
                     <pre>
                         <For each={nonDefaultRemotes()}>
-                            {r => r}
+                            {r => `${r}\n`}
                         </For>
                     </pre>
                 </li>
@@ -69,19 +70,21 @@ export function InstallViaReapack(props: { recipe: ParsedRecipe }) {
                 Install required packages
                 <ReapackPackageInstalls urls={props.recipe.requiredPackages}/>
             </li>
-            <li>
-                Install optional packages
-                <ul>
-                    <For each={Object.values(props.recipe.features)}>
-                        {feature =>
-                            <li>
-                                If you want to use feature "{feature.raw.name}", install its packages:
-                                <ReapackPackageInstalls urls={feature.packages}/>
-                            </li>
-                        }
-                    </For>
-                </ul>
-            </li>
+            <Show when={features().length > 0}>
+                <li>
+                    Install optional packages
+                    <ul>
+                        <For each={features()}>
+                            {feature =>
+                                <li>
+                                    If you want to use feature "{feature.raw.name}", install its packages:
+                                    <ReapackPackageInstalls urls={feature.packages}/>
+                                </li>
+                            }
+                        </For>
+                    </ul>
+                </li>
+            </Show>
             <li>
                 Press OK
             </li>
@@ -101,8 +104,8 @@ function ReapackPackageInstalls(props: { urls: PackageUrl[] }) {
                 <>
                     <li>
                         Search for&#32;
-                        <span class="font-mono">
-                                    {purl.package_version_ref.package_path.package_name}
+                        <span class="font-mono font-bold">
+                                    "{purl.package_version_ref.package_path.package_name}"
                                 </span> or something similar-sounding (the package description might be different
                         from the package name)
                     </li>
