@@ -1,6 +1,6 @@
-import {FaBrandsGithub} from "solid-icons/fa";
 import {A} from "@solidjs/router";
 import {Index, Show} from "solid-js";
+import ReabootLogo from '../../../commons/src/reaboot-logo.svg?component-solid';
 
 type Props = {
     poweredBy: boolean,
@@ -10,7 +10,8 @@ type Props = {
 export function Welcome(props: Props) {
     return <div class="grow hero">
         <div class="hero-content text-center">
-            <div class="max-w-md">
+            <div class="flex flex-col items-center max-w-md">
+                <ReabootLogo class="fill-base opacity-30 mb-6"/>
                 {props.poweredBy && <h1>
                     <span class="italic">Powered by</span>
                     &#32;
