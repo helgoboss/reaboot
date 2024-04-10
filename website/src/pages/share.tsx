@@ -71,10 +71,9 @@ export default function Share() {
             </p>
             <pre>{`{
     "name": "ReaLearn",
+    "author": "Helgoboss Projects",
     "website": "https://www.helgoboss.org/projects/realearn/",
-    "manufacturer": "Helgoboss Projects",
-    "logo": "https://www.helgoboss.org/projects/realearn/slide.png",
-    "package_urls": [
+    "required_packages": [
         "https://github.com/helgoboss/reaper-packages/raw/master/index.xml#p=Extensions/ReaLearn-x64&v=latest"
     ]
 }`}</pre>

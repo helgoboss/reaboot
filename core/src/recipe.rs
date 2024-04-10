@@ -1,5 +1,6 @@
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 use ts_rs::TS;
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
@@ -7,12 +8,29 @@ use ts_rs::TS;
 pub struct Recipe {
     pub name: String,
     #[ts(optional)]
+    pub description: Option<String>,
+    #[ts(optional)]
+    pub author: Option<String>,
+    #[ts(optional)]
     pub website: Option<String>,
     #[ts(optional)]
-    pub manufacturer: Option<String>,
+    pub skip_additional_packages: Option<bool>,
     #[ts(optional)]
-    pub logo: Option<String>,
-    pub package_urls: Vec<String>,
+    pub required_packages: Option<Vec<String>>,
+    #[ts(optional)]
+    pub features: Option<BTreeMap<String, Feature>>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct Feature {
+    pub name: String,
+    #[ts(optional)]
+    pub default: Option<bool>,
+    #[ts(optional)]
+    pub description: Option<String>,
+    #[ts(optional)]
+    pub packages: Option<Vec<String>>,
 }
 
 pub async fn fetch_and_parse_recipe(url: &str) -> Option<Recipe> {

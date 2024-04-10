@@ -1,6 +1,6 @@
 import {createMemo, createResource, createSignal, For, Match, Show, Switch} from 'solid-js';
 import {Step} from "../components/step";
-import {FaRegularClipboard, FaSolidCheck, FaSolidDownload} from "solid-icons/fa";
+import {FaSolidCheck, FaSolidDownload} from "solid-icons/fa";
 import {UAParser} from 'ua-parser-js';
 import {Params, useParams, useSearchParams} from "@solidjs/router";
 import {Recipe} from "../../../core/bindings/Recipe";
@@ -11,6 +11,7 @@ import {Collapsible, Tabs} from "@kobalte/core";
 import {copyTextToClipboard} from "../util/clipboard-util";
 import {CopyField} from "../components/copy-field";
 import {Welcome} from "../components/welcome";
+import {Footer} from "../components/footer";
 
 export default function Install() {
     const params = useParams();
@@ -62,6 +63,7 @@ export default function Install() {
             </main>
             <header class="max-w-sm bg-base-200 flex flex-col overflow-y-auto">
                 <Welcome poweredBy={true} examples={false}/>
+                <Footer/>
             </header>
         </div>
     );
@@ -73,7 +75,11 @@ type InstallViaProps = {
 
 function InstallViaReapack(props: InstallViaProps) {
     const packageUrls = createMemo(() => {
-        return props.recipe.package_urls
+        const required_packages = props.recipe.required_packages;
+        if (!required_packages) {
+            return [];
+        }
+        return required_packages
             .map(tryParsePackageUrlFromRaw)
             .filter(u => u !== null) as PackageUrl[]
     });
@@ -164,6 +170,29 @@ function InstallViaReapack(props: InstallViaProps) {
     </div>
 }
 
+function ReapackPackageInstalls(props: { urls: PackageUrl[] }) {
+    return <ul>
+        <For each={props.urls}>
+            {purl =>
+                <>
+                    <li>
+                        Search for&#32;
+                        <span class="font-mono">
+                                    {purl.package_version_ref.package_path.package_name}
+                                </span> or something similar-sounding (the package description might be different
+                        from the package name)
+                    </li>
+                    <li>
+                        Right-click the corresponding package and
+                        choose&#32;
+                        <em>{getReapackMenuEntry(purl.package_version_ref.version_ref)}</em>
+                    </li>
+                </>
+            }
+        </For>
+    </ul>;
+}
+
 function getReapackMenuEntry(versionRef: VersionRef): string {
     switch (versionRef) {
         case "latest":
@@ -176,12 +205,13 @@ function getReapackMenuEntry(versionRef: VersionRef): string {
 }
 
 function InstallViaReaboot(props: InstallViaProps) {
-    const primaryDownload = getOptimalReabootDownload();
-    const otherDownloads = reabootDownloads.filter(d => d.label !== primaryDownload?.label);
-    const [mainCopyState, setMainCopyState] = createSignal(false);
+    const optimalDownloads = getOptimalReabootDownloads();
+    const otherDownloads = reabootDownloads.filter(d => {
+        return optimalDownloads.every(optimalDownload => d.label !== optimalDownload?.label);
+    });
     const getRecipeAsJson = () => JSON.stringify(props.recipe, null, "    ");
     const copyRecipeMain = async () => {
-        setMainCopyState(await copyTextToClipboard(getRecipeAsJson()));
+        await copyTextToClipboard(getRecipeAsJson());
     };
 
     return <div class="grow flex flex-col max-w-lg items-stretch gap-6">
@@ -190,26 +220,31 @@ function InstallViaReaboot(props: InstallViaProps) {
             It automatically installs REAPER and ReaPack if necessary.
         </div>
         <Step index={0} title="Download ReaBoot">
-            <div>
-                Here's the download for your system:
-            </div>
             <Switch>
-                <Match when={primaryDownload}>
-                    {d =>
-                        <a href={buildDownloadUrl(d())}
-                           onclick={() => copyRecipeMain()}
-                           class="btn btn-accent">
-                            <FaSolidDownload/>
-                            ReaBoot for {d().label}
-                            {mainCopyState() && <FaSolidCheck/>}
-                        </a>
-                    }
+                <Match when={optimalDownloads.length > 0}>
+                    <>
+                        <div>
+                            For your system:
+                        </div>
+                        <div class="flex flex-row justify-center gap-2">
+                            <For each={optimalDownloads}>
+                                {d =>
+                                    <a href={buildDownloadUrl(d)}
+                                       onclick={() => copyRecipeMain()}
+                                       class="btn btn-accent">
+                                        <FaSolidDownload/>
+                                        ReaBoot for {d.label}
+                                    </a>
+                                }
+                            </For>
+                        </div>
+                    </>
                 </Match>
                 <Match when={true}>
-                    <a class="btn btn-primary disabled">
-                        <FaSolidDownload/>
-                        OS probably unsupported
-                    </a>
+                    <div>
+                        ReaBoot is currently not available for your system.
+                        Try installation via ReaPack instead!
+                    </div>
                 </Match>
             </Switch>
             <div class="text-xs">
@@ -264,49 +299,50 @@ type ReabootDownload = {
     asset: string,
 }
 
-function getOptimalReabootDownload(): ReabootDownload | null {
+function getOptimalReabootDownloads(): ReabootDownload[] {
     const parser = UAParser();
     switch (parser.os.name) {
         case "Mac OS":
-            return macOsDownload;
+            return [macOsArm64Download, macOsX86_64Download];
         case "Windows":
-            return windowsX64Download
+            return [windowsX64Download];
         case "Linux":
-            switch (parser.cpu.architecture) {
-                case "amd64":
-                    return linuxX86_64Download;
-                case "arm64":
-                    return linuxAarch64Download;
-                default:
-                    return null;
-            }
+            return [linuxX86_64Download];
+        // switch (parser.cpu.architecture) {
+        //     case "amd64":
+        //         return linuxX86_64Download;
+        //     case "arm64":
+        //         return linuxAarch64Download;
+        //     default:
+        //         return null;
+        // }
         default:
-            return null;
+            return [];
     }
 }
 
-const macOsDownload = {
-    label: "macOS Universal",
-    asset: "reaboot-universal.dmg"
+const macOsArm64Download = {
+    label: "macOS ARM64",
+    asset: "reaboot-arm64.dmg"
+};
+const macOsX86_64Download = {
+    label: "macOS Intel",
+    asset: "reaboot-x86_64.dmg"
 };
 const linuxX86_64Download = {
-    label: "Linux x86_64 (DEB)",
+    label: "Linux x86_64 (deb)",
     asset: "reaboot-x86_64.deb",
-};
-const linuxAarch64Download = {
-    label: "Linux aarch64 (DEB)",
-    asset: "reaboot-aarch64.deb",
 };
 const windowsX64Download = {
     label: "Windows x64",
-    asset: "reaboot.exe",
+    asset: "reaboot-x64.exe",
 };
 
 const reabootDownloads = [
-    macOsDownload,
-    linuxX86_64Download,
-    linuxAarch64Download,
+    macOsArm64Download,
+    macOsX86_64Download,
     windowsX64Download,
+    linuxX86_64Download,
 ];
 
 function buildDownloadUrl(download: ReabootDownload): string {

@@ -88,7 +88,7 @@ pub async fn resolve_config(config: InstallerConfig) -> anyhow::Result<ResolvedI
     package_urls.push(create_reapack_package_url());
     // Add recipe package URLs
     if let Some(r) = config.recipe.as_ref() {
-        let recipe_package_urls = parse_package_urls(r.package_urls.iter())
+        let recipe_package_urls = parse_package_urls(r.required_packages.iter().flatten())
             .context("couldn't parse recipe package URls")?;
         package_urls.extend(recipe_package_urls);
     }

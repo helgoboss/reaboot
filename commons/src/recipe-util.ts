@@ -69,7 +69,7 @@ function tryParsePackagePath(text: string): PackagePath | null {
 function buildRecipeFromPackageUrl(rawPackageUrl: URL, parsedPackageUrl: PackageUrl): Recipe {
     return {
         name: parsedPackageUrl.package_version_ref.package_path.package_name,
-        package_urls: [
+        required_packages: [
             rawPackageUrl.toString()
         ]
     };

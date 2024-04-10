@@ -5,13 +5,6 @@ import {Match, Show, Switch} from "solid-js";
 export function WelcomePage() {
     return (
         <div class="grow hero">
-            <Show when={mainStore.state.resolvedConfig?.recipe?.logo}>
-                {logo =>
-                    <div style={`background-image: url(${logo()}); opacity: 0.03`}
-                         class="bg-no-repeat bg-center h-full w-full">
-                    </div>
-                }
-            </Show>
             <div class="hero-content text-center">
                 <div class="max-w-md">
                     <h1 class="text-5xl font-bold">Welcome!</h1>
@@ -51,9 +44,9 @@ export function WelcomePage() {
                                                     <div class="text-3xl font-bold">
                                                         {recipe().name}
                                                     </div>
-                                                    <Show when={recipe().manufacturer}>
+                                                    <Show when={recipe().author}>
                                                         <div class="italic">
-                                                            by {recipe().manufacturer}
+                                                            by {recipe().author}
                                                         </div>
                                                     </Show>
                                                 </Match>

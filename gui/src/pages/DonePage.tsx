@@ -42,9 +42,11 @@ export function DonePage() {
                                             <Match when={mainStore.state.manualReaperInstallPath}>
                                                 {path =>
                                                     <>
-                                                        <p class="pb-3">
-                                                            ReaBoot was not able to install REAPER automatically. Please
-                                                            install it manually and close ReaBoot when you are done.
+                                                        <p class="mb-3 alert alert-warning text-center text-sm">
+                                                            ReaBoot couldn't install REAPER automatically
+                                                            but it has downloaded the installer for you. Please install
+                                                            REAPER manually and close ReaBoot when you are
+                                                            done.
                                                         </p>
                                                         <button class="btn btn-primary"
                                                                 onClick={() => startReaperInstaller(path())}>
