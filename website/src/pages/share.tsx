@@ -49,7 +49,8 @@ export function Share() {
                             <Show when={installationUrl().length > MAX_URL_LENGTH}>
                                 <div class="alert alert-warning">
                                     The generated URL contains more than {MAX_URL_LENGTH} characters. This could become
-                                    a problem in some browsers! Please consider putting the recipe somewhere online
+                                    a problem in some browsers! If you want to be on the safe side, consider putting the
+                                    recipe somewhere online
                                     (e.g. in a GitHub repository or as a GitHub Gist) and providing an URL to the raw
                                     content of that recipe.
                                 </div>
@@ -63,10 +64,10 @@ export function Share() {
                                 <CopyField text={installationUrl}>
                                     Raw installation URL
                                 </CopyField>
-                                <CopyField text={() => `[url=${installationUrl()}]${recipe().name}[/url]`}>
+                                <CopyField text={() => `[url=${installationUrl()}]${recipe().raw.name}[/url]`}>
                                     REAPER forum link
                                 </CopyField>
-                                <CopyField text={() => `<a href="${installationUrl()}">${recipe().name}</a>`}>
+                                <CopyField text={() => `<a href="${installationUrl()}">${recipe().raw.name}</a>`}>
                                     HTML link (for website embedding)
                                 </CopyField>
                             </div>

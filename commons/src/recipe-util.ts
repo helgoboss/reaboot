@@ -3,23 +3,35 @@ import {PackageUrl} from "../../reapack/bindings/PackageUrl";
 import {PackageVersionRef} from "../../reapack/bindings/PackageVersionRef";
 import {PackagePath} from "../../reapack/bindings/PackagePath";
 import {Convert, Recipe as JsonSchemaRecipe} from "./recipe-parser";
+import {Feature} from "../../core/bindings/Feature";
 
-export async function tryExtractRecipe(text: string): Promise<Recipe | null> {
-    return nullOnErrorAsync(() => extractRecipe(text));
+
+export type ParsedRecipe = {
+    raw: Recipe,
+    requiredPackages: PackageUrl[],
+    features: Record<string, ParsedFeature>,
 }
 
-export async function extractRecipe(text: string): Promise<Recipe> {
-    const url = nullOnError(() => new URL(text));
-    return url ? await getRecipeFromUrl(url) : parseRecipe(text);
+export type ParsedFeature = {
+    raw: Feature,
+    packages: PackageUrl[],
 }
 
+export async function tryExtractRecipe(text: string): Promise<ParsedRecipe | null> {
+    return getOrNullAsync(() => extractRecipe(text));
+}
 
-async function getRecipeFromUrl(url: URL): Promise<Recipe> {
-    const packageUrl = parsePackageUrl(url);
+export async function extractRecipe(text: string): Promise<ParsedRecipe> {
+    const url = getOrNull(() => new URL(text));
+    return url ? await getRecipeFromUrl(url) : parseRecipeFromRawString(text);
+}
+
+async function getRecipeFromUrl(url: URL): Promise<ParsedRecipe> {
+    const packageUrl = getOrNull(() => parsePackageUrl(url));
     return packageUrl ? buildRecipeFromPackageUrl(url, packageUrl) : await fetchRecipeFromUrl(url);
 }
 
-export function parseRawPackageUrl(raw: string): PackageUrl {
+export function parsePackageUrlFromRawString(raw: string): PackageUrl {
     try {
         const url = new URL(raw);
         return parsePackageUrlInternal(url);
@@ -75,16 +87,15 @@ function parsePackagePath(text: string): PackagePath {
     }
 }
 
-function buildRecipeFromPackageUrl(rawPackageUrl: URL, parsedPackageUrl: PackageUrl): Recipe {
-    return {
+function buildRecipeFromPackageUrl(rawUrl: URL, parsedPackageUrl: PackageUrl): ParsedRecipe {
+    const recipe: Recipe = {
         name: parsedPackageUrl.package_version_ref.package_path.package_name,
-        required_packages: [
-            rawPackageUrl.toString()
-        ]
+        required_packages: [rawUrl.toString()]
     };
+    return parseRecipe(recipe);
 }
 
-async function fetchRecipeFromUrl(url: URL): Promise<Recipe> {
+async function fetchRecipeFromUrl(url: URL): Promise<ParsedRecipe> {
     // Send request
     const response = await fetch(url);
     if (!response.ok) {
@@ -102,31 +113,37 @@ async function fetchRecipeFromUrl(url: URL): Promise<Recipe> {
         throw new Error("Recipe URL doesn't return text");
     }
     // Parse response text as recipe
-    return parseRecipe(text);
+    return parseRecipeFromRawString(text);
 }
 
-function parseRecipe(text: string): Recipe {
+function parseRecipeFromRawString(text: string): ParsedRecipe {
     const recipe = Convert.toRecipe(text);
-    validatePackageUrls(recipe.required_packages);
-    if (!recipe.features) {
-        return recipe;
-    }
-    for (const feature of Object.values(recipe.features)) {
-        validatePackageUrls(feature.packages);
-    }
-    return recipe;
+    return parseRecipe(recipe);
 }
 
-function validatePackageUrls(packageUrls: string[] | null | undefined) {
-    if (!packageUrls) {
-        return;
+function parseRecipe(recipe: Recipe): ParsedRecipe {
+    const rawFeatures = getOrEmptyRecord(recipe.features);
+    const parsedFeatures: Record<string, ParsedFeature> = {};
+    for (const featureId in rawFeatures) {
+        const rawFeature = rawFeatures[featureId];
+        parsedFeatures[featureId] = parseFeature(rawFeature);
     }
-    for (const url of packageUrls) {
-        parseRawPackageUrl(url);
-    }
+
+    return {
+        raw: recipe,
+        requiredPackages: getOrEmptyArray(recipe.required_packages).map(parsePackageUrlFromRawString),
+        features: parsedFeatures,
+    };
 }
 
-function nullOnError<R>(f: () => R): R | null {
+function parseFeature(feature: Feature): ParsedFeature {
+    return {
+        raw: feature,
+        packages: getOrEmptyArray(feature.packages).map(parsePackageUrlFromRawString),
+    };
+}
+
+function getOrNull<R>(f: () => R): R | null {
     try {
         return f();
     } catch {
@@ -134,10 +151,22 @@ function nullOnError<R>(f: () => R): R | null {
     }
 }
 
-async function nullOnErrorAsync<R>(f: () => Promise<R>): Promise<R | null> {
+async function getOrNullAsync<R>(f: () => Promise<R>): Promise<R | null> {
     try {
         return await f();
     } catch {
         return null;
     }
+}
+
+function getOrEmptyArray<T>(items: T[] | null | undefined): T[] {
+    return items ?? [];
+}
+
+function getOrEmptyRecord<T>(items: Record<string, T> | null | undefined): Record<string, T> {
+    return items ?? {};
+}
+
+function parsePackageUrls(packageUrls: string[]): PackageUrl[] {
+    return packageUrls.map(raw => parsePackageUrlFromRawString(raw));
 }

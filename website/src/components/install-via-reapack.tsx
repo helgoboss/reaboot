@@ -1,20 +1,18 @@
 import {createMemo, For, Show} from "solid-js";
-import {parsePackageUrl, parseRawPackageUrl} from "../../../commons/src/recipe-util";
+import {ParsedRecipe, parsePackageUrlFromRawString} from "../../../commons/src/recipe-util";
 import {PackageUrl} from "../../../reapack/bindings/PackageUrl";
 import {Recipe} from "../../../core/bindings/Recipe";
 import {VersionRef} from "../../../reapack/bindings/VersionRef";
 
-export function InstallViaReapack(props: { recipe: Recipe }) {
-    const requiredPackageUrls = createMemo(() => {
-        const required_packages = props.recipe.required_packages;
-        if (!required_packages) {
-            return [];
-        }
-        return required_packages.map(raw => parseRawPackageUrl(raw))
-    });
-    const remotes = createMemo(() => [...new Set(requiredPackageUrls().map(u => u.repository_url))]);
+
+export function InstallViaReapack(props: { recipe: ParsedRecipe }) {
+    const allPackageUrls = createMemo(() => [
+        ...props.recipe.requiredPackages,
+        ...(Object.values(props.recipe.features).flatMap(f => f.packages))
+    ]);
+    const remotes = createMemo(() => [...new Set(allPackageUrls().map(u => u.repository_url))]);
     const nonDefaultRemotes = createMemo(() => remotes().filter(r => !defaultRemotes.has(r)));
-    const needsRestart = () => requiredPackageUrls().some(p => p.package_version_ref.package_path.category === "Extensions");
+    const needsRestart = () => allPackageUrls().some(p => p.package_version_ref.package_path.category === "Extensions");
     return <div class="prose">
         <h3>
             If REAPER is not installed yet:
@@ -69,7 +67,20 @@ export function InstallViaReapack(props: { recipe: Recipe }) {
             </li>
             <li>
                 Install required packages
-                <ReapackPackageInstalls urls={requiredPackageUrls()}/>
+                <ReapackPackageInstalls urls={props.recipe.requiredPackages}/>
+            </li>
+            <li>
+                Install optional packages
+                <ul>
+                    <For each={Object.values(props.recipe.features)}>
+                        {feature =>
+                            <li>
+                                If you want to use feature "{feature.raw.name}", install its packages:
+                                <ReapackPackageInstalls urls={feature.packages}/>
+                            </li>
+                        }
+                    </For>
+                </ul>
             </li>
             <li>
                 Press OK

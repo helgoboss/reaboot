@@ -7,8 +7,9 @@ import {CopyField} from "./copy-field";
 import {UAParser} from "ua-parser-js";
 import {Recipe} from "../../../core/bindings/Recipe";
 import {recipeNameIsSpecial} from "../util/recipe-util";
+import {ParsedRecipe} from "../../../commons/src/recipe-util";
 
-export function InstallViaReaboot(props: { recipe: Recipe }) {
+export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
     const optimalDownloads = getOptimalReabootDownloads();
     const otherDownloads = reabootDownloads.filter(d => {
         return optimalDownloads.every(optimalDownload => d.label !== optimalDownload?.label);
@@ -154,10 +155,10 @@ function buildDownloadUrl(download: ReabootDownload): string {
 }
 
 
-function displayRecipeNormal(recipe: Recipe) {
-    if (recipeNameIsSpecial(recipe.name)) {
-        return <span class="badge">{recipe.name}</span>;
+function displayRecipeNormal(recipe: ParsedRecipe) {
+    if (recipeNameIsSpecial(recipe.raw.name)) {
+        return <span class="badge">{recipe.raw.name}</span>;
     } else {
-        return recipe.name;
+        return recipe.raw.name;
     }
 }
