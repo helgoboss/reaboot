@@ -7,7 +7,7 @@ import {MainInstallationIcon, PortableInstallationIcon} from "./components/icons
 import {navigateTo, showError, showWarning} from "./epics/common.tsx";
 import {GlobalDialog} from "./components/GlobalDialog.tsx";
 import {clipboard} from "@tauri-apps/api";
-import {tryExtractRecipe} from "../../commons/src/recipe-util.ts";
+import {getOrEmptyRecord, ParsedRecipe, tryExtractRecipe} from "reaboot-commons/src/recipe-util";
 import {Portal} from "solid-js/web";
 import {Toast} from "@kobalte/core";
 
@@ -112,5 +112,21 @@ async function detectInitialRecipe() {
     if (!recipe) {
         return;
     }
-    await configureInstaller({recipe});
+    await configureInstaller({
+        recipe: recipe.raw,
+        selectedFeatures: getDefaultFeatureIdsFromRecipe(recipe)
+    });
+    mainStore.setParsedRecipe(recipe);
+}
+
+function getDefaultFeatureIdsFromRecipe(recipe: ParsedRecipe) {
+    const defaults = [];
+    const map = getOrEmptyRecord(recipe.features);
+    for (const featureId in map) {
+        const feature = map[featureId];
+        if (feature.raw.default) {
+            defaults.push(featureId);
+        }
+    }
+    return defaults;
 }

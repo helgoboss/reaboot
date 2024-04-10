@@ -7,7 +7,7 @@ import {CopyField} from "./copy-field";
 import {UAParser} from "ua-parser-js";
 import {Recipe} from "../../../core/bindings/Recipe";
 import {recipeNameIsSpecial} from "../util/recipe-util";
-import {ParsedRecipe} from "../../../commons/src/recipe-util";
+import {ParsedRecipe} from "reaboot-commons/src/recipe-util";
 
 export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
     const optimalDownloads = getOptimalReabootDownloads();

@@ -1,5 +1,5 @@
 import {createMemo, createResource, createSignal, Match, Show, Switch} from "solid-js";
-import {extractRecipe} from "../../../commons/src/recipe-util";
+import {extractRecipe} from "reaboot-commons/src/recipe-util";
 import {NormalPage} from "../components/normal-page";
 import {CopyField} from "../components/copy-field";
 

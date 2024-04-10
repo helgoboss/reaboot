@@ -2,7 +2,7 @@ import {Recipe} from "../../core/bindings/Recipe";
 import {PackageUrl} from "../../reapack/bindings/PackageUrl";
 import {PackageVersionRef} from "../../reapack/bindings/PackageVersionRef";
 import {PackagePath} from "../../reapack/bindings/PackagePath";
-import {Convert, Recipe as JsonSchemaRecipe} from "./recipe-parser";
+import {Convert} from "./recipe-parser";
 import {Feature} from "../../core/bindings/Feature";
 
 
@@ -163,10 +163,6 @@ function getOrEmptyArray<T>(items: T[] | null | undefined): T[] {
     return items ?? [];
 }
 
-function getOrEmptyRecord<T>(items: Record<string, T> | null | undefined): Record<string, T> {
+export function getOrEmptyRecord<T>(items: Record<string, T> | null | undefined): Record<string, T> {
     return items ?? {};
-}
-
-function parsePackageUrls(packageUrls: string[]): PackageUrl[] {
-    return packageUrls.map(raw => parsePackageUrlFromRawString(raw));
 }

@@ -32,7 +32,7 @@ export function PickReaperPage() {
                 <ProminentChoice selected={!resolvedConfig.portable}
                                  icon={<MainInstallationIcon size="24"/>}
                                  topRightIndicator="Good default choice"
-                                 onClick={() => configureInstaller({custom_reaper_resource_dir: null})}>
+                                 onClick={() => configureInstaller({customReaperResourceDir: null})}>
                     <h2 class="card-title">
                         Main REAPER installation
                     </h2>
@@ -73,7 +73,7 @@ export function PickReaperPage() {
                 </ProminentChoice>
             </div>
             <ButtonRow>
-                <NavButton onClick={() => navigateTo("add-packages")}>Continue</NavButton>
+                <NavButton onClick={() => navigateTo("customize")}>Continue</NavButton>
             </ButtonRow>
         </Page>
     )
@@ -84,7 +84,7 @@ async function configurePortable(forcePick: boolean) {
     if (forcePick || !mainStore.state.lastPickedPortableReaperDir) {
         await pickPortableReaperDir();
     }
-    configureInstaller({custom_reaper_resource_dir: mainStore.state.lastPickedPortableReaperDir});
+    configureInstaller({customReaperResourceDir: mainStore.state.lastPickedPortableReaperDir});
 }
 
 async function pickPortableReaperDir() {

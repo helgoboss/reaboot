@@ -71,4 +71,10 @@ skip_failed_packages: boolean,
 /**
  * An optional recipe.
  */
-recipe?: Recipe, };
+recipe?: Recipe, 
+/**
+ * The set of recipe features to be installed.
+ *
+ * Features not contained in the recipe will be ignored.
+ */
+selected_features: Array<string>, };

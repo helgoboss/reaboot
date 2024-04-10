@@ -6,7 +6,7 @@ import {appWindow, Theme} from "@tauri-apps/api/window";
 import {PageDescriptor} from "./model/page.ts";
 import {WelcomePage} from "./pages/WelcomePage.tsx";
 import {PickReaperPage} from "./pages/PickReaperPage.tsx";
-import {AddPackagesPage} from "./pages/AddPackagesPage.tsx";
+import {CustomizePage} from "./pages/CustomizePage.tsx";
 import {InstallPage} from "./pages/InstallPage.tsx";
 import {DonePage} from "./pages/DonePage.tsx";
 
@@ -25,6 +25,7 @@ export const mainStore = new MainStore({
         keep_temp_dir: false,
         dry_run: false,
         skip_failed_packages: false,
+        selected_features: [""],
     },
     usePortableReaperDir: false,
     installationStage: {
@@ -51,9 +52,9 @@ export const pages: PageDescriptor[] = [
         requiresReaperEulaAgreement: false,
     },
     {
-        id: "add-packages",
-        title: "Add packages",
-        content: AddPackagesPage,
+        id: "customize",
+        title: "Customize",
+        content: CustomizePage,
         requiresReaperEulaAgreement: true,
     },
     {

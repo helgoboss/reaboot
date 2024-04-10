@@ -1,4 +1,5 @@
 use crate::reaper_platform::ReaperPlatform;
+use std::collections::HashSet;
 
 use serde::{Deserialize, Serialize};
 
@@ -93,6 +94,10 @@ pub struct InstallerConfig {
     /// An optional recipe.
     #[ts(optional)]
     pub recipe: Option<Recipe>,
+    /// The set of recipe features to be installed.
+    ///
+    /// Features not contained in the recipe will be ignored.
+    pub selected_features: HashSet<String>,
 }
 
 /// Resolved installer configuration (derived from the frontend installer config).
@@ -119,7 +124,10 @@ pub struct ResolvedInstallerConfig {
     pub portable: bool,
     /// Resolved REAPER platform.
     pub platform: ReaperPlatform,
-    /// Resolved package URLs (includes URLs of packages that will be installed anyway).
+    /// Resolved package URLs.
+    ///
+    /// This includes manually configured packages, packages that will be installed anyway
+    /// and packages that were selected via features.
     pub package_urls: Vec<PackageUrl>,
     pub num_download_retries: u32,
     pub temp_parent_dir: PathBuf,

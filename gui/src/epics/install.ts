@@ -4,8 +4,9 @@ import {Recipe} from "../../../core/bindings/Recipe.ts";
 
 type PatchConfigurationArgs = {
     recipe?: Recipe | null,
-    custom_reaper_resource_dir?: string | null,
+    customReaperResourceDir?: string | null,
     packageUrls?: string[],
+    selectedFeatures?: string[],
 };
 
 export async function install() {
@@ -20,8 +21,9 @@ export async function configureInstaller(args: PatchConfigurationArgs) {
     const newConfig = {
         ...oldConfig,
         recipe: args.recipe === undefined ? oldConfig.recipe : (args.recipe ?? undefined),
-        custom_reaper_resource_dir: args.custom_reaper_resource_dir === undefined ? oldConfig.custom_reaper_resource_dir : (args.custom_reaper_resource_dir ?? undefined),
+        custom_reaper_resource_dir: args.customReaperResourceDir === undefined ? oldConfig.custom_reaper_resource_dir : (args.customReaperResourceDir ?? undefined),
         package_urls: args.packageUrls ?? oldConfig.package_urls,
+        selected_features: args.selectedFeatures ?? oldConfig.selected_features,
     };
     try {
         await mainService.configure(newConfig);

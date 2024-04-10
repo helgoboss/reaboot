@@ -1,7 +1,7 @@
 use reqwest::StatusCode;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 use ts_rs::TS;
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS, JsonSchema)]
@@ -20,6 +20,21 @@ pub struct Recipe {
     pub required_packages: Option<Vec<String>>,
     #[ts(optional = nullable)]
     pub features: Option<BTreeMap<String, Feature>>,
+}
+
+impl Recipe {
+    pub fn resolve_all_packages<'a>(
+        &'a self,
+        selected_features: &'a HashSet<String>,
+    ) -> impl Iterator<Item = &String> {
+        self.required_packages.iter().flatten().chain(
+            self.features
+                .iter()
+                .flatten()
+                .filter(|(id, _)| selected_features.contains(*id))
+                .flat_map(|(_, feature)| feature.packages.iter().flatten()),
+        )
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS, JsonSchema)]

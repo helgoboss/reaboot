@@ -43,6 +43,9 @@ portable: boolean,
  */
 platform: ReaperPlatform, 
 /**
- * Resolved package URLs (includes URLs of packages that will be installed anyway).
+ * Resolved package URLs.
+ *
+ * This includes manually configured packages, packages that will be installed anyway
+ * and packages that were selected via features.
  */
 package_urls: Array<PackageUrl>, num_download_retries: number, temp_parent_dir: string, keep_temp_dir: boolean, concurrent_downloads: number, dry_run: boolean, reaper_version: VersionRef, skip_failed_packages: boolean, recipe?: Recipe, };

@@ -1,5 +1,5 @@
 import {createMemo, For, Show} from "solid-js";
-import {ParsedRecipe, parsePackageUrlFromRawString} from "../../../commons/src/recipe-util";
+import {ParsedRecipe, parsePackageUrlFromRawString} from "reaboot-commons/src/recipe-util";
 import {PackageUrl} from "../../../reapack/bindings/PackageUrl";
 import {Recipe} from "../../../core/bindings/Recipe";
 import {VersionRef} from "../../../reapack/bindings/VersionRef";

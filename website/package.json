@@ -24,6 +24,7 @@
     "@kobalte/core": "^0.12.6",
     "@solidjs/router": "^0.13.1",
     "@types/ua-parser-js": "^0.7.39",
+    "reaboot-commons": "file:../commons",
     "solid-icons": "^1.1.0",
     "solid-js": "^1.8.11",
     "ua-parser-js": "^1.0.37"

@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::env;
 use std::path::PathBuf;
 
@@ -81,14 +82,17 @@ pub async fn resolve_config(config: InstallerConfig) -> anyhow::Result<ResolvedI
         }
     };
     // Parse user-defined package URLs
-    let mut package_urls = parse_package_urls(&config.package_urls)
-        .context("couldn't parse user-provided package URLs")?;
+    let mut package_urls: HashSet<PackageUrl> = parse_package_urls(&config.package_urls)
+        .context("couldn't parse user-provided package URLs")?
+        .into_iter()
+        .collect();
     // Add ReaPack package (this is good to have for updates within REAPER and also necessary
     // for scripts being registered at runtime)
-    package_urls.push(create_reapack_package_url());
+    package_urls.insert(create_reapack_package_url());
     // Add recipe package URLs
     if let Some(r) = config.recipe.as_ref() {
-        let recipe_package_urls = parse_package_urls(r.required_packages.iter().flatten())
+        let all_recipe_packages = r.resolve_all_packages(&config.selected_features);
+        let recipe_package_urls = parse_package_urls(all_recipe_packages)
             .context("couldn't parse recipe package URls")?;
         package_urls.extend(recipe_package_urls);
     }
@@ -100,7 +104,7 @@ pub async fn resolve_config(config: InstallerConfig) -> anyhow::Result<ResolvedI
         reaper_exe,
         portable,
         platform: reaper_platform,
-        package_urls,
+        package_urls: package_urls.into_iter().collect(),
         num_download_retries: config.num_download_retries.unwrap_or(3),
         temp_parent_dir,
         keep_temp_dir: config.keep_temp_dir,

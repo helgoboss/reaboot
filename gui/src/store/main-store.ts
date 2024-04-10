@@ -6,6 +6,7 @@ import {ResolvedInstallerConfig} from "../../src-tauri/bindings/ResolvedInstalle
 import {InstallerConfig} from "../../../core/bindings/InstallerConfig.ts";
 import {Accessor, createMemo} from "solid-js";
 import {getPage} from "../epics/common.tsx";
+import {getOrEmptyRecord, ParsedRecipe} from "reaboot-commons/src/recipe-util.ts";
 
 export type MainStoreState = {
     // ID of the currently displayed page
@@ -22,6 +23,9 @@ export type MainStoreState = {
     // Installer config.
     // Dictated by frontend.
     installerConfig: InstallerConfig,
+    // Parsed recipe
+    // Dictated by frontend. Only set after being accepted by backend.
+    parsedRecipe?: ParsedRecipe,
     // Basic info from the backend.
     // If undefined, it means the backend hasn't sent its info yet.
     // Set in response to event from backend.
@@ -66,6 +70,10 @@ export class MainStore {
         this.setState = setState;
     }
 
+    featureIsSelected(featureId: string) {
+        return this.state.installerConfig.selected_features.includes(featureId);
+    }
+
     setCurrentPageId(pageId: PageId) {
         this.setState("currentPageId", pageId);
     }
@@ -76,6 +84,10 @@ export class MainStore {
 
     setInstallerConfig(value: InstallerConfig) {
         this.setState("installerConfig", value);
+    }
+
+    setParsedRecipe(value: ParsedRecipe) {
+        this.setState("parsedRecipe", value);
     }
 
     setResolvedConfig(value: ResolvedInstallerConfig) {
@@ -100,6 +112,20 @@ export class MainStore {
 
     agreeToEula() {
         this.setState("agreedToReaperEula", true);
+    }
+
+    get showAddCustomPackagesButton() {
+        const parsedRecipe = this.state.parsedRecipe;
+        if (!parsedRecipe) {
+            return true;
+        }
+        return !parsedRecipe.raw.skip_additional_packages;
+    }
+
+    get parsedRecipeFeatures() {
+        return createMemo(() => {
+            return Object.entries(getOrEmptyRecord(this.state.parsedRecipe?.features));
+        });
     }
 
     get currentPage(): Accessor<PageDescriptor> {
