@@ -11,7 +11,7 @@ export function Welcome(props: Props) {
     return <div class="grow hero">
         <div class="hero-content text-center">
             <div class="flex flex-col items-center max-w-md">
-                <A href="/"><ReabootLogo class="fill-base opacity-30 mb-6"/></A>
+                <A href="/"><ReabootLogo class="fill-primary mb-6"/></A>
                 {props.poweredBy && <h1>
                     <span class="italic">Powered by</span>
                     &#32;

@@ -1,11 +1,13 @@
-import {createResource, createSignal, Match, Switch} from "solid-js";
-import {tryExtractRecipe} from "../../../commons/src/recipe-util";
+import {createResource, createSignal, Match, Show, Switch} from "solid-js";
+import {extractRecipe} from "../../../commons/src/recipe-util";
 import {CopyField} from "../components/copy-field";
 import {NormalPage} from "../components/normal-page";
 
+const MAX_URL_LENGTH = 2000;
+
 export default function Share() {
     const [payload, setPayload] = createSignal("");
-    const [recipeResource] = createResource(payload, tryExtractRecipe);
+    const [recipeResource] = createResource(payload, extractRecipe);
     const installationUrl = () => createReabootInstallationUrl(payload());
     return <NormalPage>
         <div class="prose">
@@ -16,11 +18,10 @@ export default function Share() {
             <p>Let's create a link, so that you can easily share REAPER packages or complete REAPER distributions!</p>
 
             <h3>
-                1. Enter the <a href="#reaboot-recipe">recipe</a>, an URL to a recipe or just a <a href="#package-url">package
-                URL</a>
+                1. Enter the recipe, an URL to a recipe or just a package URL
             </h3>
 
-            <p><a href="#explanations">Scroll down</a> to learn more about recipes.</p>
+            <p><a href="#explanations">Scroll down</a> to learn more about these terms.</p>
 
             <div>
                 <textarea class="textarea textarea-bordered h-56 font-mono text-xs w-full"
@@ -30,9 +31,26 @@ export default function Share() {
             </div>
 
             <Switch>
+                <Match when={recipeResource.error}>
+                    {error =>
+                        <div class="alert alert-error">
+                            Looks like you haven't entered a valid recipe, recipe URL or package URL:
+                            {error()}
+                        </div>
+                    }
+                </Match>
                 <Match when={recipeResource()}>
                     {recipe =>
                         <>
+                            <Show when={installationUrl().length > MAX_URL_LENGTH}>
+                                <div class="alert alert-warning">
+                                    The generated URL contains more than {MAX_URL_LENGTH} characters. This could become
+                                    a problem in some browsers! Please consider putting the recipe somewhere online
+                                    (e.g. in a GitHub repository or as a GitHub Gist) and providing an URL to the raw
+                                    content of that recipe instead.
+                                </div>
+                            </Show>
+
                             <h3>2. Give it a try</h3>
                             <a href={installationUrl()} target="_blank">Try it!</a>
 
@@ -51,11 +69,6 @@ export default function Share() {
                         </>
                     }
                 </Match>
-                <Match when={true}>
-                    <div class="alert alert-error">
-                        Looks like you haven't entered a valid recipe, recipe URL or package URL!
-                    </div>
-                </Match>
             </Switch>
 
             <h2 id="explanations">Explanations</h2>
@@ -67,7 +80,7 @@ export default function Share() {
                 should be installed and gives the installer a sort of branding.
             </p>
             <p>
-                Here's an example recipe in JSON format:
+                Here's a very simple example recipe in JSON format:
             </p>
             <pre>{`{
     "name": "ReaLearn",
@@ -82,6 +95,42 @@ export default function Share() {
                 pre-configures itself with the data in the recipe. As an alternative, it accepts a package URL or an URL
                 that points to a recipe.
             </p>
+            <p>Here's a more complicated recipe which demonstrates the use of optional features:</p>
+            <pre>{`{
+    "name": "Helgo's random tool collection",
+    "description": "This is just an example recipe for ReaBoot in order to demonstrate how to share a complete collection of packages and make some of them optional.",
+    "author": "helgoboss",
+    "website": "https://www.reaboot.com/",
+    "required_packages": [
+        "https://raw.githubusercontent.com/ReaTeam/Extensions/master/index.xml#p=API/reaper_imgui.ext"
+    ],
+    "features": {
+        "sws": {
+            "name": "SWS/S&M Extension",
+            "default": true,
+            "description": "Popular and established extension that adds a variety of smaller features to REAPER. Considered as must-have by many.",
+            "packages": [
+                "https://raw.githubusercontent.com/ReaTeam/Extensions/master/index.xml#p=Extensions/reaper-oss_SWS.ext&v=latest-pre"
+            ]
+        },
+        "libraries": {
+            "name": "Common libraries",
+            "description": "Frequently used libraries that provide functions for ReaScripts",
+            "packages": [
+                "https://github.com/Ultraschall/ultraschall-lua-api-for-reaper/raw/master/ultraschall_api_index.xml#p=Ultraschall-API-category/Ultraschall%20API%20package",
+                "https://github.com/ReaTeam/ReaScripts/raw/master/index.xml#p=Development/Lokasenna_GUI%20library%20v2.lua",
+                "https://github.com/ReaTeam/ReaScripts/raw/master/index.xml#p=Development/Lokasenna_Scythe%20library%20v3.lua"
+            ]
+        },
+        "realearn": {
+            "name": "ReaLearn",
+            "description": "The \\"Swiss Army Knife\\" among the REAPER controller integration tools",
+            "packages": [
+                "https://github.com/helgoboss/reaper-packages/raw/master/index.xml#p=Extensions/ReaLearn-x64&v=latest"
+            ]
+        }
+    }
+}`}</pre>
 
             <h3 id="package-url">Package URL</h3>
             <p>
@@ -105,7 +154,17 @@ https://github.com/ReaTeam/ReaScripts/raw/master/index.xml#p=Various/rodilab_Col
 }
 
 function createReabootInstallationUrl(payload: string): string {
-    const encodedPayload = encodeURIComponent(payload);
+    const encodedPayload = encodeURIComponent(minifyPayload(payload));
     const loc = window.location;
     return `${loc.protocol}//${loc.host}/install/${encodedPayload}`;
+}
+
+// Minifies the given payload if it's JSON. Important to keep the URL length small.
+function minifyPayload(payload: string): string {
+    try {
+        const parsed = JSON.parse(payload);
+        return JSON.stringify(parsed);
+    } catch {
+        return payload;
+    }
 }

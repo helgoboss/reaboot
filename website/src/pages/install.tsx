@@ -1,7 +1,7 @@
 import {createResource, Match, Switch} from 'solid-js';
 import {Params, useParams, useSearchParams} from "@solidjs/router";
 import {Recipe} from "../../../core/bindings/Recipe";
-import {tryExtractRecipe, tryParsePackageUrlFromRaw} from "../../../commons/src/recipe-util";
+import {extractRecipe} from "../../../commons/src/recipe-util";
 import {Tabs} from "@kobalte/core";
 import {Welcome} from "../components/welcome";
 import {Footer} from "../components/footer";
@@ -12,7 +12,7 @@ import {InstallViaReapack} from "../components/install-via-reapack";
 export default function Install() {
     const params = useParams();
     const [searchParams, setSearchParams] = useSearchParams();
-    const [recipeResource] = createResource(params, tryGetRecipeFromParams);
+    const [recipeResource] = createResource(params, getRecipeFromParams);
 
     const via = () => searchParams.via ?? "reaboot";
 
@@ -65,24 +65,13 @@ export default function Install() {
     );
 }
 
-async function tryGetRecipeFromParams(params: Partial<Params>): Promise<Recipe | null> {
+async function getRecipeFromParams(params: Partial<Params>): Promise<Recipe> {
     const thing = params.thing;
     if (!thing) {
-        return null;
+        throw new Error("The URL is missing information about what to install!");
     }
-    const decodedThing = tryDecodeThing(thing);
-    if (!decodedThing) {
-        return null;
-    }
-    return tryExtractRecipe(decodedThing);
-}
-
-function tryDecodeThing(thing: string): string | null {
-    try {
-        return decodeURIComponent(thing);
-    } catch {
-        return null;
-    }
+    const decodedThing = decodeURIComponent(thing);
+    return extractRecipe(decodedThing);
 }
 
 function displayRecipeHeading(recipe: Recipe) {

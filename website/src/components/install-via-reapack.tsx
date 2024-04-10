@@ -1,22 +1,20 @@
 import {createMemo, For, Show} from "solid-js";
-import {tryParsePackageUrlFromRaw} from "../../../commons/src/recipe-util";
+import {parsePackageUrl} from "../../../commons/src/recipe-util";
 import {PackageUrl} from "../../../reapack/bindings/PackageUrl";
 import {Recipe} from "../../../core/bindings/Recipe";
 import {VersionRef} from "../../../reapack/bindings/VersionRef";
 
 export function InstallViaReapack(props: { recipe: Recipe }) {
-    const packageUrls = createMemo(() => {
+    const requiredPackageUrls = createMemo(() => {
         const required_packages = props.recipe.required_packages;
         if (!required_packages) {
             return [];
         }
-        return required_packages
-            .map(tryParsePackageUrlFromRaw)
-            .filter(u => u !== null) as PackageUrl[]
+        return required_packages.map(raw => parsePackageUrl(new URL(raw)))
     });
-    const remotes = createMemo(() => [...new Set(packageUrls().map(u => u.repository_url))]);
+    const remotes = createMemo(() => [...new Set(requiredPackageUrls().map(u => u.repository_url))]);
     const nonDefaultRemotes = createMemo(() => remotes().filter(r => !defaultRemotes.has(r)));
-    const needsRestart = () => packageUrls().some(p => p.package_version_ref.package_path.category === "Extensions");
+    const needsRestart = () => requiredPackageUrls().some(p => p.package_version_ref.package_path.category === "Extensions");
     return <div class="prose">
         <h3>
             If REAPER is not installed yet:
@@ -71,7 +69,7 @@ export function InstallViaReapack(props: { recipe: Recipe }) {
             </li>
             <li>
                 Install required packages
-                <ReapackPackageInstalls urls={packageUrls()}/>
+                <ReapackPackageInstalls urls={requiredPackageUrls()}/>
             </li>
             <li>
                 Press OK
@@ -120,14 +118,20 @@ function getReapackMenuEntry(versionRef: VersionRef): string {
     }
 }
 
-const defaultRemotes = new Set([
-    "https://reapack.com/index.xml",
-    "https://raw.githubusercontent.com/cfillion/reapack/master/index.xml",
-    "https://github.com/ReaTeam/ReaScripts/raw/master/index.xml",
-    "https://github.com/ReaTeam/JSFX/raw/master/index.xml",
-    "https://github.com/ReaTeam/Themes/raw/master/index.xml",
-    "https://github.com/ReaTeam/LangPacks/raw/master/index.xml",
-    "https://github.com/ReaTeam/Extensions/raw/master/index.xml",
-    "https://github.com/MichaelPilyavskiy/ReaScripts/raw/master/index.xml",
-    "https://github.com/X-Raym/REAPER-ReaScripts/raw/master/index.xml",
-]);
+const defaultRemoteDescs = [
+    "cfillion/reapack",
+    "ReaTeam/ReaScripts",
+    "ReaTeam/Extensions",
+    "ReaTeam/JSFX",
+    "ReaTeam/Themes",
+    "ReaTeam/LangPacks",
+    "MichaelPilyavskiy/ReaScripts",
+    "X-Raym/REAPER-ReaScripts",
+];
+
+const defaultRemotes = new Set(
+    defaultRemoteDescs.flatMap(desc => [
+        `https://github.com/${desc}/raw/master/index.xml`,
+        `https://raw.githubusercontent.com/${desc}/master/index.xml`,
+    ])
+);

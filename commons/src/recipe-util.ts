@@ -2,34 +2,29 @@ import {Recipe} from "../../core/bindings/Recipe";
 import {PackageUrl} from "../../reapack/bindings/PackageUrl";
 import {PackageVersionRef} from "../../reapack/bindings/PackageVersionRef";
 import {PackagePath} from "../../reapack/bindings/PackagePath";
+import typia from "typia";
 
 export async function tryExtractRecipe(text: string): Promise<Recipe | null> {
-    const url = tryExtractUrl(text);
-    return url ? await tryGetRecipeFromUrl(url) : tryParseRecipe(text);
+    return nullOnErrorAsync(() => extractRecipe(text));
 }
 
-async function tryGetRecipeFromUrl(url: URL): Promise<Recipe | null> {
-    const packageUrl = tryParsePackageUrl(url);
-    return packageUrl ? buildRecipeFromPackageUrl(url, packageUrl) : await tryFetchRecipeFromUrl(url);
+export async function extractRecipe(text: string): Promise<Recipe> {
+    const url = nullOnError(() => new URL(text));
+    return url ? await getRecipeFromUrl(url) : parseRecipe(text);
 }
 
-export function tryParsePackageUrlFromRaw(text: string): PackageUrl | null {
-    const url = tryParseUrl(text);
-    if (!url) {
-        return null;
-    }
-    return tryParsePackageUrl(url);
+
+async function getRecipeFromUrl(url: URL): Promise<Recipe> {
+    const packageUrl = parsePackageUrl(url);
+    return packageUrl ? buildRecipeFromPackageUrl(url, packageUrl) : await fetchRecipeFromUrl(url);
 }
 
-export function tryParsePackageUrl(url: URL): PackageUrl | null {
+export function parsePackageUrl(url: URL): PackageUrl {
     const fragmentId = url.hash.substring(1);
     if (fragmentId.length === 0) {
-        return null;
+        throw new Error("Fragment identifier missing");
     }
-    const packageVersionRef = tryParsePackageVersionRef(fragmentId);
-    if (!packageVersionRef) {
-        return null;
-    }
+    const packageVersionRef = parsePackageVersionRef(fragmentId);
     const repositoryUrl = new URL(url);
     repositoryUrl.hash = "";
     return {
@@ -38,16 +33,13 @@ export function tryParsePackageUrl(url: URL): PackageUrl | null {
     }
 }
 
-function tryParsePackageVersionRef(fragmentId: string): PackageVersionRef | null {
+function parsePackageVersionRef(fragmentId: string): PackageVersionRef {
     const params = new URLSearchParams(fragmentId);
     const rawPackagePath = params.get("p");
     if (!rawPackagePath) {
-        return null;
+        throw new Error("Package path missing");
     }
-    const packagePath = tryParsePackagePath(rawPackagePath);
-    if (!packagePath) {
-        return null;
-    }
+    const packagePath = parsePackagePath(rawPackagePath);
     const versionRef = params.get("v") ?? "latest";
     return {
         package_path: packagePath,
@@ -55,10 +47,10 @@ function tryParsePackageVersionRef(fragmentId: string): PackageVersionRef | null
     }
 }
 
-function tryParsePackagePath(text: string): PackagePath | null {
+function parsePackagePath(text: string): PackagePath {
     const lastSlashIndex = text.lastIndexOf("/");
     if (lastSlashIndex === -1) {
-        return null;
+        throw new Error("Package category missing");
     }
     return {
         category: text.substring(0, lastSlashIndex),
@@ -75,46 +67,44 @@ function buildRecipeFromPackageUrl(rawPackageUrl: URL, parsedPackageUrl: Package
     };
 }
 
-async function tryFetchRecipeFromUrl(url: URL): Promise<Recipe | null> {
+async function fetchRecipeFromUrl(url: URL): Promise<Recipe> {
     // Send request
     const response = await fetch(url);
     if (!response.ok) {
-        return null;
+        throw new Error("Non-successful response status code from recipe URL");
     }
     // Don't continue if response contains too much data
     const maxContentLength = 100 * 1024;
     const contentLength = response.headers.get("Content-Length");
     if (contentLength === null || parseInt(contentLength) > maxContentLength) {
-        return null;
+        throw new Error("Recipe URL response too big");
     }
     // Try to read response as text
     const text = await response.text().catch(() => null);
     if (!text) {
-        return null;
+        throw new Error("Recipe URL doesn't return text");
     }
     // Parse response text as recipe
-    return tryParseRecipe(text);
+    return parseRecipe(text);
 }
 
-function tryParseRecipe(text: string): Recipe | null {
+function parseRecipe(text: string): Recipe {
+    // TODO-high Add more error reporting
+    typia.validate<T>()
+    return JSON.parse(text);
+}
+
+function nullOnError<R>(f: () => R): R | null {
     try {
-        return JSON.parse(text);
+        return f();
     } catch {
         return null;
     }
 }
 
-function tryExtractUrl(text: string): URL | null {
-    const lines = text.split("\n");
-    if (lines.length !== 1) {
-        return null;
-    }
-    return tryParseUrl(lines[0]);
-}
-
-function tryParseUrl(text: string): URL | null {
+async function nullOnErrorAsync<R>(f: () => Promise<R>): Promise<R | null> {
     try {
-        return new URL(text);
+        return await f();
     } catch {
         return null;
     }
