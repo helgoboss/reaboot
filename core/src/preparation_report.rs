@@ -43,6 +43,8 @@ pub struct PackagePreparationOutcome {
     pub package_id: PackageId,
     pub version: Option<VersionRef>,
     pub status: PackagePrepStatus,
+    /// A donation URL. Should only be set if the package was installed, not just replaced.
+    pub donation_url: Option<String>,
 }
 
 #[derive(Debug)]
@@ -95,6 +97,7 @@ impl PreparationReport {
                 },
                 version: Some(failure.package_url.version_ref().clone()),
                 status: PackagePrepStatus::NotFoundInRepo(failure.error),
+                donation_url: None,
             });
         let version_conflicts =
             download_plan
@@ -110,6 +113,7 @@ impl PreparationReport {
                             .map(|v| v.version.name.clone())
                             .collect(),
                     ),
+                    donation_url: None,
                 });
         let incompatible_versions =
             download_plan
@@ -119,6 +123,7 @@ impl PreparationReport {
                     package_id: version.id().package_id.to_owned(),
                     version: Some(version.id().version.clone().into()),
                     status: PackagePrepStatus::Incompatible,
+                    donation_url: None,
                 });
         let conflicts_with_other_packages_to_be_installed = download_plan
             .recipe_file_conflicts
@@ -133,6 +138,7 @@ impl PreparationReport {
                         status: PackagePrepStatus::ConflictWithOtherPackagesToBeInstalled {
                             relative_path: conflict.relative_path.clone(),
                         },
+                        donation_url: None,
                     })
             });
         let conflicts_with_already_installed_packages = download_plan
@@ -144,6 +150,7 @@ impl PreparationReport {
                 status: PackagePrepStatus::ConflictWithAlreadyInstalledFiles {
                     relative_path: s.relative_path,
                 },
+                donation_url: None,
             });
         let failed_downloads = download_errors
             .into_iter()
@@ -151,6 +158,7 @@ impl PreparationReport {
                 package_id: e.download.payload.package_id().to_owned(),
                 version: Some(e.download.payload.version.version.name.clone().into()),
                 status: PackagePrepStatus::DownloadFailed(e.error),
+                donation_url: None,
             });
         let temp_install_fails =
             temp_install_failures
@@ -159,18 +167,27 @@ impl PreparationReport {
                     package_id: failure.version_id.package_id.to_owned(),
                     version: Some(failure.version_id.version.clone().into()),
                     status: PackagePrepStatus::TempInstallFailed(failure.error),
+                    donation_url: None,
                 });
         let ready = package_installation_plans
             .iter()
             .map(|a| PackagePreparationOutcome {
-                package_id: a.version_id.package_id.to_owned(),
-                version: Some(a.version_id.version.clone().into()),
+                package_id: a.version.id().package_id.to_owned(),
+                version: Some(a.version.id().version.clone().into()),
                 status: if let Some(p) = a.to_be_removed {
                     PackagePrepStatus::ToBeReplaced {
                         old_version: p.version.to_string(),
                     }
                 } else {
                     PackagePrepStatus::ToBeAdded
+                },
+                donation_url: if a.to_be_removed.is_some() {
+                    None
+                } else {
+                    a.version.package.package.metadata().and_then(|md| {
+                        let url = md.donation_urls().next()?;
+                        Some(url.to_string())
+                    })
                 },
             });
         let package_preparation_outcomes = not_found
@@ -282,6 +299,10 @@ pub struct PreparationReportAsMarkdown<'a> {
 pub struct PreparationReportMarkdownOptions {
     /// Whether to include the main heading.
     pub include_main_heading: bool,
+    /// Whether to show donation links.
+    ///
+    /// This will produce real HTML (in order to set `target="_blank"`).
+    pub include_donation_links: bool,
     /// Whether the packages have actually been installed (`true`) or if installation failed
     /// or this was just a dry run (`false`).
     pub actually_installed_things: bool,
@@ -412,9 +433,20 @@ impl<'a> Display for PreparationReportAsMarkdown<'a> {
         if summary.additions > 0 {
             heading_count += 1;
             self.write_heading(f, "package addition", summary.additions, skipped_suffix)?;
-            for o in &self.report.package_preparation_outcomes {
-                if o.status.category() == PackageStatusCategory::Addition {
-                    writeln!(f, "- {}", PackageVersionAsMarkdown(o))?;
+            if self.options.include_donation_links {
+                self.write_3col_table_header(f, "Package", "Version", "Donate")?;
+                for o in &self.report.package_preparation_outcomes {
+                    if let Some(url) = &o.donation_url {
+                        self.outcome_row(f, o, FormatAsLink(&url))?;
+                    } else {
+                        self.outcome_row(f, o, "")?;
+                    }
+                }
+            } else {
+                for o in &self.report.package_preparation_outcomes {
+                    if o.status.category() == PackageStatusCategory::Addition {
+                        writeln!(f, "- {}", PackageVersionAsMarkdown(o))?;
+                    }
                 }
             }
         }
@@ -422,6 +454,14 @@ impl<'a> Display for PreparationReportAsMarkdown<'a> {
             f.write_str("No changes were necessary.")?;
         }
         Ok(())
+    }
+}
+
+struct FormatAsLink<'a>(&'a str);
+
+impl<'a> Display for FormatAsLink<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "<a href=\"{}\" target=\"_blank\">Donate</a>", self.0)
     }
 }
 

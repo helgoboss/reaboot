@@ -1,3 +1,4 @@
+use markdown::{CompileOptions, ParseOptions};
 use std::path::PathBuf;
 
 use tauri::async_runtime::Receiver;
@@ -69,21 +70,33 @@ impl ReabootWorker {
                     InstallError::Other(_) => (None, false, None),
                 },
             };
-        let preparation_report_html = if let Some(r) = report {
+        let (report_html, report_contains_donation_links) = if let Some(r) = report {
             let options = PreparationReportMarkdownOptions {
                 include_main_heading: false,
+                include_donation_links: true,
                 actually_installed_things,
                 optimize_for_termimad: false,
             };
             let markdown = PreparationReportAsMarkdown::new(&r, options).to_string();
-            let html = markdown::to_html_with_options(&markdown, &markdown::Options::gfm())
-                .unwrap_or_default();
-            Some(html)
+            let options = markdown::Options {
+                parse: ParseOptions::gfm(),
+                compile: CompileOptions {
+                    allow_dangerous_html: true,
+                    ..CompileOptions::gfm()
+                },
+            };
+            let html = markdown::to_html_with_options(&markdown, &options).unwrap_or_default();
+            let contains_donation_links = r
+                .package_preparation_outcomes
+                .iter()
+                .any(|o| o.donation_url.is_some());
+            (Some(html), contains_donation_links)
         } else {
-            None
+            (None, false)
         };
         let done_event = ReabootEvent::InstallationDone {
-            preparation_report_html,
+            report_html,
+            report_contains_donation_links,
             manual_reaper_install_path,
         };
         self.app_handle.emit_reaboot_event(done_event);

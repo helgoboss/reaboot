@@ -78,7 +78,7 @@ function keepSyncingStateFromBackendToStore() {
                 }
                 break;
             case "InstallationDone":
-                mainStore.setInstallationReportHtml(evt.preparation_report_html);
+                mainStore.setInstallationReport(evt.report_html, evt.report_contains_donation_links);
                 mainStore.setManualReaperInstallPath(evt.manual_reaper_install_path);
                 break;
             case "TaskStarted":

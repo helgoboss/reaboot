@@ -35,7 +35,7 @@ pub struct TempInstallFailure<'a> {
 }
 
 pub struct PackageInstallationPlan<'a> {
-    pub version_id: LightVersionId<'a>,
+    pub version: QualifiedVersion<'a>,
     pub to_be_moved: Vec<DownloadWithPayload<QualifiedSource<'a>>>,
     pub to_be_removed: Option<&'a InstalledPackage>,
 }

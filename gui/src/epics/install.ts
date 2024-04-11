@@ -11,7 +11,7 @@ type PatchConfigurationArgs = {
 
 export async function install() {
     // At first, reset outcome of potential previous installation
-    mainStore.setInstallationReportHtml(undefined);
+    mainStore.setInstallationReport(undefined, false);
     // Then start installation
     await mainService.startInstallation();
 }

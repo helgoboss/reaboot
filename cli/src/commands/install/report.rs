@@ -5,6 +5,7 @@ use reaboot_core::{
 pub fn print_report(report: &PreparationReport, actually_installed_things: bool) {
     let opts = PreparationReportMarkdownOptions {
         include_main_heading: true,
+        include_donation_links: false,
         actually_installed_things,
         optimize_for_termimad: true,
     };

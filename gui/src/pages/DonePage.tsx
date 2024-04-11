@@ -1,6 +1,5 @@
-import {ButtonRow} from "../components/ButtonRow.tsx";
 import {mainStore} from "../globals.ts";
-import {FaSolidCircleCheck, FaSolidFaceSadTear, FaSolidRocket} from "solid-icons/fa";
+import {FaSolidCircleCheck, FaSolidFaceSadTear, FaSolidHeart, FaSolidRocket} from "solid-icons/fa";
 import {Match, Show, Switch} from "solid-js";
 import {showDialog} from "../components/GlobalDialog.tsx";
 import {startReaperAndQuit, startReaperInstaller} from "../epics/done.ts";
@@ -71,13 +70,21 @@ export function DonePage() {
                         }
                     }
                 </Show>
-                <ButtonRow>
-                    <Show when={mainStore.state.installationReportHtml}>
+                <Show when={mainStore.state.installationReportHtml}>
+                    <div>
                         <button class="btn btn-link" onClick={showInstallationReport}>
                             Show installation report
                         </button>
-                    </Show>
-                </ButtonRow>
+                        <Show when={mainStore.state.installationReportContainsDonationLinks}>
+                            <div role="alert" class="alert">
+                                <FaSolidHeart class="cursor-pointer" onClick={showInstallationReport}/>
+                                <span>
+                                    This report contains donation links. Please consider supporting the package authors!
+                                </span>
+                            </div>
+                        </Show>
+                    </div>
+                </Show>
             </div>
         </div>
     </div>;

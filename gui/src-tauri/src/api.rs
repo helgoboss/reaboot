@@ -57,7 +57,8 @@ pub enum ReabootEvent {
     },
     InstallationDone {
         #[ts(optional)]
-        preparation_report_html: Option<String>,
+        report_html: Option<String>,
+        report_contains_donation_links: bool,
         #[ts(optional)]
         manual_reaper_install_path: Option<PathBuf>,
     },

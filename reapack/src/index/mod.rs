@@ -135,7 +135,7 @@ pub struct Source {
 pub struct Metadata {
     #[serde(default)]
     #[serde(rename = "$value")]
-    entries: Vec<MetadataEntry>,
+    pub entries: Vec<MetadataEntry>,
 }
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize)]
@@ -143,7 +143,7 @@ pub struct Metadata {
 pub enum MetadataEntry {
     /// Zero or one
     Description(String),
-    /// Zero or one
+    /// Multiple
     Link(Link),
 }
 
@@ -335,6 +335,23 @@ impl Source {
             MidiNoteNames => format!("MIDINoteNames/{file}"),
             AutomationItem => format!("AutomationItems/{index_name}/{category}/{file}"),
         }
+    }
+}
+
+impl Metadata {
+    pub fn donation_urls(&self) -> impl Iterator<Item = &str> {
+        self.entries.iter().filter_map(|entry| {
+            let MetadataEntry::Link(Link {
+                rel: Rel::Known(KnownRel::Donation),
+                href,
+                content,
+                ..
+            }) = entry
+            else {
+                return None;
+            };
+            Some(href.as_ref().map(|s| s.as_str()).unwrap_or(content))
+        })
     }
 }
 

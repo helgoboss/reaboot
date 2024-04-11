@@ -419,7 +419,11 @@ impl<L: InstallerListener> Installer<L> {
             match install_result {
                 Ok(_) => {
                     let plan = PackageInstallationPlan {
-                        version_id,
+                        version: downloads
+                            .first()
+                            .expect("there must be at least one download at this point")
+                            .payload
+                            .version,
                         to_be_moved: downloads,
                         to_be_removed: replace_package,
                     };
@@ -568,7 +572,7 @@ impl<L: InstallerListener> Installer<L> {
         self.listener
             .installation_stage_changed(InstallationStage::InstallingPackage {
                 package: PackageInfo {
-                    name: plan.version_id.package_id.package.to_string(),
+                    name: plan.version.id().package_id.package.to_string(),
                 },
             });
         if let Some(p) = plan.to_be_removed {
@@ -585,8 +589,10 @@ impl<L: InstallerListener> Installer<L> {
             }
         }
         // Copy/move
-        self.listener
-            .info(format!("Moving files of new package {}", &plan.version_id));
+        self.listener.info(format!(
+            "Moving files of new package {}",
+            &plan.version.id()
+        ));
         for download in plan.to_be_moved.into_iter() {
             let src_file = download.download.file;
             let dest_file = self

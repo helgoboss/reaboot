@@ -40,6 +40,9 @@ export type MainStoreState = {
     // Installation report, HTML-formatted.
     // Set in response to event from backend.
     installationReportHtml?: string,
+    // Whether the installation report contains donation links.
+    // Set in response to event from backend.
+    installationReportContainsDonationLinks?: boolean,
     // If set, it means that the installer couldn't install REAPER automatically and this contains the path of
     // the installer.
     // Set in response to event from backend.
@@ -102,8 +105,13 @@ export class MainStore {
         this.setState("lastPickedPortableReaperDir", value);
     }
 
-    setInstallationReportHtml(value: string | undefined) {
-        this.setState("installationReportHtml", value);
+    setInstallationReport(html: string | undefined, containsDonationLinks: boolean) {
+        this.setState(
+            produce((state) => {
+                state.installationReportHtml = html;
+                state.installationReportContainsDonationLinks = containsDonationLinks;
+            })
+        );
     }
 
     setManualReaperInstallPath(value: string | undefined) {
