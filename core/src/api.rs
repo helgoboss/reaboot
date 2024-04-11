@@ -98,6 +98,8 @@ pub struct InstallerConfig {
     ///
     /// Features not contained in the recipe will be ignored.
     pub selected_features: HashSet<String>,
+    /// Update REAPER if there's a new version available.
+    pub update_reaper: bool,
 }
 
 /// Resolved installer configuration (derived from the frontend installer config).
@@ -136,6 +138,7 @@ pub struct ResolvedInstallerConfig {
     pub dry_run: bool,
     pub reaper_version: VersionRef,
     pub skip_failed_packages: bool,
+    pub update_reaper: bool,
     #[ts(optional)]
     pub recipe: Option<Recipe>,
 }

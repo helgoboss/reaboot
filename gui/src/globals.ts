@@ -25,6 +25,7 @@ export const mainStore = new MainStore({
         keep_temp_dir: false,
         dry_run: false,
         skip_failed_packages: false,
+        update_reaper: false,
         concurrent_downloads: 8,
         selected_features: [""],
     },

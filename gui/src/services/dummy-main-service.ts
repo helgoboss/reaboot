@@ -22,6 +22,7 @@ export class DummyMainService implements MainService {
                 reaper_exe_exists: true,
                 reaper_exe: "bla",
                 reaper_ini_exists: true,
+                update_reaper: false,
                 reaper_version: config.reaper_version ?? "latest",
                 skip_failed_packages: config.skip_failed_packages,
                 temp_parent_dir: config.temp_parent_dir ?? "/tmp",

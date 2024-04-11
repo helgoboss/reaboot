@@ -61,6 +61,9 @@ pub struct InstallArgs {
     /// or use `latest` or `latest-pre`.
     #[arg(long, default_value = "latest")]
     reaper_version: String,
+    /// If set, REAPER will be updated to the latest version.
+    #[arg(long, default_value_t = false)]
+    update_reaper: bool,
     /// URLs of ReaPack packages to be installed.
     #[arg(short, long)]
     package_url: Option<Vec<String>>,
@@ -81,6 +84,7 @@ pub async fn install(args: InstallArgs) -> anyhow::Result<()> {
         concurrent_downloads: Some(args.concurrent_downloads),
         dry_run: args.dry_run,
         reaper_version: Some(reaper_version),
+        update_reaper: args.update_reaper,
         skip_failed_packages: args.skip_failed_packages,
         recipe: None,
         selected_features: Default::default(),
@@ -97,8 +101,7 @@ pub async fn install(args: InstallArgs) -> anyhow::Result<()> {
     // Show REAPER EULA if necessary
     let skip_license_prompts = args.non_interactive || args.accept_licenses;
     if !skip_license_prompts && installer.reaper_is_installable() {
-        let initial_stage = installer.determine_initial_installation_stage().await?;
-        if initial_stage.is_nothing_installed() && !confirm_license().await? {
+        if !installer.resolved_config().reaper_exe_exists && !confirm_license().await? {
             println!("You haven't agreed to the license terms. Exiting.");
             return Ok(());
         }

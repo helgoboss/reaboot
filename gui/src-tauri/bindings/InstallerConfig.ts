@@ -77,4 +77,8 @@ recipe?: Recipe,
  *
  * Features not contained in the recipe will be ignored.
  */
-selected_features: Array<string>, };
+selected_features: Array<string>, 
+/**
+ * Update REAPER if there's a new version available.
+ */
+update_reaper: boolean, };

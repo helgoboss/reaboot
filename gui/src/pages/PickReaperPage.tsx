@@ -4,11 +4,12 @@ import {NavButton} from "../components/NavButton.tsx";
 import {Page} from "../components/Page.tsx";
 import {open} from "@tauri-apps/api/dialog";
 import {mainStore} from "../globals.ts";
-import {Match, Switch} from "solid-js";
+import {Match, Show, Switch} from "solid-js";
 import {configureInstaller} from "../epics/install.ts";
 import {MainInstallationIcon, PortableInstallationIcon} from "../components/icons.tsx";
 import {WaitingForDataPage} from "./WaitingForDataPage.tsx";
 import {navigateTo} from "../epics/common.tsx";
+import {Switch as KSwitch} from "@kobalte/core";
 
 export function PickReaperPage() {
     const backendInfo = mainStore.state.backendInfo;
@@ -28,7 +29,7 @@ export function PickReaperPage() {
                     </Match>
                 </Switch>
             </p>
-            <div class="grow flex flex-col items-center justify-center gap-4">
+            <div class="grow my-4 flex flex-col items-center justify-center gap-4">
                 <ProminentChoice selected={!resolvedConfig.portable}
                                  icon={<MainInstallationIcon size="24"/>}
                                  topRightIndicator="Good default choice"
@@ -72,12 +73,23 @@ export function PickReaperPage() {
                     </div>
                 </ProminentChoice>
             </div>
+            <Show when={resolvedConfig.reaper_exe_exists}>
+                <KSwitch.Root class="self-center mb-4 flex flex-row gap-2"
+                              checked={mainStore.state.installerConfig.update_reaper}
+                              onChange={on => configureInstaller({updateReaper: on})}>
+                    <KSwitch.Label>Update REAPER if new version available</KSwitch.Label>
+                    <KSwitch.Input/>
+                    <KSwitch.Control>
+                        <KSwitch.Thumb class="toggle toggle-primary"
+                                       aria-checked={mainStore.state.installerConfig.update_reaper}/>
+                    </KSwitch.Control>
+                </KSwitch.Root>
+            </Show>
             <ButtonRow>
                 <NavButton onClick={() => navigateTo("customize")}>Continue</NavButton>
             </ButtonRow>
         </Page>
-    )
-        ;
+    );
 }
 
 async function configurePortable(forcePick: boolean) {

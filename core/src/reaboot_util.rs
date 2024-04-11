@@ -1,13 +1,13 @@
 use std::collections::HashSet;
-use std::env;
 use std::path::PathBuf;
+use std::{env, fs};
 
 use anyhow::{bail, Context};
 use url::Url;
 
 use reaboot_reapack::database::{CompatibilityInfo, Database};
 use reaboot_reapack::model::{
-    PackagePath, PackageUrl, PackageVersionRef, ParsePackageUrlError, VersionRef,
+    PackagePath, PackageUrl, PackageVersionRef, ParsePackageUrlError, VersionName, VersionRef,
 };
 
 use crate::api::{InstallationStage, InstallerConfig, ReabootBackendInfo, ResolvedInstallerConfig};
@@ -111,6 +111,7 @@ pub async fn resolve_config(config: InstallerConfig) -> anyhow::Result<ResolvedI
         concurrent_downloads: config.concurrent_downloads.unwrap_or(5),
         dry_run: config.dry_run,
         reaper_version: config.reaper_version.unwrap_or_default(),
+        update_reaper: config.update_reaper,
         skip_failed_packages: config.skip_failed_packages,
         recipe: config.recipe,
     };

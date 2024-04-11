@@ -18,7 +18,7 @@ use crate::preparation_report::PreparationReport;
 use crate::reaper_resource_dir::{
     ReaperResourceDir, REAPACK_INI_FILE_PATH, REAPACK_REGISTRY_DB_FILE_PATH,
 };
-use crate::reaper_util::extract_reaper_to_dir;
+use crate::reaper_util::{extract_reaper_to_dir, ReaperInstallerAsset};
 use crate::task_tracker::{TaskSummary, TaskTrackerListener};
 use crate::{reaboot_util, reaper_util, ToolDownload, ToolingChange};
 use anyhow::{bail, ensure, Context, Error};
@@ -120,8 +120,8 @@ impl<L: InstallerListener> Installer<L> {
         self.resolved_config.portable || cfg!(target_os = "windows")
     }
 
-    pub async fn determine_initial_installation_stage(&self) -> anyhow::Result<InstallationStage> {
-        reaboot_util::determine_initial_installation_stage(&self.resolved_config).await
+    pub fn resolved_config(&self) -> &ResolvedInstallerConfig {
+        &self.resolved_config
     }
 
     pub async fn install(mut self) -> Result<InstallationOutcome, InstallError> {
@@ -138,17 +138,8 @@ impl<L: InstallerListener> Installer<L> {
     }
 
     async fn install_internal(&mut self) -> Result<InstallationOutcome, InstallError> {
-        // Determine initial installation status, so that we know where to start off
-        let initial_installation_stage = self.determine_initial_installation_stage().await?;
         // Download and extract REAPER if necessary
-        let reaper_preparation_outcome =
-            if initial_installation_stage < InstallationStage::InstalledReaper {
-                let download = self.download_reaper().await?;
-                let outcome = self.prepare_reaper(download).await?;
-                Some(outcome)
-            } else {
-                None
-            };
+        let reaper_preparation_outcome = self.download_and_prepare_reaper_if_necessary().await?;
         // Prepare temporary directory
         self.prepare_temp_dir()?;
         // Download repository indexes
@@ -642,14 +633,43 @@ impl<L: InstallerListener> Installer<L> {
         Database::open(self.temp_reaper_resource_dir.reapack_registry_db_file()).await
     }
 
-    async fn download_reaper(&self) -> anyhow::Result<ToolDownload> {
+    async fn download_and_prepare_reaper_if_necessary(
+        &self,
+    ) -> anyhow::Result<Option<ReaperPreparationOutcome>> {
+        if self.resolved_config.reaper_exe_exists && !self.resolved_config.update_reaper {
+            return Ok(None);
+        }
+        // Check for latest REAPER version
         self.listener
             .installation_stage_changed(InstallationStage::CheckingLatestReaperVersion);
-        let installer_asset = reaper_util::get_latest_reaper_installer_asset(
+        let reaper_installer_asset = reaper_util::get_latest_reaper_installer_asset(
             self.resolved_config.platform,
             &self.resolved_config.reaper_version,
         )
         .await?;
+        // Skip download if version is up-to-date
+        if self.resolved_config.reaper_exe_exists {
+            if let Some(v) = self
+                .resolved_config
+                .reaper_resource_dir
+                .read_installed_version()
+            {
+                if v >= reaper_installer_asset.version {
+                    // No update necessary
+                    return Ok(None);
+                }
+            }
+        }
+        // Download
+        let download = self.download_reaper(reaper_installer_asset).await?;
+        let outcome = self.prepare_reaper(download).await?;
+        Ok(Some(outcome))
+    }
+
+    async fn download_reaper(
+        &self,
+        installer_asset: ReaperInstallerAsset,
+    ) -> anyhow::Result<ToolDownload> {
         let file = self
             .temp_dir_for_reaper_download
             .join(installer_asset.file_name);

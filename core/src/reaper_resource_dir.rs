@@ -1,10 +1,12 @@
 use crate::file_util::get_first_existing_parent_dir;
 
+use crate::api::InstallationStage;
 use anyhow::{ensure, Context};
+use reaboot_reapack::model::VersionName;
 use ref_cast::RefCast;
 use serde::Serialize;
-use std::env;
 use std::path::{Path, PathBuf};
+use std::{env, fs};
 use ts_rs::TS;
 
 #[derive(Clone, Eq, PartialEq, Debug, Serialize, TS, RefCast)]
@@ -50,6 +52,15 @@ impl ReaperResourceDir {
 
     pub fn reaper_ini_file(&self) -> PathBuf {
         self.join(REAPER_INI_FILE_PATH)
+    }
+
+    pub fn reaper_install_rev_file(&self) -> PathBuf {
+        self.join("reaper-install-rev.txt")
+    }
+
+    pub fn read_installed_version(&self) -> Option<VersionName> {
+        let rev = fs::read_to_string(self.reaper_install_rev_file()).ok()?;
+        rev.trim().parse().ok()
     }
 
     pub fn user_plugins_dir(&self) -> PathBuf {
