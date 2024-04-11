@@ -4,9 +4,16 @@
         version="1.1"
         style="display:block"
         viewBox="0 0 146.16481 155.8054"
-        width="146.16481"
-        height="155.8054"
+        fill="url(#0)"
+        width="300"
+        height="300"
         xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <linearGradient id="0" x1="0.5" y1="0" x2="0.5" y2="1">
+            <stop offset="0%" stop-color="#0E7490"/>
+            <stop offset="100%" stop-color="#06B6D4"/>
+        </linearGradient>
+    </defs>
     <path
             id="path981"
             style="opacity:1;fill-opacity:1"
