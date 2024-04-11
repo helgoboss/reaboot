@@ -14,7 +14,7 @@ export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
     const otherDownloads = reabootDownloads.filter(d => {
         return optimalDownloads.every(optimalDownload => d.label !== optimalDownload?.label);
     });
-    const getRecipeAsJson = () => JSON.stringify(props.recipe, null, "    ");
+    const getRecipeAsJson = () => JSON.stringify(props.recipe.raw, null, "    ");
     const copyRecipeMain = async () => {
         await copyTextToClipboard(getRecipeAsJson());
     };
