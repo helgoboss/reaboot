@@ -1,6 +1,6 @@
 [package]
 name = "reaboot-gui"
-description = "ReaBoot GUI - A graphical user interface for ReaBoot"
+description = "ReaBoot - a convenient all-in-one online installer for REAPER, ReaPack and arbitrary packages."
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

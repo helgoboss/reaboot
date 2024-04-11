@@ -2,8 +2,8 @@ name: Create release
 
 on:
   push:
-    branches:
-      - release
+    tags:
+      - 'v*'
 
 jobs:
   publish-tauri:
@@ -72,12 +72,6 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: npm run tauri build -- ${{ matrix.settings.args }}
 
-      #      - name: Upload artifact
-      #        uses: actions/upload-artifact@v4
-      #        with:
-      #          name: ${{ matrix.settings.dest }}
-      #          path: ${{ matrix.settings.src }}
-
       - name: Move main asset
         shell: bash
         run: |
@@ -91,31 +85,16 @@ jobs:
           mv target/release/bundle/msi/reaboot_*_x64_en-US.msi "./release-assets/reaboot-x64.msi"
           mv target/release/bundle/nsis/reaboot_*_x64-setup.exe "./release-assets/reaboot-x64-setup.exe"
 
-      #      - name: Create release
-      #        shell: bash
-      #        env:
-      #          GITHUB_TOKEN: ${{ github.TOKEN }}
-      #        run: |
-      #          gh release create --draft --prerelease --target v0.0.0
+      - name: Create release
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.TOKEN }}
+        run: |
+          gh release create --draft --prerelease --target ${{ github.ref_name }}
 
       - name: Upload all assets
         shell: bash
         env:
           GITHUB_TOKEN: ${{ github.TOKEN }}
         run: |
-          gh release upload v0.0.0 --clobber ./release-assets/*
-
-#      - uses: tauri-apps/tauri-action@v0
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-#          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-#          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-#          APPLE_ID: ${{ secrets.APPLE_ID }}
-#          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-#          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-#        with:
-#          projectPath: gui
-#          args: ${{ matrix.settings.args }}
-#          tagName: v__VERSION__
-#          releaseName: 'v__VERSION__'
+          gh release upload ${{ github.ref_name }} --clobber ./release-assets/*
