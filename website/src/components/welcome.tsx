@@ -49,7 +49,7 @@ export function Welcome(props: Props) {
                     </div>
                 </Show>
                 <p class="py-6">
-                    Want to share REAPER packages or complete REAPER distributions and make
+                    Want to share single REAPER packages or complete collections, making
                     them installable in seconds - even for beginners?
                 </p>
                 <A href="/share" class="btn btn-primary">Here's how!</A>
