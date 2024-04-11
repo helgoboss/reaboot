@@ -9,6 +9,8 @@ import {Recipe} from "../../../core/bindings/Recipe";
 import {recipeNameIsSpecial} from "../util/recipe-util";
 import {ParsedRecipe} from "reaboot-commons/src/recipe-util";
 
+const LATEST_REABOOT_VERSION = "0.1.0";
+
 export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
     const optimalDownloads = getOptimalReabootDownloads();
     const otherDownloads = reabootDownloads.filter(d => {
@@ -151,7 +153,7 @@ const reabootDownloads = [
 ];
 
 function buildDownloadUrl(download: ReabootDownload): string {
-    return `https://github.com/helgoboss/reaboot/releases/download/latest/${download.asset}`
+    return `https://github.com/helgoboss/reaboot/releases/download/v${LATEST_REABOOT_VERSION}/${download.asset}`
 }
 
 

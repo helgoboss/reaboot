@@ -5,6 +5,7 @@ import Install from './pages/install';
 import Faq from './pages/faq';
 import {Share} from "./pages/share";
 import Home from "./pages/home";
+import Beta from "./pages/beta";
 
 export const routes: RouteDefinition[] = [
     {
@@ -18,6 +19,10 @@ export const routes: RouteDefinition[] = [
     {
         path: '/faq',
         component: Faq,
+    },
+    {
+        path: '/beta',
+        component: Beta,
     },
     {
         path: '/share',

@@ -11,7 +11,10 @@ export function NormalPage(props: Props) {
         <header class="navbar bg-base-200">
             <div class="navbar-start"></div>
             <div class="navbar-center">
-                <A href="/" class="btn btn-ghost text-2xl">ReaBoot</A>
+                <A href="/" class="btn btn-ghost text-2xl">
+                    ReaBoot
+                </A>
+                <A href="/beta" class="card bg-warning text-warning-content px-4">Beta</A>
             </div>
             <div class="navbar-end"></div>
         </header>
