@@ -1,6 +1,5 @@
 use crate::file_util::get_first_existing_parent_dir;
 
-use crate::api::InstallationStage;
 use anyhow::{ensure, Context};
 use reaboot_reapack::model::VersionName;
 use ref_cast::RefCast;

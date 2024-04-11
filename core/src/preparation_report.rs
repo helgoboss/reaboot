@@ -437,7 +437,7 @@ impl<'a> Display for PreparationReportAsMarkdown<'a> {
                 self.write_3col_table_header(f, "Package", "Version", "Donate")?;
                 for o in &self.report.package_preparation_outcomes {
                     if let Some(url) = &o.donation_url {
-                        self.outcome_row(f, o, FormatAsLink(&url))?;
+                        self.outcome_row(f, o, FormatAsLink(url))?;
                     } else {
                         self.outcome_row(f, o, "")?;
                     }

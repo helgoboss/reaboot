@@ -1,13 +1,13 @@
 use std::collections::HashSet;
+use std::env;
 use std::path::PathBuf;
-use std::{env, fs};
 
 use anyhow::{bail, Context};
 use url::Url;
 
 use reaboot_reapack::database::{CompatibilityInfo, Database};
 use reaboot_reapack::model::{
-    PackagePath, PackageUrl, PackageVersionRef, ParsePackageUrlError, VersionName, VersionRef,
+    PackagePath, PackageUrl, PackageVersionRef, ParsePackageUrlError, VersionRef,
 };
 
 use crate::api::{InstallationStage, InstallerConfig, ReabootBackendInfo, ResolvedInstallerConfig};
