@@ -90,7 +90,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.TOKEN }}
         run: |
-          gh release create --draft --prerelease --target ${{ github.ref_name }}
+          gh release create ${{ github.ref_name }} --draft --prerelease
 
       - name: Upload all assets
         shell: bash
