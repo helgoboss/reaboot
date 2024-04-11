@@ -1,6 +1,6 @@
 import {A} from "@solidjs/router";
 import {Index, Show} from "solid-js";
-import ReabootLogo from '../../../commons/src/reaboot-logo.svg?component-solid';
+import ReabootLogo from './../assets/reaboot-logo.svg?component-solid';
 
 type Props = {
     poweredBy: boolean,
