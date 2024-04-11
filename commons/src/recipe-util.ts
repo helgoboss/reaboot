@@ -17,10 +17,6 @@ export type ParsedFeature = {
     packages: PackageUrl[],
 }
 
-export async function tryExtractRecipe(text: string): Promise<ParsedRecipe | null> {
-    return getOrNullAsync(() => extractRecipe(text));
-}
-
 export async function extractRecipe(text: string): Promise<ParsedRecipe> {
     const url = getOrNull(() => new URL(text));
     return url ? await getRecipeFromUrl(url) : parseRecipeFromRawString(text);
@@ -146,14 +142,6 @@ function parseFeature(feature: Feature): ParsedFeature {
 function getOrNull<R>(f: () => R): R | null {
     try {
         return f();
-    } catch {
-        return null;
-    }
-}
-
-async function getOrNullAsync<R>(f: () => Promise<R>): Promise<R | null> {
-    try {
-        return await f();
     } catch {
         return null;
     }

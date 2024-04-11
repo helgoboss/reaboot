@@ -6,21 +6,25 @@ import {Toast, toaster} from "@kobalte/core";
 import {FaSolidX} from "solid-icons/fa";
 
 export function showError(message: any) {
-    showToast("error", message);
+    showToast("alert-error", message);
 }
 
 export function showInfo(message: any) {
-    showToast("info", message);
+    showToast("alert-info", message);
+}
+
+export function showSuccess(message: any) {
+    showToast("alert-success", message);
 }
 
 export function showWarning(message: any) {
-    showToast("warning", message);
+    showToast("alert-warning", message);
 }
 
-function showToast(purpose: string, message: string) {
+function showToast(clazz: string, message: string) {
     toaster.show(props => (
-        <Toast.Root toastId={props.toastId} class={`alert alert-${purpose}`} duration={4000}>
-            <div class="flex flex-row">
+        <Toast.Root toastId={props.toastId} class={`alert ${clazz}`} duration={4000}>
+            <div class="flex flex-row justify-between">
                 <div>
                     <Toast.Description>
                         {message}

@@ -6,17 +6,17 @@ import {configureInstaller} from "./epics/install.ts";
 import {MainInstallationIcon, PortableInstallationIcon} from "./components/icons.tsx";
 import {navigateTo, showError, showWarning} from "./epics/common.tsx";
 import {GlobalDialog} from "./components/GlobalDialog.tsx";
-import {clipboard} from "@tauri-apps/api";
-import {getOrEmptyRecord, ParsedRecipe, tryExtractRecipe} from "reaboot-commons/src/recipe-util";
 import {Portal} from "solid-js/web";
 import {Toast} from "@kobalte/core";
+import {applyRecipeFromClipboard} from "./epics/welcome.ts";
 
 export function App() {
     keepSyncingStateFromBackendToStore();
     // Right at the beginning, we configure the installer exactly once with default values.
     // This makes the backend give us all necessary data.
     void configureInstaller({});
-    void detectInitialRecipe();
+    // Try applying recipe from clipboard. Fail silently.
+    void applyRecipeFromClipboard().catch(() => undefined);
     const resolvedConfig = () => mainStore.state.resolvedConfig;
     return <div class="w-screen h-screen flex flex-col min-h-0 select-none">
         <header class="flex-none p-4">
@@ -101,32 +101,4 @@ function keepSyncingStateFromBackendToStore() {
                 break;
         }
     });
-}
-
-async function detectInitialRecipe() {
-    const text = await clipboard.readText();
-    if (text == null) {
-        return;
-    }
-    const recipe = await tryExtractRecipe(text);
-    if (!recipe) {
-        return;
-    }
-    await configureInstaller({
-        recipe: recipe.raw,
-        selectedFeatures: getDefaultFeatureIdsFromRecipe(recipe)
-    });
-    mainStore.setParsedRecipe(recipe);
-}
-
-function getDefaultFeatureIdsFromRecipe(recipe: ParsedRecipe) {
-    const defaults = [];
-    const map = getOrEmptyRecord(recipe.features);
-    for (const featureId in map) {
-        const feature = map[featureId];
-        if (feature.raw.default) {
-            defaults.push(featureId);
-        }
-    }
-    return defaults;
 }
