@@ -1,10 +1,10 @@
 use crate::file_util::move_dir_contents;
+use crate::file_util::move_dir_contents;
 use crate::reaper_platform::ReaperPlatform;
-use anyhow::{anyhow, bail, ensure, Context};
+use anyhow::{bail, ensure, Context};
 
 use reaboot_reapack::model::{VersionName, VersionRef};
 
-use std::fs::File;
 use std::io::BufWriter;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -83,18 +83,20 @@ fn extract_reaper_for_macos_to_dir(
 ) -> anyhow::Result<()> {
     #[cfg(not(target_os = "macos"))]
     {
+        let _ = (dmg_path, dest_dir, temp_dir);
         bail!("It's not possible on a non-macOS system to extract REAPER for macOS");
     }
     #[cfg(target_os = "macos")]
     {
         fn convert_dmg_to_img(dmg_path: &Path, img_path: &PathBuf) -> anyhow::Result<()> {
-            let dmg_file = File::open(dmg_path).context("couldn't open REAPER DMG file")?;
+            let dmg_file = fs::File::open(dmg_path).context("couldn't open REAPER DMG file")?;
             let mut dmg_wiz = dmgwiz::DmgWiz::from_reader(dmg_file, dmgwiz::Verbosity::None)
-                .map_err(|e| anyhow!("could not read REAPER dmg file: {e}"))?;
-            let img_file = File::create(img_path).context("could not create REAPER img file")?;
-            dmg_wiz
-                .extract_all(BufWriter::new(img_file))
-                .map_err(|e| anyhow!("could not extract files from REAPER dmg file: {e}"))?;
+                .map_err(|e| anyhow::anyhow!("could not read REAPER dmg file: {e}"))?;
+            let img_file =
+                fs::File::create(img_path).context("could not create REAPER img file")?;
+            dmg_wiz.extract_all(BufWriter::new(img_file)).map_err(|e| {
+                anyhow::anyhow!("could not extract files from REAPER dmg file: {e}")
+            })?;
             Ok(())
         }
 
