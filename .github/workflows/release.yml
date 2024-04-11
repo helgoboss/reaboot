@@ -15,19 +15,19 @@ jobs:
         settings:
           - platform: 'macos-latest' # for Arm based macs (M1 and above).
             args: '--target aarch64-apple-darwin'
-            src: 'target/aarch64-apple-darwin/release/bundle/dmg/ReaBoot_*_aarch64.dmg'
+            src: 'target/aarch64-apple-darwin/release/bundle/dmg/reaboot_*_aarch64.dmg'
             dest: 'reaboot-arm64.dmg'
           - platform: 'macos-latest' # for Intel based macs.
             args: '--target x86_64-apple-darwin'
-            src: 'target/x86_64-apple-darwin/release/bundle/dmg/ReaBoot_*_x64.dmg'
+            src: 'target/x86_64-apple-darwin/release/bundle/dmg/reaboot_*_x64.dmg'
             dest: 'reaboot-x86_64.dmg'
           - platform: 'windows-latest'
             args: '--bundles msi,nsis'
-            src: 'target/release/ReaBoot.exe'
+            src: 'target/release/reaboot.exe'
             dest: 'reaboot-x64.exe'
           - platform: 'ubuntu-22.04' # for Tauri v1 you could replace this with ubuntu-20.04.
             args: '--bundles deb'
-            src: 'target/release/bundle/deb/ReaBoot_*_amd64.deb'
+            src: 'target/release/bundle/deb/reaboot_*_amd64.deb'
             dest: 'reaboot-x86_64.deb'
 
     runs-on: ${{ matrix.settings.platform }}
@@ -88,8 +88,8 @@ jobs:
         if: matrix.settings.platform == 'windows-latest'
         shell: bash
         run: |
-          mv target/release/bundle/msi/ReaBoot_*_x64_en-US.msi "./release-assets/reaboot-x64.msi"
-          mv target/release/bundle/nsis/ReaBoot_*-x64-setup.exe "./release-assets/reaboot-x64-setup.exe"
+          mv target/release/bundle/msi/reaboot_*_x64_en-US.msi "./release-assets/reaboot-x64.msi"
+          mv target/release/bundle/nsis/reaboot_*-x64-setup.exe "./release-assets/reaboot-x64-setup.exe"
 
       #      - name: Create release
       #        shell: bash

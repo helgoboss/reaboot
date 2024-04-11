@@ -6,7 +6,7 @@
     "distDir": "../dist"
   },
   "package": {
-    "productName": "ReaBoot"
+    "productName": "reaboot"
   },
   "tauri": {
     "allowlist": {
