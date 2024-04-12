@@ -7,8 +7,8 @@ type Props = {
 }
 
 export function Step(props: Props) {
-    return <div class="flex flex-col justify-center relative">
-        <div class="absolute -left-16">
+    return <div class="flex flex-col items-stretch gap-3 md:block md:relative">
+        <div class="self-center md:absolute md:-left-16 md:top-1/2 md:-translate-y-1/2">
             <div
                 class="w-9 h-9 rounded-full flex items-center justify-center bg-base-200 text-base-content">
                 {props.index + 1}

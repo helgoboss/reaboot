@@ -3,7 +3,7 @@ import {NormalPage} from "../components/normal-page";
 export default function Beta() {
     return (
         <NormalPage>
-            <div class="prose">
+            <div class="responsive-prose">
                 <h1 class="text-center">ReaBoot is currently being beta tested</h1>
                 <p class="font-bold">That means it's being tested by a wider audience and you should use it with
                     care.</p>

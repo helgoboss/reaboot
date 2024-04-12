@@ -18,7 +18,7 @@ export function NormalPage(props: Props) {
             </div>
             <div class="navbar-end"></div>
         </header>
-        <main class="grow min-h-0 overflow-y-auto flex flex-col items-center p-6">
+        <main class="grow min-h-0 overflow-y-auto flex flex-col p-6 sm:items-center">
             {props.children}
         </main>
         <Footer/>

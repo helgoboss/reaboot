@@ -24,7 +24,7 @@ export default function Install() {
 
     return (
         <div class="w-screen h-screen flex flex-row">
-            <main class="grow flex flex-col items-center p-6 overflow-y-auto">
+            <main class="grow flex flex-col p-6 overflow-y-auto sm:items-center">
                 <div class="grow flex flex-col">
                     <Switch>
                         <Match when={recipeResource.loading}>
@@ -32,11 +32,11 @@ export default function Install() {
                         </Match>
                         <Match when={recipeResource()}>
                             {recipe => <>
-                                <h1 class="text-center text-4xl font-bold">
+                                <h1 class="text-center text-xl lg:text-3xl font-bold">
                                     Let's install {displayRecipeHeading(recipe())}!
                                 </h1>
-                                <Tabs.Root value={via()} onChange={setVia} class="flex flex-col items-center">
-                                    <Tabs.List class="tabs tabs-boxed m-4">
+                                <Tabs.Root value={via()} onChange={setVia} class="flex flex-col">
+                                    <Tabs.List class="tabs tabs-boxed m-4 self-center">
                                         <Tabs.Trigger value="reaboot" class="tab data-[selected]:tab-active">
                                             Via ReaBoot
                                         </Tabs.Trigger>
@@ -57,7 +57,7 @@ export default function Install() {
                     </Switch>
                 </div>
             </main>
-            <header class="max-w-sm bg-base-200 flex flex-col overflow-y-auto">
+            <header class="max-w-sm bg-base-200 hidden overflow-y-auto lg:flex lg:flex-col">
                 <Welcome poweredBy={true} examples={false}/>
                 <Footer/>
             </header>

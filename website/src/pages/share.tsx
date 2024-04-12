@@ -16,7 +16,7 @@ export function Share() {
     });
     const installationUrl = () => createReabootInstallationUrl(payload());
     return <NormalPage>
-        <div class="prose">
+        <div class="responsive-prose">
             <h1>Share a recipe via ReaBoot</h1>
 
             <h2>ReaBoot installation link builder</h2>
@@ -75,10 +75,11 @@ export function Share() {
                                 <CopyField text={installationUrl}>
                                     Raw installation URL
                                 </CopyField>
-                                <CopyField text={() => `[url=${installationUrl()}]${recipe().raw.name}[/url]`}>
+                                <CopyField text={() => `[url=${installationUrl()}]Install ${recipe().raw.name}[/url]`}>
                                     REAPER forum link
                                 </CopyField>
-                                <CopyField text={() => `<a href="${installationUrl()}">${recipe().raw.name}</a>`}>
+                                <CopyField
+                                    text={() => `<a href="${installationUrl()}">Install ${recipe().raw.name}</a>`}>
                                     HTML link (for website embedding)
                                 </CopyField>
                             </div>

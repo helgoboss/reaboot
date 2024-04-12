@@ -1,3 +1,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.responsive-prose {
+    @apply prose prose-sm md:prose-lg;
+}
