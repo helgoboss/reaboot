@@ -52,12 +52,12 @@ export function Share() {
                 <Match when={recipeResource()}>
                     {recipe =>
                         <>
+                            <div class="alert alert-success mb-3">
+                                You are sharing a recipe named "{recipe().raw.name}" with&#32;
+                                {recipe().requiredPackages.length} required packages and&#32;
+                                {features().length} features.
+                            </div>
                             <Show when={installationUrl().length > MAX_URL_LENGTH}>
-                                <div class="alert alert-success mb-3">
-                                    You are sharing a recipe named "{recipe().raw.name}" with&#32;
-                                    {recipe().requiredPackages.length} required packages and&#32;
-                                    {features().length} features.
-                                </div>
                                 <div class="alert alert-warning">
                                     The generated URL contains more than {MAX_URL_LENGTH} characters. This could become
                                     a problem in some browsers! If you want to be on the safe side, consider putting the
