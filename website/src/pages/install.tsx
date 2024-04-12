@@ -35,7 +35,7 @@ export default function Install() {
                                 <h1 class="text-center text-xl lg:text-3xl font-bold">
                                     Let's install {displayRecipeHeading(recipe())}!
                                 </h1>
-                                <Tabs.Root value={via()} onChange={setVia} class="flex flex-col">
+                                <Tabs.Root value={via()} onChange={setVia} class="flex flex-col sm:items-center">
                                     <Tabs.List class="tabs tabs-boxed m-4 self-center">
                                         <Tabs.Trigger value="reaboot" class="tab data-[selected]:tab-active">
                                             Via ReaBoot

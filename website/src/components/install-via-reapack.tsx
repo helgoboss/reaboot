@@ -3,6 +3,7 @@ import {ParsedRecipe, parsePackageUrlFromRawString} from "reaboot-commons/src/re
 import {PackageUrl} from "../../../reapack/bindings/PackageUrl";
 import {Recipe} from "../../../core/bindings/Recipe";
 import {VersionRef} from "../../../reapack/bindings/VersionRef";
+import {RecipeRef} from "./recipe-ref";
 
 
 export function InstallViaReapack(props: { recipe: ParsedRecipe }) {
@@ -15,8 +16,11 @@ export function InstallViaReapack(props: { recipe: ParsedRecipe }) {
     const nonDefaultRemotes = createMemo(() => remotes().filter(r => !defaultRemotes.has(r)));
     const needsRestart = () => allPackageUrls().some(p => p.package_version_ref.package_path.category === "Extensions");
     return <div class="h-responsive-prose">
+        <div class="text-center">
+            Here's what you need to do if you want to install <RecipeRef recipe={props.recipe}/> manually via ReaPack.
+        </div>
         <h3>
-            If REAPER is not installed yet:
+            If REAPER is not installed yet
         </h3>
         <ol>
             <li>
@@ -31,7 +35,7 @@ export function InstallViaReapack(props: { recipe: ParsedRecipe }) {
             </li>
         </ol>
         <h3>
-            If ReaPack is not installed yet:
+            If ReaPack is not installed yet
         </h3>
         <ol>
             <li>
@@ -47,7 +51,7 @@ export function InstallViaReapack(props: { recipe: ParsedRecipe }) {
             </li>
         </ol>
         <h3>
-            Always:
+            Always
         </h3>
         <ol>
             <Show when={nonDefaultRemotes().length > 0}>

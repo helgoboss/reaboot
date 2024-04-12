@@ -5,9 +5,8 @@ import {FaSolidDownload} from "solid-icons/fa";
 import {Collapsible} from "@kobalte/core";
 import {CopyField} from "./copy-field";
 import {UAParser} from "ua-parser-js";
-import {Recipe} from "../../../core/bindings/Recipe";
-import {recipeNameIsSpecial} from "../util/recipe-util";
 import {ParsedRecipe} from "reaboot-commons/src/recipe-util";
+import {RecipeRef} from "./recipe-ref";
 
 const LATEST_REABOOT_VERSION = "0.1.0";
 
@@ -23,7 +22,7 @@ export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
 
     return <div class="grow flex flex-col max-w-lg items-stretch gap-6">
         <div class="text-center">
-            ReaBoot is the easiest way to install {displayRecipeNormal(props.recipe)}.
+            ReaBoot is the easiest way to install <RecipeRef recipe={props.recipe}/>.
             It automatically installs REAPER and ReaPack if necessary.
         </div>
         <Step index={0} title="Download ReaBoot">
@@ -154,13 +153,4 @@ const reabootDownloads = [
 
 function buildDownloadUrl(download: ReabootDownload): string {
     return `https://github.com/helgoboss/reaboot/releases/download/v${LATEST_REABOOT_VERSION}/${download.asset}`
-}
-
-
-function displayRecipeNormal(recipe: ParsedRecipe) {
-    if (recipeNameIsSpecial(recipe.raw.name)) {
-        return <span class="badge">{recipe.raw.name}</span>;
-    } else {
-        return recipe.raw.name;
-    }
 }
