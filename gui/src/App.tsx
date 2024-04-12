@@ -29,8 +29,8 @@ export function App() {
             <Show when={resolvedConfig()}>
                 {(conf) =>
                     <footer class="p-4 bg-base-300 text-base-content flex flex-row text-xs gap-3">
-                        <div class="text-left font-bold tooltip tooltip-right"
-                             data-tip="Folder in which REAPER saves user data, e.g. preferences and scripts.">
+                        <div class="text-left font-bold"
+                             title="Folder in which REAPER saves user data, e.g. preferences and scripts.">
                             REAPER resource path:
                         </div>
                         <div class="grow"></div>

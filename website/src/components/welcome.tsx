@@ -1,6 +1,6 @@
 import {A} from "@solidjs/router";
-import {Index, Show} from "solid-js";
 import ReabootLogo from './../assets/reaboot-logo.svg?component-solid';
+import {Index, Show} from "solid-js";
 
 type Props = {
     poweredBy: boolean,
@@ -20,28 +20,30 @@ export function Welcome(props: Props) {
                 }
                 <p class="py-6">
                     ReaBoot is a convenient all-in-one online installer for&#32;
-                    <span class="whitespace-nowrap"><a href="https://reaper.fm/" target="_blank"
-                                                       class="tooltip tooltip-success underline"
-                                                       data-tip="The DAW we all love">
+                    <span class="whitespace-nowrap">
+                        <a href="https://reaper.fm/" target="_blank"
+                           class="underline"
+                           title="The DAW we all love">
                             REAPER
-                        </a>,</span>&#32;
+                        </a>,
+                    </span>&#32;
                     <a href="https://reapack.com/" target="_blank"
-                       class="tooltip tooltip-success underline"
-                       data-tip="The standard package manager for REAPER">
+                       class="underline"
+                       title="The standard package manager for REAPER">
                         ReaPack
                     </a>
                     &#32;and arbitrary&#32;
-                    <span class="tooltip underline"
-                          data-tip="3rd-party add-ons for REAPER, e.g. scripts, extensions and themes">
+                    <span class="underline"
+                          title="3rd-party add-ons for REAPER, e.g. scripts, extensions and themes">
                                     packages
-                                </span>.
+                    </span>.
                 </p>
                 <Show when={props.examples}>
                     <div class="mb-3 font-bold">Some example links:</div>
                     <div class="flex flex-wrap justify-center gap-4">
                         <Index each={examples}>
                             {example =>
-                                <a href={example()[2]} class={`badge badge-outline whitespace-nowrap ${example()[1]}`}>
+                                <a href={example()[2]} class={`badge badge-outline h-auto ${example()[1]}`}>
                                     {example()[0]}
                                 </a>
                             }

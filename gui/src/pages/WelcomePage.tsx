@@ -14,18 +14,18 @@ export function WelcomePage() {
                         &#32;is a convenient all-in-one online installer for&#32;
                         <span class="whitespace-nowrap">
                             <a href="https://reaper.fm/" target="_blank"
-                               class="tooltip tooltip-success underline"
-                               data-tip="The DAW we all love">
+                               class="underline"
+                               title="The DAW we all love">
                                 REAPER
                             </a>,&#32;
                             <a href="https://reapack.com/" target="_blank"
-                               class="tooltip tooltip-success underline"
-                               data-tip="The standard package manager for REAPER">
+                               class="underline"
+                               title="The standard package manager for REAPER">
                                 ReaPack
                             </a>
                             &#32;and arbitrary&#32;
-                            <span class="tooltip underline"
-                                  data-tip="3rd-party add-ons for REAPER">
+                            <span class="underline"
+                                  title="3rd-party add-ons for REAPER such as scripts, extensions and themes">
                                 packages
                             </span>
                         </span>.
@@ -65,8 +65,8 @@ export function WelcomePage() {
                                     <div>
                                         <p>
                                             ReaBoot is currently running&#32;
-                                            <span class="tooltip underline"
-                                                  data-tip="That means it's not pre-configured and will by default install REAPER and ReaPack only.">
+                                            <span class="underline"
+                                                  title="That means it's not pre-configured and will by default install REAPER and ReaPack only.">
                                                 without recipe
                                             </span>.
                                             If you wanted to install something particular, please paste the recipe now!
