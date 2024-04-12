@@ -16,7 +16,7 @@ export function Share() {
     });
     const installationUrl = () => createReabootInstallationUrl(payload());
     return <NormalPage>
-        <div class="responsive-prose">
+        <div class="h-responsive-prose">
             <h1>Share a recipe via ReaBoot</h1>
 
             <h2>ReaBoot installation link builder</h2>
@@ -40,9 +40,9 @@ export function Share() {
                 <Match when={recipeResource.error}>
                     <div class="alert alert-error">
                         <div>
-                            <h3 class="text-error-content">
+                            <div class="text-error-content">
                                 You must enter a valid recipe, recipe URL or package URL!
-                            </h3>
+                            </div>
                             <div class="text-xs">
                                 <pre>{recipeResource.error.toString()}</pre>
                             </div>

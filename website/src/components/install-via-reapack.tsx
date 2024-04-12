@@ -14,7 +14,7 @@ export function InstallViaReapack(props: { recipe: ParsedRecipe }) {
     const remotes = createMemo(() => [...new Set(allPackageUrls().map(u => u.repository_url))]);
     const nonDefaultRemotes = createMemo(() => remotes().filter(r => !defaultRemotes.has(r)));
     const needsRestart = () => allPackageUrls().some(p => p.package_version_ref.package_path.category === "Extensions");
-    return <div class="responsive-prose">
+    return <div class="h-responsive-prose">
         <h3>
             If REAPER is not installed yet:
         </h3>

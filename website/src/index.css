@@ -2,6 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
-.responsive-prose {
+.h-responsive-prose {
     @apply prose prose-sm md:prose-lg;
+}
+
+.h-success {
+    @apply bg-success text-success-content;
+}
+
+.h-warning {
+    @apply bg-warning text-warning-content;
+}
+
+.h-error {
+    @apply bg-error text-error-content;
+}
+
+.h-info {
+    @apply bg-info text-info-content;
 }

@@ -14,7 +14,7 @@ export function NormalPage(props: Props) {
                 <A href="/" class="btn btn-ghost text-2xl">
                     ReaBoot
                 </A>
-                <A href="/beta" class="card bg-warning text-warning-content px-4">Beta</A>
+                <A href="/beta" class="card h-warning px-4">Beta</A>
             </div>
             <div class="navbar-end"></div>
         </header>

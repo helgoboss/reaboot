@@ -7,7 +7,7 @@ export function Footer() {
             <p>© 2024 <a href="https://www.helgoboss.org/" class="link">Helgoboss Projects</a></p>
         </aside>
         <A href="/faq" class="link">FAQ</A>
-        <A href="/beta" class="card bg-warning text-warning-content px-4">Beta</A>
+        <A href="/beta" class="card h-warning px-4">Beta</A>
         <a href="https://github.com/helgoboss/reaboot">
             <FaBrandsGithub/>
         </a>

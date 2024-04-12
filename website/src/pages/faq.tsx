@@ -3,7 +3,7 @@ import {NormalPage} from "../components/normal-page";
 export default function Faq() {
     return (
         <NormalPage>
-            <div class="responsive-prose">
+            <div class="h-responsive-prose">
                 <h1 class="text-center">Frequently Asked Questions</h1>
                 <dl>
                     <dt>
