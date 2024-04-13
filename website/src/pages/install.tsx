@@ -1,9 +1,7 @@
 import {createResource, Match, Switch} from 'solid-js';
 import {Params, useParams, useSearchParams} from "@solidjs/router";
-import {Recipe} from "../../../core/bindings/Recipe";
 import {extractRecipe, ParsedRecipe} from "reaboot-commons/src/recipe-util";
 import {Tabs} from "@kobalte/core";
-import {Welcome} from "../components/welcome";
 import {Footer} from "../components/footer";
 import {recipeNameIsSpecial} from "../util/recipe-util";
 import {InstallViaReaboot} from "../components/install-via-reaboot";
