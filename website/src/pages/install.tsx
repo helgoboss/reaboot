@@ -23,7 +23,7 @@ export default function Install() {
     };
 
     return (
-        <div class="w-screen h-screen flex flex-row">
+        <div class="w-screen h-screen flex flex-col">
             <main class="grow flex flex-col p-6 overflow-y-auto sm:items-center">
                 <div class="grow flex flex-col">
                     <Switch>
@@ -57,10 +57,7 @@ export default function Install() {
                     </Switch>
                 </div>
             </main>
-            <header class="max-w-sm bg-base-200 hidden overflow-y-auto lg:flex lg:flex-col">
-                <Welcome poweredBy={true} examples={false}/>
-                <Footer/>
-            </header>
+            <Footer poweredBy={true}/>
         </div>
     );
 }

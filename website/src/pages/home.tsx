@@ -5,7 +5,7 @@ export default function Home() {
     return (
         <NormalPage>
             <div class="flex flex-col gap-4 items-center lg:flex-row">
-                <Welcome poweredBy={false} examples={true}/>
+                <Welcome/>
                 <div>
                     <h2 class="text-center text-2xl mb-4 lg:hidden">Introduction video</h2>
                     <iframe

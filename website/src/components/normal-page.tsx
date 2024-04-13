@@ -21,6 +21,6 @@ export function NormalPage(props: Props) {
         <main class="grow min-h-0 overflow-y-auto flex flex-col p-6 sm:items-center">
             {props.children}
         </main>
-        <Footer/>
+        <Footer poweredBy={false}/>
     </div>
 }

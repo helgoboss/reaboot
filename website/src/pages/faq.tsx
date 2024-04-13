@@ -7,6 +7,14 @@ export default function Faq() {
                 <h1 class="text-center">Frequently Asked Questions</h1>
                 <dl>
                     <dt>
+                        What is ReaBoot?
+                    </dt>
+                    <dd>
+                        ReaBoot is a convenient all-in-one online installer for REAPER, ReaPack and arbitrary packages.
+                        You probably ended up here because someone wanted to give you an easy way to install REAPER
+                        scripts or extensions.
+                    </dd>
+                    <dt>
                         I'm afraid that ReaBoot creates dirty installations. Is it safer to install REAPER and ReaPack
                         by
                         hand?
@@ -51,6 +59,13 @@ export default function Faq() {
                     </dt>
                     <dd>
                         Yes. If not, let me know!
+                    </dd>
+                    <dt>
+                        Do I lock myself in by relying on ReaBoot installation links?
+                    </dt>
+                    <dd>
+                        No. All parts of ReaBoot are open-source (GPL-3) and will remain so, including the website
+                        you are currently seeing.
                     </dd>
                     <dt>
                         I would like to share not just packages but also apply user settings. Is that supported by

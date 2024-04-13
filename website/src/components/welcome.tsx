@@ -1,23 +1,12 @@
 import {A} from "@solidjs/router";
 import ReabootLogo from './../assets/reaboot-logo.svg?component-solid';
-import {Index, Show} from "solid-js";
+import {Index} from "solid-js";
 
-type Props = {
-    poweredBy: boolean,
-    examples: boolean
-}
-
-export function Welcome(props: Props) {
+export function Welcome() {
     return <div class="grow hero">
         <div class="hero-content text-center">
             <div class="flex flex-col items-center max-w-md">
                 <A href="/"><ReabootLogo class="h-32 mb-6"/></A>
-                {props.poweredBy && <h1>
-                    <span class="italic">Powered by</span>
-                    &#32;
-                    <A href="/" class="text-2xl font-bold">ReaBoot</A>
-                </h1>
-                }
                 <p class="py-6">
                     ReaBoot is a convenient all-in-one online installer for&#32;
                     <span class="whitespace-nowrap">
@@ -38,18 +27,16 @@ export function Welcome(props: Props) {
                                     packages
                     </span>.
                 </p>
-                <Show when={props.examples}>
-                    <div class="mb-3 font-bold">Some example links:</div>
-                    <div class="flex flex-wrap justify-center gap-4">
-                        <Index each={examples}>
-                            {example =>
-                                <a href={example()[2]} class={`badge badge-outline h-auto ${example()[1]}`}>
-                                    {example()[0]}
-                                </a>
-                            }
-                        </Index>
-                    </div>
-                </Show>
+                <div class="mb-3 font-bold">Some example links:</div>
+                <div class="flex flex-wrap justify-center gap-4">
+                    <Index each={examples}>
+                        {example =>
+                            <a href={example()[2]} class={`badge badge-outline h-auto ${example()[1]}`}>
+                                {example()[0]}
+                            </a>
+                        }
+                    </Index>
+                </div>
                 <p class="py-6">
                     Want to share single REAPER packages or complete collections, making
                     them installable in seconds - even for beginners?
