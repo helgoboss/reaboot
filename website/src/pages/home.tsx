@@ -3,9 +3,13 @@ import {A} from "@solidjs/router";
 import {createSignal, Index, JSX} from "solid-js";
 import ReabootLogo from './../assets/reaboot-logo.svg?component-solid';
 import {Tabs} from "@kobalte/core";
+import {makePersisted} from "@solid-primitives/storage";
 
 export default function Home() {
-    const [userType, setUserType] = createSignal("user");
+    const [userType, setUserType] = makePersisted(
+        createSignal("user"),
+        {name: "userType"}
+    );
     return (
         <Page>
             <div class="flex flex-col gap-4">

@@ -3,12 +3,16 @@ import {extractRecipe} from "reaboot-commons/src/recipe-util";
 import {Page} from "../components/page";
 import {CopyField} from "../components/copy-field";
 import {deconstructRecipe} from "../util/recipe-util";
+import {makePersisted} from "@solid-primitives/storage";
 
 const MAX_NICE_URL_LENGTH = 250;
 const MAX_URL_LENGTH = 2000;
 
 export function Share() {
-    const [payload, setPayload] = createSignal("");
+    const [payload, setPayload] = makePersisted(
+        createSignal(""),
+        {name: "sharedPayload"}
+    );
     const [recipeResource] = createResource(payload, extractRecipe);
     const features = createMemo(() => {
         if (recipeResource.state !== "ready") {
