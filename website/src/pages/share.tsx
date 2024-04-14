@@ -11,7 +11,7 @@ const MAX_URL_LENGTH = 2000;
 export function Share() {
     const [payload, setPayload] = makePersisted(
         createSignal(""),
-        {name: "sharedPayload"}
+        {name: "shared-payload"}
     );
     const [recipeResource] = createResource(payload, extractRecipe);
     const features = createMemo(() => {

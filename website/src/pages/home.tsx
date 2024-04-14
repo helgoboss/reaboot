@@ -8,7 +8,7 @@ import {makePersisted} from "@solid-primitives/storage";
 export default function Home() {
     const [userType, setUserType] = makePersisted(
         createSignal("user"),
-        {name: "userType"}
+        {name: "user-type"}
     );
     return (
         <Page>
