@@ -28,7 +28,7 @@ export default function Home() {
                                     ReaPack
                                 </a>
                                 &#32;and arbitrary&#32;
-                                <span class="underline"
+                                <span class="italic"
                                       title="3rd-party add-ons for REAPER, e.g. scripts, extensions and themes">
                                                 packages
                                 </span>.
@@ -50,7 +50,7 @@ export default function Home() {
                         <div class="card bg-base-200">
                             <div class="card-body">
                                 <Tabs.Content value="user" class="flex flex-col gap-6">
-                                    <h3 class="font-bold text-xl text-center">As a normal REAPER user ...</h3>
+                                    <h3 class="font-bold text-lg text-center">As a normal REAPER user ...</h3>
                                     <p>
                                         ... you are probably here for the&#32;
                                         <em>default installer</em>,
@@ -69,12 +69,12 @@ export default function Home() {
                                     </div>
                                 </Tabs.Content>
                                 <Tabs.Content value="dev" class="flex flex-col gap-6">
-                                    <h3 class="font-bold text-xl text-center">Already familiar with ReaBoot?</h3>
+                                    <h3 class="font-bold text-lg text-center">Already familiar with ReaBoot?</h3>
                                     <div class="text-center">
                                         <A href="/share" class="btn btn-secondary">Start creating installation
                                             links!</A>
                                     </div>
-                                    <h3 class="font-bold text-xl text-center">ReaBoot is for you ...</h3>
+                                    <h3 class="font-bold text-lg text-center">ReaBoot is for you ...</h3>
                                     <ul class="list-disc ml-5">
                                         <li>
                                             If you want to offer your users a really easy way to install your own
@@ -85,7 +85,7 @@ export default function Home() {
                                             extensions with friends.
                                         </li>
                                     </ul>
-                                    <h3 class="font-bold text-xl text-center">How does it work?</h3>
+                                    <h3 class="font-bold text-lg text-center">How does it work?</h3>
                                     <ol class="list-decimal ml-5">
                                         <li>You use this website to build a so-called &#32;<em>installation
                                             link</em>.
@@ -96,7 +96,7 @@ export default function Home() {
                                             extensions in seconds.
                                         </li>
                                     </ol>
-                                    <h2 class="font-bold text-xl text-center">Some example links</h2>
+                                    <h2 class="font-bold text-lg text-center">Some example links</h2>
                                     <p>
                                         The following links are example links, solely made for demonstrating ReaBoot's
                                         features. Don't share them!
@@ -110,7 +110,7 @@ export default function Home() {
                                             }
                                         </Index>
                                     </div>
-                                    <h3 class="font-bold text-xl text-center">Introduction video</h3>
+                                    <h3 class="font-bold text-lg text-center">Introduction video</h3>
                                     <iframe
                                         class="w-full aspect-video"
                                         width="560" height="315"
