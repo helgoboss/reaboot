@@ -1,6 +1,6 @@
 import {createMemo, createResource, createSignal, Match, Show, Switch} from "solid-js";
 import {extractRecipe} from "reaboot-commons/src/recipe-util";
-import {NormalPage} from "../components/normal-page";
+import {Page} from "../components/page";
 import {CopyField} from "../components/copy-field";
 
 const MAX_NICE_URL_LENGTH = 250;
@@ -16,7 +16,7 @@ export function Share() {
         return Object.values(recipeResource()!);
     });
     const installationUrl = () => createReabootInstallationUrl(payload());
-    return <NormalPage>
+    return <Page>
         <div class="h-responsive-prose">
             <h1>Share a recipe via ReaBoot</h1>
 
@@ -193,7 +193,7 @@ https://github.com/helgoboss/reaper-packages/raw/master/index.xml#p=Extensions/R
 https://github.com/ReaTeam/ReaScripts/raw/master/index.xml#p=Various/rodilab_Color%20palette.lua&v=latest`}</pre>
 
         </div>
-    </NormalPage>;
+    </Page>;
 }
 
 function createReabootInstallationUrl(payload: string): string {

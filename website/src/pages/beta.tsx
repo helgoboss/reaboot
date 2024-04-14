@@ -1,8 +1,8 @@
-import {NormalPage} from "../components/normal-page";
+import {Page} from "../components/page";
 
 export default function Beta() {
     return (
-        <NormalPage>
+        <Page>
             <div class="h-responsive-prose">
                 <h1 class="text-center">ReaBoot is currently being beta tested</h1>
                 <p class="font-bold">That means it's being tested by a wider audience and you should use it with
@@ -127,6 +127,6 @@ export default function Beta() {
                     </table>
                 </div>
             </div>
-        </NormalPage>
+        </Page>
     );
 }

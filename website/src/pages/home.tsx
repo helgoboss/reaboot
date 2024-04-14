@@ -1,4 +1,4 @@
-import {NormalPage} from "../components/normal-page";
+import {Page} from "../components/page";
 import {A} from "@solidjs/router";
 import {createSignal, Index, JSX} from "solid-js";
 import ReabootLogo from './../assets/reaboot-logo.svg?component-solid';
@@ -7,7 +7,7 @@ import {Tabs} from "@kobalte/core";
 export default function Home() {
     const [userType, setUserType] = createSignal("user");
     return (
-        <NormalPage>
+        <Page>
             <div class="flex flex-col gap-4">
                 <div class="grow hero">
                     <div class="hero-content text-center">
@@ -124,7 +124,7 @@ export default function Home() {
                     </Tabs.Root>
                 </div>
             </div>
-        </NormalPage>
+        </Page>
     );
 }
 

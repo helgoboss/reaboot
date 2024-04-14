@@ -1,8 +1,8 @@
-import {NormalPage} from "../components/normal-page";
+import {Page} from "../components/page";
 
 export default function Faq() {
     return (
-        <NormalPage>
+        <Page>
             <div class="h-responsive-prose">
                 <h1 class="text-center">Frequently Asked Questions</h1>
                 <dl>
@@ -78,6 +78,6 @@ export default function Faq() {
                     </dd>
                 </dl>
             </div>
-        </NormalPage>
+        </Page>
     );
 }
