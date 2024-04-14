@@ -40,10 +40,10 @@ export default function Home() {
                     <h2 class="font-bold text-2xl text-center">Please choose!</h2>
                     <Tabs.Root value={userType()} onChange={setUserType} class="flex flex-col sm:items-center">
                         <Tabs.List class="tabs tabs-boxed m-4 self-center">
-                            <Tabs.Trigger value="user" class="tab data-[selected]:tab-active">
+                            <Tabs.Trigger value="user" class="tab data-[selected]:tab-active !h-auto">
                                 I'm just a normal REAPER user!
                             </Tabs.Trigger>
-                            <Tabs.Trigger value="dev" class="tab data-[selected]:tab-active">
+                            <Tabs.Trigger value="dev" class="tab data-[selected]:tab-active !h-auto">
                                 I'm a script or extension developer!
                             </Tabs.Trigger>
                         </Tabs.List>

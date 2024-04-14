@@ -6,7 +6,11 @@ type Props = {
 }
 
 export function Footer(props: Props) {
-    return <footer class="text-xs p-4 bg-base-300 flex flex-row gap-4 justify-between items-center">
+    return <footer class="text-xs p-4 bg-base-300 flex flex-row gap-4 items-center"
+                   classList={{
+                       "justify-between": props.poweredBy,
+                       "justify-center sm:justify-between": !props.poweredBy,
+                   }}>
         <aside class="hidden sm:block">
             <p>© 2024 <a href="https://www.helgoboss.org/" class="link">Helgoboss Projects</a></p>
         </aside>
