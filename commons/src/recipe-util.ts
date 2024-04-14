@@ -113,6 +113,9 @@ async function fetchRecipeFromUrl(url: URL): Promise<ParsedRecipe> {
 }
 
 function parseRecipeFromRawString(text: string): ParsedRecipe {
+    if (text.trim().length === 0) {
+        throw new Error("Recipe is empty");
+    }
     const recipe = Convert.toRecipe(text);
     return parseRecipe(recipe);
 }

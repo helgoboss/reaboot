@@ -3,6 +3,7 @@ import {extractRecipe} from "reaboot-commons/src/recipe-util";
 import {NormalPage} from "../components/normal-page";
 import {CopyField} from "../components/copy-field";
 
+const MAX_NICE_URL_LENGTH = 250;
 const MAX_URL_LENGTH = 2000;
 
 export function Share() {
@@ -33,60 +34,85 @@ export function Share() {
                       oninput={evt => setPayload(evt.currentTarget.value)}>
                     {payload()}
             </textarea>
-            <Switch>
-                <Match when={recipeResource.loading}>
-                    <div>Loading...</div>
-                </Match>
-                <Match when={recipeResource.error}>
-                    <div class="alert alert-error">
-                        <div>
-                            <div class="text-error-content">
-                                You must enter a valid recipe, recipe URL or package URL!
-                            </div>
-                            <div class="text-xs">
-                                <pre>{recipeResource.error.toString()}</pre>
+            <Show when={payload().trim().length > 0}>
+                <Switch>
+                    <Match when={recipeResource.loading}>
+                        <div>Loading...</div>
+                    </Match>
+                    <Match when={recipeResource.error}>
+                        <div class="alert alert-error">
+                            <div>
+                                <div class="text-error-content">
+                                    You must enter a valid recipe, recipe URL or package URL!
+                                </div>
+                                <div class="text-xs">
+                                    <pre>{recipeResource.error.toString()}</pre>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </Match>
-                <Match when={recipeResource()}>
-                    {recipe =>
-                        <>
-                            <div class="alert alert-success mb-3">
-                                You are sharing a recipe named "{recipe().raw.name}" with&#32;
-                                {recipe().requiredPackages.length} required packages and&#32;
-                                {features().length} features.
-                            </div>
-                            <Show when={installationUrl().length > MAX_URL_LENGTH}>
-                                <div class="alert alert-warning">
-                                    The generated URL contains more than {MAX_URL_LENGTH} characters. This could become
-                                    a problem in some browsers! If you want to be on the safe side, consider putting the
-                                    recipe somewhere online
-                                    (e.g. in a GitHub repository or as a GitHub Gist) and providing an URL to the raw
-                                    content of that recipe.
+                    </Match>
+                    <Match when={recipeResource()}>
+                        {recipe =>
+                            <>
+                                <div class="alert alert-success mb-3">
+                                    You are sharing a recipe named "{recipe().raw.name}" with&#32;
+                                    {recipe().requiredPackages.length} required packages and&#32;
+                                    {features().length} features.
                                 </div>
-                            </Show>
 
-                            <h3>2. Give it a try</h3>
-                            <a href={installationUrl()} target="_blank">Try it!</a>
+                                <Switch>
+                                    <Match when={installationUrl().length > MAX_URL_LENGTH}>
+                                        <div class="alert alert-warning">
+                                            The generated URL contains more than {MAX_URL_LENGTH} characters. This could
+                                            become
+                                            a problem in some browsers! {PUT_RECIPE_ONLINE_TIP}
+                                        </div>
+                                    </Match>
+                                    <Match when={installationUrl().length > MAX_NICE_URL_LENGTH}>
+                                        <div class="alert alert-info">
+                                            The generated installation URL contains more
+                                            than {MAX_NICE_URL_LENGTH} characters.
+                                            This is absolutely fine if you share the URL as named link, because with
+                                            a proper link, users will not see the raw URL. But if you have to share
+                                            the raw URL for some reason, remember that long URLs are intimidating for
+                                            non-tech users! {PUT_RECIPE_ONLINE_TIP}
+                                        </div>
+                                    </Match>
+                                </Switch>
 
-                            <h3>3. Copy what you need</h3>
-                            <div class="flex flex-wrap gap-4">
-                                <CopyField text={installationUrl}>
-                                    Raw installation URL
-                                </CopyField>
-                                <CopyField text={() => `[url=${installationUrl()}]Install ${recipe().raw.name}[/url]`}>
-                                    REAPER forum link
-                                </CopyField>
-                                <CopyField
-                                    text={() => `<a href="${installationUrl()}">Install ${recipe().raw.name}</a>`}>
-                                    HTML link (for website embedding)
-                                </CopyField>
-                            </div>
-                        </>
-                    }
-                </Match>
-            </Switch>
+                                <h3>2. Give it a try</h3>
+                                <a href={installationUrl()} target="_blank">Try it!</a>
+
+                                <h3>3. Copy what you need</h3>
+                                <p>
+                                    Copy one of the following installation links (depending on where you want to share
+                                    it):
+                                </p>
+                                <div class="flex flex-wrap gap-4">
+                                    <CopyField
+                                        text={() => `[url=${installationUrl()}]Install ${recipe().raw.name}[/url]`}>
+                                        REAPER forum link
+                                    </CopyField>
+                                    <CopyField text={() => `[Install ${recipe().raw.name}(${installationUrl()})`}>
+                                        Discord/Slack link
+                                    </CopyField>
+                                    <CopyField
+                                        text={() => `<a href="${installationUrl()}">Install ${recipe().raw.name}</a>`}>
+                                        HTML link (for website embedding)
+                                    </CopyField>
+                                </div>
+                                <p>
+                                    It's best to share proper installation links and not the raw installation URL!
+                                    Just in case that you need the raw installation URL, here it is:
+                                </p>
+                                <pre>
+                                    {installationUrl()}
+                                </pre>
+                            </>
+                        }
+                    </Match>
+                </Switch>
+            </Show>
 
             <h2 id="explanations">Explanations</h2>
 
@@ -185,3 +211,5 @@ function minifyPayload(payload: string): string {
         return payload;
     }
 }
+
+const PUT_RECIPE_ONLINE_TIP = "Consider putting the recipe somewhere online (e.g. in a GitHub repository or as a GitHub Gist) and providing an URL to the raw content of that recipe.";
