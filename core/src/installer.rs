@@ -540,13 +540,19 @@ impl<L: InstallerListener> Installer<L> {
         )
         .context("moving ReaPack registry DB file failed")?;
         let dest_cache_dir = self.resolved_config.reaper_resource_dir.reapack_cache_dir();
-        for index in downloaded_indexes.values() {
-            let src_index_file_name = index
-                .temp_download_file
+        // It can happen that we downloaded one repository index by 2 different URLs. This would
+        // result in only one XML file on disk, but the hash map refers to it with 2 different
+        // URLs. It's important that we move the XML file only once.
+        let downloaded_index_files: HashSet<_> = downloaded_indexes
+            .values()
+            .map(|i| i.temp_download_file.clone())
+            .collect();
+        for downloaded_index_file in downloaded_index_files {
+            let src_index_file_name = downloaded_index_file
                 .file_name()
                 .context("ReaPack index file should have a name at this point")?;
             let dest_index_file = dest_cache_dir.join(src_index_file_name);
-            move_file_overwriting_with_backup(&index.temp_download_file, dest_index_file)
+            move_file_overwriting_with_backup(&downloaded_index_file, dest_index_file)
                 .context("moving cached ReaPack repository index failed")?;
         }
         Ok(())
@@ -780,12 +786,14 @@ impl<L: InstallerListener> Installer<L> {
                 let index_name = index.name.as_ref()?;
                 if !index_names_so_far.insert(index_name.clone()) {
                     // Another index was downloaded with the same index name. The first one wins!
+                    // We still need to include this URL-index pair because the package URLs
+                    // refer to specific repository URLs. If not, we would get a "Repository
+                    // unavailable" error at the end.
                     tracing::warn!(
                         msg = "Encountered multiple URLs returning index with same name",
                         index_name,
                         ignored_url = %download.download.url
                     );
-                    return None;
                 }
                 let final_cache_file_name = format!("{index_name}.xml");
                 let final_cache_file = download.download.file.with_file_name(final_cache_file_name);

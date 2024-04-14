@@ -2,6 +2,7 @@ import {createMemo, createResource, createSignal, Match, Show, Switch} from "sol
 import {extractRecipe} from "reaboot-commons/src/recipe-util";
 import {Page} from "../components/page";
 import {CopyField} from "../components/copy-field";
+import {deconstructRecipe} from "../util/recipe-util";
 
 const MAX_NICE_URL_LENGTH = 250;
 const MAX_URL_LENGTH = 2000;
@@ -16,19 +17,31 @@ export function Share() {
         return Object.values(recipeResource()!);
     });
     const installationUrl = () => createReabootInstallationUrl(payload());
+    const pasteExistingUrl = async () => {
+        const text = await navigator.clipboard.readText();
+        const recipe = await deconstructRecipe(text);
+        setPayload(JSON.stringify(recipe.raw, null, "    "));
+    };
     return <Page>
         <div class="h-responsive-prose">
-            <h1>Share a recipe via ReaBoot</h1>
+            <h1>Installation sharing</h1>
 
             <h2>ReaBoot installation link builder</h2>
 
-            <p>Let's create a link, so that you can easily share REAPER packages or complete REAPER distributions!</p>
+            <p>Let's create an installation link, so that you can easily share REAPER packages or complete REAPER
+                distributions!</p>
 
             <h3>
                 1. Enter the recipe, an URL to a recipe or just a package URL
             </h3>
 
             <p><a href="#explanations">Scroll down</a> to learn more about these terms.</p>
+
+            <div class="text-right">
+                <button class="btn btn-xs mb-3 text-end" onclick={() => pasteExistingUrl()}>
+                    Paste existing URL
+                </button>
+            </div>
 
             <textarea class="textarea textarea-bordered h-56 font-mono text-xs w-full mb-3"
                       oninput={evt => setPayload(evt.currentTarget.value)}>
