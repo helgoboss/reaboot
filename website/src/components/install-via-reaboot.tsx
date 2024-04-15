@@ -32,9 +32,6 @@ export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
             It automatically installs REAPER and ReaPack if necessary.
         </div>
         <Step index={0} title="Download ReaBoot">
-            <div>
-                {downloadConfig.downloadComment}
-            </div>
             <Switch>
                 <Match when={downloadConfig.mainDownloads.length > 0}>
                     <>
@@ -57,8 +54,11 @@ export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
                     </>
                 </Match>
             </Switch>
+            <div class="mt-1">
+                {downloadConfig.downloadComment}
+            </div>
             <div class="text-xs">
-                <div class="divider">Looking for another download?</div>
+                <div class="divider mt-1">Looking for another download?</div>
                 <div class="flex flex-wrap justify-center gap-3">
                     <For each={otherDownloads}>
                         {d =>
