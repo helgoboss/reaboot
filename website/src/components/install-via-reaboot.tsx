@@ -54,7 +54,7 @@ export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
                     </>
                 </Match>
             </Switch>
-            <div class="mt-1">
+            <div class="mt-1 text-xs">
                 {downloadConfig.downloadComment}
             </div>
             <div class="text-xs">
@@ -157,9 +157,9 @@ function getDownloadConfig(): ReabootDownloadConfig {
                     return {
                         downloadComment: <>
                             You are running an older Windows version. If you want to use the portable download, you will
-                            probably have to&#32;
+                            probably have to install the&#32;
                             <a class="link" href="https://go.microsoft.com/fwlink/p/?LinkId=2124703">
-                                install the Microsoft Edge WebView2 runtime
+                                Microsoft Edge WebView2 runtime
                             </a>
                             first, otherwise ReaBoot will not work.
                         </>,
@@ -178,10 +178,11 @@ function getDownloadConfig(): ReabootDownloadConfig {
                 default:
                     return {
                         downloadComment: <>
-                            If the portable download doesn't work, either use the installer or first&#32;
+                            {SUSPICIOUS_DOWNLOAD_COMMENT} If the portable download doesn't work, either use the
+                            installer or first install the&#32;
                             <a class="link" href="https://go.microsoft.com/fwlink/p/?LinkId=2124703">
-                                install the Microsoft Edge WebView2 runtime
-                            </a>! {SUSPICIOUS_DOWNLOAD_COMMENT}
+                                Microsoft Edge WebView2 runtime
+                            </a>.
                         </>,
                         mainDownloads: [windowsX64ExeDownload, windowsX64MsiDownload],
                         recommendFirstDownload: true,
