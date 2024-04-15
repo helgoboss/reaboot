@@ -41,7 +41,7 @@ pub enum InstalledVersionName {
 /// package type coming from the DB because it reads packages from the DB just for the purpose
 /// of checking which file locations are currently managed by ReaPack. And these file locations
 /// are available explicitly in the `path` column.
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub enum InstalledPackageType {
     Known(PackageType),
     Unknown(i32),

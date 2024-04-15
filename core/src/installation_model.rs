@@ -5,7 +5,8 @@ use crate::reaper_platform::ReaperPlatform;
 use camino::Utf8Path;
 use reaboot_reapack::index::{Category, IndexPackageType, IndexPlatform, Package, Source, Version};
 use reaboot_reapack::model::{
-    InstalledPackage, LightPackageId, LightVersionId, PackageType, PackageUrl, VersionRef,
+    InstalledPackage, InstalledPackageType, LightPackageId, LightVersionId, PackageType,
+    PackageUrl, VersionRef,
 };
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
@@ -73,20 +74,27 @@ pub fn determine_files_to_be_downloaded<'a>(
     let (sources, incompatible_versions) =
         resolve_package_sources_weeding_out_platform_incompatible_versions(versions, reaper_target);
     let (sources, recipe_file_conflicts) = weed_out_conflicting_files_within_recipes(sources);
-    let (mut files, conflicts_with_already_installed_files) =
-        weed_out_conflicting_files_with_already_installed_packages(
-            sources,
-            installed_packages_to_keep,
-        );
-    remove_incomplete_versions(&mut files, &recipe_file_conflicts);
+    let mut already_installed_findings = weed_out_conflicting_files_with_already_installed_packages(
+        sources,
+        installed_packages_to_keep,
+    );
+    // Remove incomplete versions
+    let incomplete_versions = identify_incomplete_versions(
+        &recipe_file_conflicts,
+        &already_installed_findings.conflicts,
+    );
+    already_installed_findings
+        .non_conflicting_files
+        .retain(|source| !incomplete_versions.contains(&source.version.id()));
+    // Build result
     let failures = PreDownloadFailures {
         package_descriptors_with_failures,
         version_conflicts,
         incompatible_versions,
         recipe_file_conflicts,
-        conflicts_with_already_installed_files,
+        conflicts_with_already_installed_files: already_installed_findings.conflicts,
     };
-    (files, failures)
+    (already_installed_findings.non_conflicting_files, failures)
 }
 
 pub struct QualifiedSource<'a> {
@@ -327,21 +335,49 @@ fn weed_out_conflicting_files_within_recipes(
 fn weed_out_conflicting_files_with_already_installed_packages<'a>(
     files: Vec<QualifiedSource<'a>>,
     installed_packages_to_keep: &'a [InstalledPackage],
-) -> (
-    Vec<QualifiedSource<'a>>,
-    Vec<ConflictWithAlreadyInstalledFile<'a>>,
-) {
+) -> ConflictWithAlreadyInstalledFindings<'a> {
     let already_installed_package_by_path: HashMap<_, _> = installed_packages_to_keep
         .iter()
         .flat_map(|p| p.files.iter().map(move |f| (&f.path, p)))
         .collect();
     let mut conflicts = vec![];
+    let mut installed_packages_to_be_removed = vec![];
     let non_conflicting_files = files
         .into_iter()
         .filter_map(|f| {
             let Some(installed) = already_installed_package_by_path.get(&f.relative_path) else {
+                // No conflict
                 return Some(f);
             };
+            // The file-to-be-installed conflicts with a file from an already installed package.
+            // Normally, this would let the installation fail. But ReaBoot introduces a special
+            // handling to be more tolerant in such situations:
+            // If the already installed package has the same author and package type, it
+            // will silently uninstall the already installed package to make place for the new one.
+            //
+            // Rationale: One author can easily spot and avoid conflicting files between his own
+            // packages, especially if they are in the same type. So if there *are* conflicts,
+            // it's most likely that they are intended! And even if not. Automatically uninstalled
+            // packages can be easily reinstalled, there's no data loss.
+            //
+            // Example: I introduced a new package "Helgobox" for beta testers that would eventually
+            // replace the package "ReaLearn". Naturally, they have conflicting files. Whenever
+            // the beta testers change from "ReaLearn" to "Helgobox" and back, they face conflicts.
+            // This special handling avoids those conflicts.
+            let author_matches = f
+                .version
+                .version
+                .author
+                .as_ref()
+                .is_some_and(|a| a == &installed.author);
+            let package_type_matches =
+                installed.typ == InstalledPackageType::Known(f.version.package.typ);
+            // if author_matches && package_type_matches {
+            //     // Special case!
+            //     installed_packages_to_be_removed.push(*installed);
+            //     return None;
+            // }
+            // Conflict
             let conflict = ConflictWithAlreadyInstalledFile {
                 new_file: f,
                 installed_package: &**installed,
@@ -350,7 +386,17 @@ fn weed_out_conflicting_files_with_already_installed_packages<'a>(
             None
         })
         .collect();
-    (non_conflicting_files, conflicts)
+    ConflictWithAlreadyInstalledFindings {
+        non_conflicting_files,
+        conflicts,
+        installed_packages_to_be_removed,
+    }
+}
+
+struct ConflictWithAlreadyInstalledFindings<'a> {
+    non_conflicting_files: Vec<QualifiedSource<'a>>,
+    conflicts: Vec<ConflictWithAlreadyInstalledFile<'a>>,
+    installed_packages_to_be_removed: Vec<&'a InstalledPackage>,
 }
 
 pub struct ConflictWithAlreadyInstalledFile<'a> {
@@ -389,20 +435,18 @@ where
     (cool_items, conflicts)
 }
 
-fn remove_incomplete_versions(
-    sources: &mut Vec<QualifiedSource>,
-    file_conflicts: &[RecipeFileConflict],
-) {
-    let incomplete_versions = identify_incomplete_versions(file_conflicts);
-    sources.retain(|source| !incomplete_versions.contains(&source.version.id()));
-}
-
 fn identify_incomplete_versions<'a>(
-    file_conflicts: &'a [RecipeFileConflict],
+    recipe_file_conflicts: &'a [RecipeFileConflict],
+    conflicts_with_already_installed_file: &'a [ConflictWithAlreadyInstalledFile],
 ) -> HashSet<LightVersionId<'a>> {
-    file_conflicts
+    recipe_file_conflicts
         .iter()
         .flat_map(|c| c.conflicting_files.iter())
+        .chain(
+            conflicts_with_already_installed_file
+                .iter()
+                .map(|f| &f.new_file),
+        )
         .map(|s| s.version.id())
         .collect()
 }
