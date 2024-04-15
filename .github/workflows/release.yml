@@ -13,22 +13,26 @@ jobs:
       fail-fast: false
       matrix:
         settings:
-          - platform: 'macos-latest' # for Arm based macs (M1 and above).
-            args: '--target aarch64-apple-darwin'
-            src: 'target/aarch64-apple-darwin/release/bundle/dmg/reaboot_*_aarch64.dmg'
-            dest: 'reaboot-arm64.dmg'
-          - platform: 'macos-latest' # for Intel based macs.
+          - platform: 'macos-latest'
+            args: '--bundles app --target aarch64-apple-darwin'
+            # We produce this ZIP from the "reaboot.app" directory
+            src: 'target/aarch64-apple-darwin/release/bundle/macos/reaboot.app.zip'
+            dir_containing_app_bundle: 'target/aarch64-apple-darwin/release/bundle/macos'
+            dest: 'reaboot-macos-arm64.zip'
+          - platform: 'macos-latest'
             args: '--target x86_64-apple-darwin'
-            src: 'target/x86_64-apple-darwin/release/bundle/dmg/reaboot_*_x64.dmg'
-            dest: 'reaboot-x86_64.dmg'
+            # We produce this ZIP from the "reaboot.app" directory
+            src: 'target/x86_64-apple-darwin/release/bundle/macos/reaboot.app.zip'
+            dir_containing_app_bundle: 'target/x86_64-apple-darwin/release/bundle/macos'
+            dest: 'reaboot-macos-x86_64.zip'
           - platform: 'windows-latest'
             args: '--bundles msi,nsis'
             src: 'target/release/reaboot.exe'
-            dest: 'reaboot-x64.exe'
+            dest: 'reaboot-windows-x64.exe'
           - platform: 'ubuntu-22.04' # for Tauri v1 you could replace this with ubuntu-20.04.
             args: '--bundles deb'
             src: 'target/release/bundle/deb/reaboot_*_amd64.deb'
-            dest: 'reaboot-x86_64.deb'
+            dest: 'reaboot-linux-x86_64.deb'
 
     runs-on: ${{ matrix.settings.platform }}
     steps:
@@ -72,13 +76,21 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: npm run tauri build -- ${{ matrix.settings.args }}
 
+      - name: Zip app bundle
+        if: matrix.settings.platform == 'macos-latest'
+        working-directory: ${{ matrix.settings.dir_containing_app_bundle }}
+        shell: bash
+        run: |
+          zip -r reaboot.app.zip reaboot.app
+
       - name: Move main asset
         shell: bash
         run: |
           mkdir -p release-assets
           mv ${{ matrix.settings.src }} "./release-assets/${{ matrix.settings.dest }}"
 
-      - name: Move secondary assets
+      # This is probably just temporary. We don't actually want installers.
+      - name: Move Windows installers
         if: matrix.settings.platform == 'windows-latest'
         shell: bash
         run: |
