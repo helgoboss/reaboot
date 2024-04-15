@@ -58,7 +58,7 @@ export default function Faq() {
                         Can I use ReaBoot while REAPER is running?
                     </dt>
                     <dd>
-                        Yes. If not, let me know!
+                        Yes. If not, let me know at info@helgoboss.org!
                     </dd>
                     <dt>
                         Do I lock myself in by relying on ReaBoot installation links?

@@ -1,7 +1,7 @@
 import {copyTextToClipboard} from "../util/clipboard-util";
 import {Step} from "./step";
 import {For, JSX, Match, Switch} from "solid-js";
-import {FaSolidDownload} from "solid-icons/fa";
+import {FaRegularThumbsUp, FaSolidDownload, FaSolidThumbsUp} from "solid-icons/fa";
 import {Collapsible} from "@kobalte/core";
 import {CopyField} from "./copy-field";
 import {UAParser} from "ua-parser-js";
@@ -35,17 +35,16 @@ export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
                         <div class="flex flex-row justify-center gap-2">
                             <For each={downloadConfig.mainDownloads}>
                                 {(d, i) =>
-                                    <div class="indicator">
-                                        {i() === 0 && downloadConfig.recommendFirstDownload &&
-                                            <span class="indicator-item badge badge-secondary">typing…</span>
+                                    <a href={buildDownloadUrl(d)}
+                                       onclick={() => copyRecipeMain()}
+                                       title={d.description}
+                                       class="btn btn-accent">
+                                        <FaSolidDownload/>
+                                        {d.label}
+                                        {downloadConfig.recommendFirstDownload && i() === 0 &&
+                                            <FaSolidThumbsUp title="Good default choice!"/>
                                         }
-                                        <a href={buildDownloadUrl(d)}
-                                           onclick={() => copyRecipeMain()}
-                                           class="btn btn-accent">
-                                            <FaSolidDownload/>
-                                            {d.label}
-                                        </a>
-                                    </div>
+                                    </a>
                                 }
                             </For>
                         </div>
@@ -58,6 +57,7 @@ export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
                     <For each={otherDownloads}>
                         {d =>
                             <a href={buildDownloadUrl(d)}
+                               title={d.description}
                                onclick={() => copyRecipeMain()}
                                class="btn btn-xs">
                                 {d.label}
@@ -108,12 +108,12 @@ type ReabootDownloadConfig = {
 type ReabootDownload = {
     label: string,
     asset: string,
+    description: string,
 }
 
 function getDownloadConfig(): ReabootDownloadConfig {
-    // console.log(UA_PARSER_RESULT.cpu.architecture);
     switch (UA_PARSER_RESULT.os.name) {
-        case "Mac OS":
+        case "macOS":
             switch (UA_PARSER_RESULT.cpu.architecture) {
                 case "arm64":
                     return {
@@ -121,11 +121,17 @@ function getDownloadConfig(): ReabootDownloadConfig {
                         mainDownloads: [macOsArm64Download, macOsX86_64Download],
                         recommendFirstDownload: true,
                     };
+                case "amd64":
+                    return {
+                        downloadComment: <>For your system:</>,
+                        mainDownloads: [macOsX86_64Download, macOsArm64Download],
+                        recommendFirstDownload: true,
+                    };
                 default:
                     return {
-                        downloadComment: <>Requires at least macOS 10.13</>,
-                        mainDownloads: [macOsX86_64Download, macOsArm64Download],
-                        recommendFirstDownload: false,
+                        downloadComment: <>For your system:</>,
+                        mainDownloads: [macOsArm64Download, macOsX86_64Download],
+                        recommendFirstDownload: true,
                     };
             }
         case "Windows":
@@ -182,29 +188,37 @@ function getDownloadConfig(): ReabootDownloadConfig {
 
 const UA_PARSER_RESULT = UAParser();
 
+const PREFER_PORTABLE_COMMENT = "If possible, take the portable download instead, because installing an installer is not optimal ;)";
+
 const macOsArm64Download = {
     label: "macOS ARM64",
     asset: "reaboot-macos-arm64.zip",
+    description: "Choose this if you have an Apple Silicon CPU (M1 or newer) and don't use Rosetta."
 };
 const macOsX86_64Download = {
     label: "macOS Intel",
-    asset: "reaboot-macos-x86_64.zip"
+    asset: "reaboot-macos-x86_64.zip",
+    description: "Choose this if you have an Intel 64-bit CPU or if you want to use Rosetta on an Apple Silicon CPU."
 };
 const linuxX86_64Download = {
     label: "Linux x86_64 (deb)",
     asset: "reaboot-linux-x86_64.deb",
+    description: "This is a package suitable for Debian and Debian derivatives (e.g. Ubuntu). If you need other Linux package formats, write to info@helgoboss.org.",
 };
 const windowsX64ExeDownload = {
     label: "Windows x64 (Portable)",
     asset: "reaboot-windows-x64.exe",
+    description: "This runs ReaBoot directly without having to install it first (recommended)."
 };
 const windowsX64NsisDownload = {
     label: "Windows x64 (NSIS Installer)",
     asset: "reaboot-windows-x64-setup.exe",
+    description: `This is an installer for ReaBoot that's compatible even with older Windows versions. ${PREFER_PORTABLE_COMMENT}`,
 };
 const windowsX64MsiDownload = {
     label: "Windows x64 (MSI Installer)",
     asset: "reaboot-windows-x64-setup.msi",
+    description: `This is a native installer for ReaBoot. ${PREFER_PORTABLE_COMMENT}`,
 };
 
 const reabootDownloads = [
