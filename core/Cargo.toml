@@ -61,6 +61,8 @@ camino.workspace = true
 serde_json.workspace = true
 # For generating JSON schema for the recipe type
 schemars.workspace = true
+# For not getting unnecessary user-facing UNC "\\?\C:\..." paths on Windows when canonicalizing
+dunce.workspace = true
 
 [target.'cfg(target_os = "macos")'.dependencies]
 # For converting the REAPER DMG file to a hfs+ IMG file. The DMG file itself can't be mounted silently.

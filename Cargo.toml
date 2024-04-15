@@ -59,6 +59,7 @@ termimad = "0.29.1"
 markdown = "1.0.0-alpha.16"
 plist = "1"
 schemars = "0.8.16"
+dunce = "1.0.4"
 
 [profile.release]
 # Those are the settings recommended on https://tauri.app/v1/guides/building/app-size/.

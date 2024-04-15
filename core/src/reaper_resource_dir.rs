@@ -17,7 +17,7 @@ impl ReaperResourceDir {
         let absolute_dir = if dir.exists() {
             // Dir exists
             ensure!(dir.is_dir(), "REAPER resource dir is a file");
-            dir.canonicalize()?
+            dunce::canonicalize(dir)?
         } else if dir.is_absolute() {
             // Dir doesn't exist and is absolute. Make sure that this actually can be
             // a directory.

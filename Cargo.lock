@@ -3840,6 +3840,7 @@ dependencies = [
  "dirs",
  "dmg",
  "dmgwiz",
+ "dunce",
  "enumset",
  "futures",
  "hex",
