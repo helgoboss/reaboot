@@ -108,8 +108,8 @@ jobs:
         if: matrix.settings.platform == 'windows-latest'
         shell: bash
         run: |
-          mv target/release/bundle/msi/reaboot_*_x64_en-US.msi "./release-assets/reaboot-x64.msi"
-          mv target/release/bundle/nsis/reaboot_*_x64-setup.exe "./release-assets/reaboot-x64-setup.exe"
+          mv target/release/bundle/msi/reaboot_*_x64_en-US.msi "./release-assets/reaboot-windows-x64-setup.msi"
+          mv target/release/bundle/nsis/reaboot_*_x64-setup.exe "./release-assets/reaboot-windows-x64-setup.exe"
 
       - name: Check if release exists
         id: check_release
