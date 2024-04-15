@@ -101,6 +101,7 @@ export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
 
 type ReabootDownloadConfig = {
     downloadComment: JSX.Element,
+    startComment?: JSX.Element,
     mainDownloads: ReabootDownload[],
     recommendFirstDownload: boolean,
 }
@@ -117,19 +118,19 @@ function getDownloadConfig(): ReabootDownloadConfig {
             switch (UA_PARSER_RESULT.cpu.architecture) {
                 case "arm64":
                     return {
-                        downloadComment: <>For your system:</>,
+                        downloadComment: <>{SUSPICIOUS_DOWNLOAD_COMMENT}</>,
                         mainDownloads: [macOsArm64Download, macOsX86_64Download],
                         recommendFirstDownload: true,
                     };
                 case "amd64":
                     return {
-                        downloadComment: <>For your system:</>,
+                        downloadComment: <>{SUSPICIOUS_DOWNLOAD_COMMENT}</>,
                         mainDownloads: [macOsX86_64Download, macOsArm64Download],
                         recommendFirstDownload: true,
                     };
                 default:
                     return {
-                        downloadComment: <>For your system:</>,
+                        downloadComment: <>{SUSPICIOUS_DOWNLOAD_COMMENT}</>,
                         mainDownloads: [macOsArm64Download, macOsX86_64Download],
                         recommendFirstDownload: true,
                     };
@@ -147,14 +148,16 @@ function getDownloadConfig(): ReabootDownloadConfig {
                             </a>
                             first, otherwise ReaBoot will not work.
                         </>,
+                        startComment: <>{WINDOWS_START_COMMENT}</>,
                         mainDownloads: [windowsX64NsisDownload, windowsX64ExeDownload],
                         recommendFirstDownload: true,
                     };
                 case "11":
                     return {
                         downloadComment: <>
-                            For your system:
+                            {SUSPICIOUS_DOWNLOAD_COMMENT}
                         </>,
+                        startComment: <>{WINDOWS_START_COMMENT}</>,
                         mainDownloads: [windowsX64ExeDownload, windowsX64MsiDownload],
                         recommendFirstDownload: true,
                     };
@@ -165,8 +168,9 @@ function getDownloadConfig(): ReabootDownloadConfig {
                             If the portable download doesn't work, either use the installer or first&#32;
                             <a class="link" href="https://go.microsoft.com/fwlink/p/?LinkId=2124703">
                                 install the Microsoft Edge WebView2 runtime
-                            </a>!
+                            </a>! {SUSPICIOUS_DOWNLOAD_COMMENT}
                         </>,
+                        startComment: <>{WINDOWS_START_COMMENT}</>,
                         mainDownloads: [windowsX64ExeDownload, windowsX64MsiDownload],
                         recommendFirstDownload: true,
                     };
@@ -189,6 +193,8 @@ function getDownloadConfig(): ReabootDownloadConfig {
 const UA_PARSER_RESULT = UAParser();
 
 const PREFER_PORTABLE_COMMENT = "If possible, take the portable download instead, because installing an installer is not optimal ;)";
+const SUSPICIOUS_DOWNLOAD_COMMENT = "It's possible that some browsers flag the download as suspicious. In this case, you need to ignore the warning!";
+const WINDOWS_START_COMMENT = "Microsoft Defender SmartScreen might complain when you try to start the installer: Windows protected your PC. In that case, just click \"More info\" and then \"Run anyway\".";
 
 const macOsArm64Download = {
     label: "macOS ARM64",
