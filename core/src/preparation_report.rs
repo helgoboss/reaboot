@@ -5,7 +5,7 @@ use crate::installation_model::{
     TempInstallFailure,
 };
 use crate::multi_downloader::DownloadError;
-use reaboot_reapack::model::{PackageId, VersionName, VersionRef};
+use reaboot_reapack::model::{PackageId, VersionId, VersionName, VersionRef};
 use std::fmt::{Display, Formatter, Write};
 
 #[derive(Debug)]
@@ -61,7 +61,10 @@ pub enum PackagePrepStatus {
     ConflictWithOtherPackagesToBeInstalled { relative_path: String },
     /// Package files that clash with other package files of already installed packages,
     /// because they would be installed to exactly the same destination (directory and name).
-    ConflictWithAlreadyInstalledFiles { relative_path: String },
+    ConflictWithAlreadyInstalledFiles {
+        relative_path: String,
+        installed_package_id: PackageId,
+    },
     /// Some files of the package couldn't be downloaded.
     DownloadFailed(anyhow::Error),
     /// Applying the package to the temporary ReaPack DB and simulating an installation to
@@ -142,13 +145,14 @@ impl PreparationReport {
                     })
             });
         let conflicts_with_already_installed_packages = download_plan
-            .files_conflicting_with_already_installed_files
+            .conflicts_with_already_installed_files
             .into_iter()
             .map(|s| PackagePreparationOutcome {
-                package_id: s.package_id().to_owned(),
-                version: Some(s.version.version.name.clone().into()),
+                package_id: s.new_file.package_id().to_owned(),
+                version: Some(s.new_file.version.version.name.clone().into()),
                 status: PackagePrepStatus::ConflictWithAlreadyInstalledFiles {
-                    relative_path: s.relative_path,
+                    relative_path: s.new_file.relative_path,
+                    installed_package_id: s.installed_package.package_id().to_owned(),
                 },
                 donation_url: None,
             });
@@ -267,10 +271,14 @@ impl Display for PackagePrepStatus {
                     "File conflict with other package to be installed: {relative_path}"
                 )?;
             }
-            PackagePrepStatus::ConflictWithAlreadyInstalledFiles { relative_path } => {
+            PackagePrepStatus::ConflictWithAlreadyInstalledFiles {
+                relative_path,
+                installed_package_id,
+            } => {
                 write!(
                     f,
-                    "File conflict with already installed package: {relative_path}"
+                    "File `{relative_path}` conflicts with already installed package `{}`",
+                    &installed_package_id.package
                 )?;
             }
             PackagePrepStatus::DownloadFailed(e) => {

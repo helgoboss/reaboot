@@ -26,7 +26,7 @@ pub struct PreDownloadFailures<'a> {
     pub recipe_file_conflicts: Vec<RecipeFileConflict<'a>>,
     /// Package files that clash with other package files of already installed packages,
     /// because they would be installed to exactly the same destination (directory and name).
-    pub files_conflicting_with_already_installed_files: Vec<QualifiedSource<'a>>,
+    pub conflicts_with_already_installed_files: Vec<ConflictWithAlreadyInstalledFile<'a>>,
 }
 
 pub struct TempInstallFailure<'a> {
@@ -63,7 +63,7 @@ pub enum PackageDescError {
 pub fn determine_files_to_be_downloaded<'a>(
     package_urls: &'a [PackageUrl],
     indexes: &'a HashMap<Url, DownloadedIndex>,
-    installed_packages_to_keep: &[InstalledPackage],
+    installed_packages_to_keep: &'a [InstalledPackage],
     reaper_target: ReaperPlatform,
 ) -> (Vec<QualifiedSource<'a>>, PreDownloadFailures<'a>) {
     let deduplicated_package_urls = HashSet::from_iter(package_urls);
@@ -73,7 +73,7 @@ pub fn determine_files_to_be_downloaded<'a>(
     let (sources, incompatible_versions) =
         resolve_package_sources_weeding_out_platform_incompatible_versions(versions, reaper_target);
     let (sources, recipe_file_conflicts) = weed_out_conflicting_files_within_recipes(sources);
-    let (mut files, files_conflicting_with_already_installed_files) =
+    let (mut files, conflicts_with_already_installed_files) =
         weed_out_conflicting_files_with_already_installed_packages(
             sources,
             installed_packages_to_keep,
@@ -84,7 +84,7 @@ pub fn determine_files_to_be_downloaded<'a>(
         version_conflicts,
         incompatible_versions,
         recipe_file_conflicts,
-        files_conflicting_with_already_installed_files,
+        conflicts_with_already_installed_files,
     };
     (files, failures)
 }
@@ -326,17 +326,36 @@ fn weed_out_conflicting_files_within_recipes(
 
 fn weed_out_conflicting_files_with_already_installed_packages<'a>(
     files: Vec<QualifiedSource<'a>>,
-    already_installed_non_replaced_packages: &[InstalledPackage],
-) -> (Vec<QualifiedSource<'a>>, Vec<QualifiedSource<'a>>) {
-    let already_installed_paths: HashSet<_> = already_installed_non_replaced_packages
+    installed_packages_to_keep: &'a [InstalledPackage],
+) -> (
+    Vec<QualifiedSource<'a>>,
+    Vec<ConflictWithAlreadyInstalledFile<'a>>,
+) {
+    let already_installed_package_by_path: HashMap<_, _> = installed_packages_to_keep
         .iter()
-        .flat_map(|p| p.files.iter())
-        .map(|f| &f.path)
+        .flat_map(|p| p.files.iter().map(move |f| (&f.path, p)))
         .collect();
-    let (files, conflicting_files): (Vec<_>, Vec<_>) = files
+    let mut conflicts = vec![];
+    let non_conflicting_files = files
         .into_iter()
-        .partition(|f| !already_installed_paths.contains(&f.relative_path));
-    (files, conflicting_files)
+        .filter_map(|f| {
+            let Some(installed) = already_installed_package_by_path.get(&f.relative_path) else {
+                return Some(f);
+            };
+            let conflict = ConflictWithAlreadyInstalledFile {
+                new_file: f,
+                installed_package: &**installed,
+            };
+            conflicts.push(conflict);
+            None
+        })
+        .collect();
+    (non_conflicting_files, conflicts)
+}
+
+pub struct ConflictWithAlreadyInstalledFile<'a> {
+    pub new_file: QualifiedSource<'a>,
+    pub installed_package: &'a InstalledPackage,
 }
 
 fn weed_out_conflicts<T, Key, Conflict>(
