@@ -475,7 +475,7 @@ impl<L: InstallerListener> Installer<L> {
         removed_package: &InstalledPackage,
     ) -> anyhow::Result<()> {
         let transaction = db.with_transaction(|mut transaction| async {
-            self.dry_remove_package(&mut transaction, &removed_package)
+            self.dry_remove_package(&mut transaction, removed_package)
                 .await?;
             Ok(transaction)
         });
@@ -647,7 +647,7 @@ impl<L: InstallerListener> Installer<L> {
                 },
             });
         if let Some(p) = plan.to_be_removed {
-            self.uninstall_package(&p)?;
+            self.uninstall_package(p)?;
         }
         // Copy/move
         self.listener.info(format!(

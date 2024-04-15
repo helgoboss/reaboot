@@ -393,7 +393,7 @@ fn weed_out_conflicting_files_with_already_installed_packages<'a>(
             // Conflict
             let conflict = ConflictWithAlreadyInstalledFile {
                 new_file: f,
-                installed_package: *installed,
+                installed_package: installed,
             };
             conflicts.push(conflict);
             None

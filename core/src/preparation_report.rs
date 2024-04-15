@@ -213,7 +213,7 @@ impl PreparationReport {
         Self {
             package_preparation_outcomes,
             tooling_changes,
-            package_removals: packages_to_be_removed.iter().cloned().collect(),
+            package_removals: packages_to_be_removed.to_vec(),
         }
     }
 
@@ -508,7 +508,7 @@ struct PackageVersionAsMarkdown<'a, V> {
 
 impl<'a, V: Display> Display for PackageVersionAsMarkdown<'a, V> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write_name_and_version(f, &self.package_id.package, self.version.as_ref())?;
+        write_name_and_version(f, self.package_id.package, self.version.as_ref())?;
         write!(f, " ({})", &self.package_id.category)?;
         Ok(())
     }
