@@ -1,7 +1,13 @@
 import {copyTextToClipboard} from "../util/clipboard-util";
 import {Step} from "./step";
-import {For, JSX, Match, Switch} from "solid-js";
-import {FaRegularThumbsUp, FaSolidDownload, FaSolidThumbsUp} from "solid-icons/fa";
+import {For, JSX, Match, Show, Switch} from "solid-js";
+import {
+    FaRegularLightbulb,
+    FaRegularThumbsUp,
+    FaSolidDownload,
+    FaSolidLightbulb,
+    FaSolidThumbsUp
+} from "solid-icons/fa";
 import {Collapsible} from "@kobalte/core";
 import {CopyField} from "./copy-field";
 import {UAParser} from "ua-parser-js";
@@ -72,11 +78,21 @@ export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
                 Start the installer and follow its instructions.
             </div>
             <Collapsible.Root class="collapse collapse-arrow data-[expanded]:collapse-open bg-base-300 ">
-                <Collapsible.Trigger class="collapse-title">
-                    Having issues?
+                <Collapsible.Trigger class="collapse-title flex flex-row items-center justify-center gap-2">
+                    <FaSolidLightbulb/> Having issues?
                 </Collapsible.Trigger>
                 <Collapsible.Content class="p-4 prose prose-sm">
                     <dl>
+                        <Show when={UA_PARSER_RESULT.os.name === "Windows"}>
+                            <dt>
+                                Issues with SmartScreen?
+                            </dt>
+                            <dd class="p-0">
+                                Microsoft Defender SmartScreen might complain when you try to start the installer:
+                                "Windows protected your PC". In that case, just click
+                                "More info" and then "Run anyway".
+                            </dd>
+                        </Show>
                         <dt>
                             Does the installer ask you for a recipe?
                         </dt>
@@ -101,7 +117,6 @@ export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
 
 type ReabootDownloadConfig = {
     downloadComment: JSX.Element,
-    startComment?: JSX.Element,
     mainDownloads: ReabootDownload[],
     recommendFirstDownload: boolean,
 }
@@ -148,7 +163,6 @@ function getDownloadConfig(): ReabootDownloadConfig {
                             </a>
                             first, otherwise ReaBoot will not work.
                         </>,
-                        startComment: <>{WINDOWS_START_COMMENT}</>,
                         mainDownloads: [windowsX64NsisDownload, windowsX64ExeDownload],
                         recommendFirstDownload: true,
                     };
@@ -157,7 +171,6 @@ function getDownloadConfig(): ReabootDownloadConfig {
                         downloadComment: <>
                             {SUSPICIOUS_DOWNLOAD_COMMENT}
                         </>,
-                        startComment: <>{WINDOWS_START_COMMENT}</>,
                         mainDownloads: [windowsX64ExeDownload, windowsX64MsiDownload],
                         recommendFirstDownload: true,
                     };
@@ -170,7 +183,6 @@ function getDownloadConfig(): ReabootDownloadConfig {
                                 install the Microsoft Edge WebView2 runtime
                             </a>! {SUSPICIOUS_DOWNLOAD_COMMENT}
                         </>,
-                        startComment: <>{WINDOWS_START_COMMENT}</>,
                         mainDownloads: [windowsX64ExeDownload, windowsX64MsiDownload],
                         recommendFirstDownload: true,
                     };
@@ -194,7 +206,6 @@ const UA_PARSER_RESULT = UAParser();
 
 const PREFER_PORTABLE_COMMENT = "If possible, take the portable download instead, because installing an installer is not optimal ;)";
 const SUSPICIOUS_DOWNLOAD_COMMENT = "It's possible that some browsers flag the download as suspicious. In this case, you need to ignore the warning!";
-const WINDOWS_START_COMMENT = "Microsoft Defender SmartScreen might complain when you try to start the installer: Windows protected your PC. In that case, just click \"More info\" and then \"Run anyway\".";
 
 const macOsArm64Download = {
     label: "macOS ARM64",
