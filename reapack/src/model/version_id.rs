@@ -18,7 +18,7 @@ pub struct LightVersionId<'a> {
 impl VersionId {
     fn borrowed(&self) -> LightVersionId {
         LightVersionId {
-            package_id: self.package_id.borrowed(),
+            package_id: self.package_id.to_borrowed(),
             version: &self.version,
         }
     }

@@ -35,7 +35,7 @@ pub struct TempInstallFailure<'a> {
     pub error: anyhow::Error,
 }
 
-pub struct PackageInstallationPlan<'a> {
+pub struct SinglePackageInstallationPlan<'a> {
     pub version: QualifiedVersion<'a>,
     pub to_be_moved: Vec<DownloadWithPayload<QualifiedSource<'a>>>,
     pub to_be_removed: Option<&'a InstalledPackage>,
@@ -61,12 +61,12 @@ pub enum PackageDescError {
 
 /// Returns all remaining files to be installed, with files belonging to incomplete packages
 /// removed.
-pub fn determine_files_to_be_downloaded<'a>(
+pub fn make_first_plan<'a>(
     package_urls: &'a [PackageUrl],
     indexes: &'a HashMap<Url, DownloadedIndex>,
     installed_packages_to_keep: &'a [InstalledPackage],
     reaper_target: ReaperPlatform,
-) -> (Vec<QualifiedSource<'a>>, PreDownloadFailures<'a>) {
+) -> FirstPlan<'a> {
     let deduplicated_package_urls = HashSet::from_iter(package_urls);
     let (versions, package_descriptors_with_failures) =
         resolve_and_deduplicate_versions(deduplicated_package_urls, indexes);
@@ -94,7 +94,18 @@ pub fn determine_files_to_be_downloaded<'a>(
         recipe_file_conflicts,
         conflicts_with_already_installed_files: already_installed_findings.conflicts,
     };
-    (already_installed_findings.non_conflicting_files, failures)
+    FirstPlan {
+        files_to_be_downloaded: already_installed_findings.non_conflicting_files,
+        pre_download_failures: failures,
+        installed_packages_to_be_removed: already_installed_findings
+            .installed_packages_to_be_removed,
+    }
+}
+
+pub struct FirstPlan<'a> {
+    pub files_to_be_downloaded: Vec<QualifiedSource<'a>>,
+    pub pre_download_failures: PreDownloadFailures<'a>,
+    pub installed_packages_to_be_removed: Vec<InstalledPackage>,
 }
 
 pub struct QualifiedSource<'a> {
@@ -341,7 +352,7 @@ fn weed_out_conflicting_files_with_already_installed_packages<'a>(
         .flat_map(|p| p.files.iter().map(move |f| (&f.path, p)))
         .collect();
     let mut conflicts = vec![];
-    let mut installed_packages_to_be_removed = vec![];
+    let mut installed_packages_to_be_removed = HashMap::new();
     let non_conflicting_files = files
         .into_iter()
         .filter_map(|f| {
@@ -372,15 +383,17 @@ fn weed_out_conflicting_files_with_already_installed_packages<'a>(
                 .is_some_and(|a| a == &installed.author);
             let package_type_matches =
                 installed.typ == InstalledPackageType::Known(f.version.package.typ);
-            // if author_matches && package_type_matches {
-            //     // Special case!
-            //     installed_packages_to_be_removed.push(*installed);
-            //     return None;
-            // }
+            if author_matches && package_type_matches {
+                // Special case!
+                installed_packages_to_be_removed
+                    .entry(installed.package_id())
+                    .or_insert_with(|| (*installed).clone());
+                return Some(f);
+            }
             // Conflict
             let conflict = ConflictWithAlreadyInstalledFile {
                 new_file: f,
-                installed_package: &**installed,
+                installed_package: *installed,
             };
             conflicts.push(conflict);
             None
@@ -389,14 +402,14 @@ fn weed_out_conflicting_files_with_already_installed_packages<'a>(
     ConflictWithAlreadyInstalledFindings {
         non_conflicting_files,
         conflicts,
-        installed_packages_to_be_removed,
+        installed_packages_to_be_removed: installed_packages_to_be_removed.into_values().collect(),
     }
 }
 
 struct ConflictWithAlreadyInstalledFindings<'a> {
     non_conflicting_files: Vec<QualifiedSource<'a>>,
     conflicts: Vec<ConflictWithAlreadyInstalledFile<'a>>,
-    installed_packages_to_be_removed: Vec<&'a InstalledPackage>,
+    installed_packages_to_be_removed: Vec<InstalledPackage>,
 }
 
 pub struct ConflictWithAlreadyInstalledFile<'a> {

@@ -4,7 +4,7 @@ use enumset::EnumSet;
 
 use std::fmt::{Display, Formatter};
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct InstalledPackage {
     pub remote: String,
     pub category: String,
@@ -16,7 +16,7 @@ pub struct InstalledPackage {
     pub files: Vec<InstalledFile>,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct InstalledFile {
     /// Path relative to REAPER resource folder.
     pub path: String,

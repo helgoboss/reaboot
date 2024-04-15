@@ -15,7 +15,7 @@ pub struct LightPackageId<'a> {
 }
 
 impl PackageId {
-    pub(crate) fn borrowed(&self) -> LightPackageId {
+    pub fn to_borrowed(&self) -> LightPackageId {
         LightPackageId {
             remote: &self.remote,
             category: &self.category,

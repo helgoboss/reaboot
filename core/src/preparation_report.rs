@@ -1,17 +1,23 @@
+use std::fmt::{Display, Formatter, Write};
+
+use reaboot_reapack::model::{
+    InstalledPackage, LightPackageId, PackageId, VersionName, VersionRef,
+};
+
 use crate::display_util::Separated;
 use crate::downloader::Download;
 use crate::installation_model::{
-    PackageDescError, PackageInstallationPlan, PreDownloadFailures, QualifiedSource,
+    PackageDescError, PreDownloadFailures, QualifiedSource, SinglePackageInstallationPlan,
     TempInstallFailure,
 };
 use crate::multi_downloader::DownloadError;
-use reaboot_reapack::model::{PackageId, VersionId, VersionName, VersionRef};
-use std::fmt::{Display, Formatter, Write};
 
 #[derive(Debug)]
 pub struct PreparationReport {
     pub package_preparation_outcomes: Vec<PackagePreparationOutcome>,
     pub tooling_changes: Vec<ToolingChange>,
+    /// This contains only removals without replacements
+    pub package_removals: Vec<InstalledPackage>,
 }
 
 #[derive(Clone, Debug)]
@@ -81,12 +87,13 @@ pub enum PackagePrepStatus {
 impl PreparationReport {
     pub fn new(
         tooling_changes: Vec<ToolingChange>,
-        download_plan: PreDownloadFailures,
+        pre_download_failures: PreDownloadFailures,
         download_errors: Vec<DownloadError<QualifiedSource>>,
         temp_install_failures: Vec<TempInstallFailure>,
-        package_installation_plans: &[PackageInstallationPlan],
+        packages_to_be_removed: &[InstalledPackage],
+        package_installation_plans: &[SinglePackageInstallationPlan],
     ) -> Self {
-        let not_found = download_plan
+        let not_found = pre_download_failures
             .package_descriptors_with_failures
             .into_iter()
             .map(|failure| PackagePreparationOutcome {
@@ -103,7 +110,7 @@ impl PreparationReport {
                 donation_url: None,
             });
         let version_conflicts =
-            download_plan
+            pre_download_failures
                 .version_conflicts
                 .into_iter()
                 .map(|conflict| PackagePreparationOutcome {
@@ -119,7 +126,7 @@ impl PreparationReport {
                     donation_url: None,
                 });
         let incompatible_versions =
-            download_plan
+            pre_download_failures
                 .incompatible_versions
                 .into_iter()
                 .map(|version| PackagePreparationOutcome {
@@ -128,7 +135,7 @@ impl PreparationReport {
                     status: PackagePrepStatus::Incompatible,
                     donation_url: None,
                 });
-        let conflicts_with_other_packages_to_be_installed = download_plan
+        let conflicts_with_other_packages_to_be_installed = pre_download_failures
             .recipe_file_conflicts
             .into_iter()
             .flat_map(|conflict| {
@@ -144,7 +151,7 @@ impl PreparationReport {
                         donation_url: None,
                     })
             });
-        let conflicts_with_already_installed_packages = download_plan
+        let conflicts_with_already_installed_packages = pre_download_failures
             .conflicts_with_already_installed_files
             .into_iter()
             .map(|s| PackagePreparationOutcome {
@@ -206,6 +213,7 @@ impl PreparationReport {
         Self {
             package_preparation_outcomes,
             tooling_changes,
+            package_removals: packages_to_be_removed.iter().cloned().collect(),
         }
     }
 
@@ -418,6 +426,22 @@ impl<'a> Display for PreparationReportAsMarkdown<'a> {
                 f.write_char('\n')?;
             }
         }
+        if !self.report.package_removals.is_empty() {
+            heading_count += 1;
+            self.write_heading(
+                f,
+                "package removal",
+                self.report.package_removals.len(),
+                skipped_suffix,
+            )?;
+            for removal in &self.report.package_removals {
+                let version_markdown = PackageVersionAsMarkdown {
+                    package_id: removal.package_id(),
+                    version: Some(&removal.version),
+                };
+                writeln!(f, "- {version_markdown}")?;
+            }
+        }
         if summary.replacements > 0 {
             heading_count += 1;
             self.write_heading(
@@ -453,7 +477,11 @@ impl<'a> Display for PreparationReportAsMarkdown<'a> {
             } else {
                 for o in &self.report.package_preparation_outcomes {
                     if o.status.category() == PackageStatusCategory::Addition {
-                        writeln!(f, "- {}", PackageVersionAsMarkdown(o))?;
+                        let version_markdown = PackageVersionAsMarkdown {
+                            package_id: o.package_id.to_borrowed(),
+                            version: o.version.as_ref(),
+                        };
+                        writeln!(f, "- {version_markdown}")?;
                     }
                 }
             }
@@ -473,12 +501,15 @@ impl<'a> Display for FormatAsLink<'a> {
     }
 }
 
-struct PackageVersionAsMarkdown<'a>(&'a PackagePreparationOutcome);
+struct PackageVersionAsMarkdown<'a, V> {
+    package_id: LightPackageId<'a>,
+    version: Option<V>,
+}
 
-impl<'a> Display for PackageVersionAsMarkdown<'a> {
+impl<'a, V: Display> Display for PackageVersionAsMarkdown<'a, V> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write_name_and_version(f, &self.0.package_id.package, self.0.version.as_ref())?;
-        write!(f, " ({})", &self.0.package_id.category)?;
+        write_name_and_version(f, &self.package_id.package, self.version.as_ref())?;
+        write!(f, " ({})", &self.package_id.category)?;
         Ok(())
     }
 }

@@ -8,7 +8,7 @@ use crate::file_util::{
     get_first_existing_parent_dir, move_dir_contents, move_file, move_file_overwriting_with_backup,
 };
 use crate::installation_model::{
-    determine_files_to_be_downloaded, PackageInstallationPlan, QualifiedSource, TempInstallFailure,
+    make_first_plan, QualifiedSource, SinglePackageInstallationPlan, TempInstallFailure,
 };
 use crate::multi_downloader::{
     DownloadError, DownloadResult, DownloadWithPayload, MultiDownloader,
@@ -23,7 +23,7 @@ use crate::task_tracker::{TaskSummary, TaskTrackerListener};
 use crate::{reaboot_util, reaper_util, ToolDownload, ToolingChange};
 use anyhow::{bail, ensure, Context, Error};
 use enumset::EnumSet;
-use reaboot_reapack::database::Database;
+use reaboot_reapack::database::{Database, DatabaseTransaction};
 use reaboot_reapack::index::{Index, IndexSection, NormalIndexSection};
 use reaboot_reapack::model::{
     Config, InstalledFile, InstalledPackage, InstalledPackageType, InstalledVersionName,
@@ -149,14 +149,16 @@ impl<L: InstallerListener> Installer<L> {
             .gather_already_installed_packages(&downloaded_indexes)
             .await?;
         // Determine files to be downloaded, weeding out pre-download failures
-        let (files_to_be_downloaded, pre_download_failures) = determine_files_to_be_downloaded(
+        let first_plan = make_first_plan(
             &self.resolved_config.package_urls,
             &downloaded_indexes,
             &package_status_quo.installed_packages_to_keep,
             self.resolved_config.platform,
         );
         // Download packages
-        let package_download_results = self.download_packages(files_to_be_downloaded).await;
+        let package_download_results = self
+            .download_packages(first_plan.files_to_be_downloaded)
+            .await;
         // Weed out incomplete downloads
         let (successful_downloads, download_errors) =
             weed_out_download_errors(package_download_results);
@@ -166,6 +168,7 @@ impl<L: InstallerListener> Installer<L> {
                 &downloaded_indexes,
                 successful_downloads,
                 &package_status_quo.installed_packages_to_be_replaced,
+                &first_plan.installed_packages_to_be_removed,
             )
             .await?;
         // Create preparation report
@@ -179,9 +182,10 @@ impl<L: InstallerListener> Installer<L> {
         }
         let preparation_report = PreparationReport::new(
             tooling_changes,
-            pre_download_failures,
+            first_plan.pre_download_failures,
             download_errors,
             temp_install_failures,
+            &first_plan.installed_packages_to_be_removed,
             &package_installation_plans,
         );
         if self.resolved_config.dry_run {
@@ -209,8 +213,11 @@ impl<L: InstallerListener> Installer<L> {
         self.apply_reapack_state(&downloaded_indexes)
             .context("applying ReaPack state failed")?;
         // Apply packages
-        self.install_packages(package_installation_plans)
-            .context("moving packages failed")?;
+        self.install_packages(
+            &first_plan.installed_packages_to_be_removed,
+            package_installation_plans,
+        )
+        .context("moving packages failed")?;
         // Build final outcome
         let outcome = InstallationOutcome {
             preparation_report,
@@ -316,15 +323,20 @@ impl<L: InstallerListener> Installer<L> {
         downloaded_indexes: &'a HashMap<Url, DownloadedIndex>,
         successful_downloads: Vec<DownloadWithPayload<QualifiedSource<'a>>>,
         installed_packages_to_be_replaced: &'a [InstalledPackage],
+        installed_packages_to_be_removed: &'a [InstalledPackage],
     ) -> anyhow::Result<(
-        Vec<PackageInstallationPlan<'a>>,
+        Vec<SinglePackageInstallationPlan<'a>>,
         Vec<TempInstallFailure<'a>>,
     )> {
         self.listener
             .installation_stage_changed(InstallationStage::PreparingReaPackState);
         self.create_or_update_reapack_ini_file(downloaded_indexes)?;
         let outcome = self
-            .create_or_update_reapack_db(successful_downloads, installed_packages_to_be_replaced)
+            .create_or_update_reapack_db(
+                successful_downloads,
+                installed_packages_to_be_replaced,
+                installed_packages_to_be_removed,
+            )
             .await?;
         Ok((outcome.package_installation_plans, outcome.package_failures))
     }
@@ -333,6 +345,7 @@ impl<L: InstallerListener> Installer<L> {
         &'a self,
         successful_downloads: Vec<DownloadWithPayload<QualifiedSource<'a>>>,
         installed_packages_to_be_replaced: &'a [InstalledPackage],
+        installed_packages_to_be_removed: &'a [InstalledPackage],
     ) -> anyhow::Result<TempInstallOutcome> {
         // Create/migrate ReaPack database
         let reapack_db_file = self.temp_reaper_resource_dir.reapack_registry_db_file();
@@ -343,7 +356,11 @@ impl<L: InstallerListener> Installer<L> {
         }
         // Update ReaPack database
         let application_plan = self
-            .update_reapack_db(successful_downloads, installed_packages_to_be_replaced)
+            .update_reapack_db(
+                successful_downloads,
+                installed_packages_to_be_replaced,
+                installed_packages_to_be_removed,
+            )
             .await?;
         Ok(application_plan)
     }
@@ -388,7 +405,9 @@ impl<L: InstallerListener> Installer<L> {
         &'a self,
         downloads: Vec<DownloadWithPayload<QualifiedSource<'a>>>,
         installed_packages_to_be_replaced: &'a [InstalledPackage],
+        installed_packages_to_be_removed: &'a [InstalledPackage],
     ) -> anyhow::Result<TempInstallOutcome> {
+        // Make some transformations
         let mut replace_package_by_id: HashMap<_, _> = installed_packages_to_be_replaced
             .iter()
             .map(|p| (p.package_id(), p))
@@ -400,16 +419,33 @@ impl<L: InstallerListener> Installer<L> {
                 .or_default()
                 .push(download);
         }
+        // Open temporary ReaPack DB
         let mut outcome = TempInstallOutcome::default();
         let mut db = self.open_temp_reapack_db().await?;
+        // Remove existing packages
+        for p in installed_packages_to_be_removed {
+            self.update_reapack_db_for_one_removed_package(&mut db, p)
+                .await?;
+        }
+        let files_of_removed_packages = installed_packages_to_be_removed
+            .iter()
+            .flat_map(|p| p.files.iter().map(|f| &f.path))
+            .collect();
+        // Add new packages
         for (version_id, downloads) in downloads_by_version {
             let replace_package = replace_package_by_id.remove(&version_id.package_id);
             let install_result = self
-                .update_reapack_db_for_one_package(&mut db, version_id, &downloads, replace_package)
+                .update_reapack_db_for_one_new_package(
+                    &mut db,
+                    version_id,
+                    &downloads,
+                    replace_package,
+                    &files_of_removed_packages,
+                )
                 .await;
             match install_result {
                 Ok(_) => {
-                    let plan = PackageInstallationPlan {
+                    let plan = SinglePackageInstallationPlan {
                         version: downloads
                             .first()
                             .expect("there must be at least one download at this point")
@@ -433,12 +469,47 @@ impl<L: InstallerListener> Installer<L> {
         Ok(outcome)
     }
 
-    async fn update_reapack_db_for_one_package<'a>(
+    async fn update_reapack_db_for_one_removed_package(
+        &self,
+        db: &mut Database,
+        removed_package: &InstalledPackage,
+    ) -> anyhow::Result<()> {
+        let transaction = db.with_transaction(|mut transaction| async {
+            self.dry_remove_package(&mut transaction, &removed_package)
+                .await?;
+            Ok(transaction)
+        });
+        transaction.await?;
+        Ok(())
+    }
+
+    async fn dry_remove_package(
+        &self,
+        transaction: &mut DatabaseTransaction<'_>,
+        p: &InstalledPackage,
+    ) -> anyhow::Result<()> {
+        // Dry remove installed package files
+        for file in &p.files {
+            let absolute_path = self
+                .resolved_config
+                .reaper_resource_dir
+                .get()
+                .join(&file.path);
+            dry_remove_file(&absolute_path)?;
+        }
+        // Remove package from DB
+        self.listener.info(format!("Remove package {p} from DB..."));
+        transaction.remove_package(p.package_id()).await?;
+        Ok(())
+    }
+
+    async fn update_reapack_db_for_one_new_package<'a>(
         &self,
         db: &mut Database,
         version_id: LightVersionId<'a>,
         downloads: &[DownloadWithPayload<QualifiedSource<'a>>],
         replace_package: Option<&InstalledPackage>,
+        files_of_removed_packages: &HashSet<&String>,
     ) -> anyhow::Result<()> {
         // Prepare data to be inserted into DB
         let first_download = downloads
@@ -479,22 +550,12 @@ impl<L: InstallerListener> Installer<L> {
         // Dry-remove files, dry-remove package, add package to DB and dry-move/copy files ...
         // all within one database transaction. Our atomic unit at this stage is a package.
         let transaction = db.with_transaction(|mut transaction| async {
-            let mut relative_paths_to_be_replaced = HashSet::new();
-            if let Some(p) = replace_package {
-                // Dry remove installed package files
-                for file in &p.files {
-                    relative_paths_to_be_replaced.insert(&file.path);
-                    let absolute_path = self
-                        .resolved_config
-                        .reaper_resource_dir
-                        .get()
-                        .join(&file.path);
-                    dry_remove_file(&absolute_path)?;
-                }
-                // Remove package from DB
-                self.listener.info(format!("Remove package {p} from DB..."));
-                transaction.remove_package(package_id).await?;
-            }
+            let relative_paths_to_be_replaced: HashSet<_> = if let Some(p) = replace_package {
+                self.dry_remove_package(&mut transaction, p).await?;
+                p.files.iter().map(|f| &f.path).collect()
+            } else {
+                HashSet::new()
+            };
             // Add package to DB
             self.listener
                 .info(format!("Add package {} to DB...", version_id));
@@ -505,6 +566,12 @@ impl<L: InstallerListener> Installer<L> {
                     // Dry-moving this file would fail because there's still another ReaPack
                     // managed file at this location belonging to this package. We are going to
                     // remove it eventually when applying the package, so that's fine.
+                    continue;
+                }
+                if files_of_removed_packages.contains(&download.payload.relative_path) {
+                    // Dry-moving this file would fail because there's still another ReaPack
+                    // managed file at this location belonging to another package that has been
+                    // marked for removal. We are going to remove it eventually, so that's fine.
                     continue;
                 }
                 let src_file = &download.download.file;
@@ -558,14 +625,21 @@ impl<L: InstallerListener> Installer<L> {
         Ok(())
     }
 
-    fn install_packages(&self, plans: Vec<PackageInstallationPlan>) -> anyhow::Result<()> {
+    fn install_packages(
+        &self,
+        packages_to_be_removed: &[InstalledPackage],
+        plans: Vec<SinglePackageInstallationPlan>,
+    ) -> anyhow::Result<()> {
+        for p in packages_to_be_removed {
+            self.uninstall_package(p)?;
+        }
         for plan in plans {
-            self.apply_package(plan)?;
+            self.install_package(plan)?;
         }
         Ok(())
     }
 
-    fn apply_package(&self, plan: PackageInstallationPlan) -> anyhow::Result<()> {
+    fn install_package(&self, plan: SinglePackageInstallationPlan) -> anyhow::Result<()> {
         self.listener
             .installation_stage_changed(InstallationStage::InstallingPackage {
                 package: PackageInfo {
@@ -573,17 +647,7 @@ impl<L: InstallerListener> Installer<L> {
                 },
             });
         if let Some(p) = plan.to_be_removed {
-            // Remove files
-            self.listener
-                .info(format!("Deleting files of existing package {p}"));
-            for file in &p.files {
-                let path = self
-                    .resolved_config
-                    .reaper_resource_dir
-                    .get()
-                    .join(&file.path);
-                fs::remove_file(path).context("couldn't remove file of package to be replaced")?;
-            }
+            self.uninstall_package(&p)?;
         }
         // Copy/move
         self.listener.info(format!(
@@ -598,6 +662,21 @@ impl<L: InstallerListener> Installer<L> {
                 .get()
                 .join(download.payload.relative_path);
             move_file(&src_file, &dest_file, false)?;
+        }
+        Ok(())
+    }
+
+    fn uninstall_package(&self, p: &InstalledPackage) -> Result<(), Error> {
+        // Remove files
+        self.listener
+            .info(format!("Deleting files of existing package {p}"));
+        for file in &p.files {
+            let path = self
+                .resolved_config
+                .reaper_resource_dir
+                .get()
+                .join(&file.path);
+            fs::remove_file(path).context("couldn't remove file of package to be replaced")?;
         }
         Ok(())
     }
@@ -1067,5 +1146,5 @@ pub enum InstallError {
 #[derive(Default)]
 struct TempInstallOutcome<'a> {
     package_failures: Vec<TempInstallFailure<'a>>,
-    package_installation_plans: Vec<PackageInstallationPlan<'a>>,
+    package_installation_plans: Vec<SinglePackageInstallationPlan<'a>>,
 }
