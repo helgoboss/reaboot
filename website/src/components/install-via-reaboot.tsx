@@ -1,6 +1,6 @@
 import {copyTextToClipboard} from "../util/clipboard-util";
 import {Step} from "./step";
-import {For, Match, Switch} from "solid-js";
+import {For, JSX, Match, Switch} from "solid-js";
 import {FaSolidDownload} from "solid-icons/fa";
 import {Collapsible} from "@kobalte/core";
 import {CopyField} from "./copy-field";
@@ -8,12 +8,12 @@ import {UAParser} from "ua-parser-js";
 import {ParsedRecipe} from "reaboot-commons/src/recipe-util";
 import {RecipeRef} from "./recipe-ref";
 
-const LATEST_REABOOT_VERSION = "0.1.0";
+const LATEST_REABOOT_VERSION = "0.2.0";
 
 export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
-    const optimalDownloads = getOptimalReabootDownloads();
+    const downloadConfig = getDownloadConfig();
     const otherDownloads = reabootDownloads.filter(d => {
-        return optimalDownloads.every(optimalDownload => d.label !== optimalDownload?.label);
+        return downloadConfig.mainDownloads.every(optimalDownload => d.label !== optimalDownload?.label);
     });
     const getRecipeAsJson = () => JSON.stringify(props.recipe.raw, null, "    ");
     const copyRecipeMain = async () => {
@@ -26,31 +26,30 @@ export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
             It automatically installs REAPER and ReaPack if necessary.
         </div>
         <Step index={0} title="Download ReaBoot">
+            <div>
+                {downloadConfig.downloadComment}
+            </div>
             <Switch>
-                <Match when={optimalDownloads.length > 0}>
+                <Match when={downloadConfig.mainDownloads.length > 0}>
                     <>
-                        <div>
-                            For your system:
-                        </div>
                         <div class="flex flex-row justify-center gap-2">
-                            <For each={optimalDownloads}>
-                                {d =>
-                                    <a href={buildDownloadUrl(d)}
-                                       onclick={() => copyRecipeMain()}
-                                       class="btn btn-accent">
-                                        <FaSolidDownload/>
-                                        {d.label}
-                                    </a>
+                            <For each={downloadConfig.mainDownloads}>
+                                {(d, i) =>
+                                    <div class="indicator">
+                                        {i() === 0 && downloadConfig.recommendFirstDownload &&
+                                            <span class="indicator-item badge badge-secondary">typing…</span>
+                                        }
+                                        <a href={buildDownloadUrl(d)}
+                                           onclick={() => copyRecipeMain()}
+                                           class="btn btn-accent">
+                                            <FaSolidDownload/>
+                                            {d.label}
+                                        </a>
+                                    </div>
                                 }
                             </For>
                         </div>
                     </>
-                </Match>
-                <Match when={true}>
-                    <div>
-                        ReaBoot is currently not available for your system.
-                        Try installation via ReaPack instead!
-                    </div>
                 </Match>
             </Switch>
             <div class="text-xs">
@@ -100,54 +99,120 @@ export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
     </div>
 }
 
+type ReabootDownloadConfig = {
+    downloadComment: JSX.Element,
+    mainDownloads: ReabootDownload[],
+    recommendFirstDownload: boolean,
+}
+
 type ReabootDownload = {
     label: string,
     asset: string,
 }
 
-function getOptimalReabootDownloads(): ReabootDownload[] {
-    const parser = UAParser();
-    switch (parser.os.name) {
+function getDownloadConfig(): ReabootDownloadConfig {
+    // console.log(UA_PARSER_RESULT.cpu.architecture);
+    switch (UA_PARSER_RESULT.os.name) {
         case "Mac OS":
-            return [macOsArm64Download, macOsX86_64Download];
+            switch (UA_PARSER_RESULT.cpu.architecture) {
+                case "arm64":
+                    return {
+                        downloadComment: <>For your system:</>,
+                        mainDownloads: [macOsArm64Download, macOsX86_64Download],
+                        recommendFirstDownload: true,
+                    };
+                default:
+                    return {
+                        downloadComment: <>Requires at least macOS 10.13</>,
+                        mainDownloads: [macOsX86_64Download, macOsArm64Download],
+                        recommendFirstDownload: false,
+                    };
+            }
         case "Windows":
-            return [windowsX64Download];
+            switch (UA_PARSER_RESULT.os.version) {
+                case "7":
+                case "8":
+                    return {
+                        downloadComment: <>
+                            You are running an older Windows version. If you want to use the portable download, you will
+                            probably have to&#32;
+                            <a class="link" href="https://go.microsoft.com/fwlink/p/?LinkId=2124703">
+                                install the Microsoft Edge WebView2 runtime
+                            </a>
+                            first, otherwise ReaBoot will not work.
+                        </>,
+                        mainDownloads: [windowsX64NsisDownload, windowsX64ExeDownload],
+                        recommendFirstDownload: true,
+                    };
+                case "11":
+                    return {
+                        downloadComment: <>
+                            For your system:
+                        </>,
+                        mainDownloads: [windowsX64ExeDownload, windowsX64MsiDownload],
+                        recommendFirstDownload: true,
+                    };
+                // Windows 10 or not detected
+                default:
+                    return {
+                        downloadComment: <>
+                            If the portable download doesn't work, either use the installer or first&#32;
+                            <a class="link" href="https://go.microsoft.com/fwlink/p/?LinkId=2124703">
+                                install the Microsoft Edge WebView2 runtime
+                            </a>!
+                        </>,
+                        mainDownloads: [windowsX64ExeDownload, windowsX64MsiDownload],
+                        recommendFirstDownload: true,
+                    };
+            }
         case "Linux":
-            return [linuxX86_64Download];
-        // switch (parser.cpu.architecture) {
-        //     case "amd64":
-        //         return linuxX86_64Download;
-        //     case "arm64":
-        //         return linuxAarch64Download;
-        //     default:
-        //         return null;
-        // }
+            return {
+                downloadComment: <>Requires at least glibc 2.35 (e.g. Ubuntu 22.04+)</>,
+                mainDownloads: [linuxX86_64Download],
+                recommendFirstDownload: false,
+            };
         default:
-            return [];
+            return {
+                downloadComment: <>ReaBoot is not available for your system. Try installation via ReaPack instead!</>,
+                mainDownloads: [],
+                recommendFirstDownload: false,
+            };
     }
 }
 
+const UA_PARSER_RESULT = UAParser();
+
 const macOsArm64Download = {
     label: "macOS ARM64",
-    asset: "reaboot-arm64.dmg"
+    asset: "reaboot-macos-arm64.zip",
 };
 const macOsX86_64Download = {
     label: "macOS Intel",
-    asset: "reaboot-x86_64.dmg"
+    asset: "reaboot-macos-x86_64.zip"
 };
 const linuxX86_64Download = {
     label: "Linux x86_64 (deb)",
-    asset: "reaboot-x86_64.deb",
+    asset: "reaboot-linux-x86_64.deb",
 };
-const windowsX64Download = {
-    label: "Windows x64",
-    asset: "reaboot-x64.exe",
+const windowsX64ExeDownload = {
+    label: "Windows x64 (Portable)",
+    asset: "reaboot-windows-x64.exe",
+};
+const windowsX64NsisDownload = {
+    label: "Windows x64 (NSIS Installer)",
+    asset: "reaboot-windows-x64-setup.exe",
+};
+const windowsX64MsiDownload = {
+    label: "Windows x64 (MSI Installer)",
+    asset: "reaboot-windows-x64-setup.msi",
 };
 
 const reabootDownloads = [
     macOsArm64Download,
     macOsX86_64Download,
-    windowsX64Download,
+    windowsX64ExeDownload,
+    windowsX64NsisDownload,
+    windowsX64MsiDownload,
     linuxX86_64Download,
 ];
 
