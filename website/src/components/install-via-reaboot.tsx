@@ -147,7 +147,7 @@ function getDownloadConfig(): ReabootDownloadConfig {
                     return {
                         downloadComment: <>{SUSPICIOUS_DOWNLOAD_COMMENT}</>,
                         mainDownloads: [macOsArm64Download, macOsX86_64Download],
-                        recommendFirstDownload: true,
+                        recommendFirstDownload: false,
                     };
             }
         case "Windows":
