@@ -110,7 +110,7 @@ export function Share() {
                                         text={() => `[url=${installationUrl()}]Install ${recipe().raw.name}[/url]`}>
                                         REAPER forum link
                                     </CopyField>
-                                    <CopyField text={() => `[Install ${recipe().raw.name}(${installationUrl()})`}>
+                                    <CopyField text={() => `[Install ${recipe().raw.name}](${installationUrl()})`}>
                                         Discord/Slack link
                                     </CopyField>
                                     <CopyField
