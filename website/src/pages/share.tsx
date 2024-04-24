@@ -18,7 +18,7 @@ export function Share() {
         if (recipeResource.state !== "ready") {
             return [];
         }
-        return Object.values(recipeResource()!);
+        return Object.values(recipeResource()!.features);
     });
     const installationUrl = () => createReabootInstallationUrl(payload());
     const pasteExistingUrl = async () => {
@@ -74,7 +74,7 @@ export function Share() {
                                 <div class="alert alert-success mb-3">
                                     You are sharing a recipe named "{recipe().raw.name}" with&#32;
                                     {recipe().requiredPackages.length} required packages and&#32;
-                                    {features().length} features.
+                                    {features().length} feature(s).
                                 </div>
 
                                 <Switch>
