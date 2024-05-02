@@ -1,7 +1,9 @@
 use anyhow::Context;
 use indexmap::IndexMap;
 use ini::{EscapePolicy, Ini, LineSeparator, ParseOption, Properties, WriteOption};
+use std::fs;
 
+use encoding_rs::Encoding;
 use std::path::Path;
 
 use url::Url;
@@ -27,6 +29,7 @@ pub const REAPACK_CONFIG_VERSION: u32 = 4;
 /// At the moment, this contains just those properties that are relevant for ReaBoot.
 /// Other properties will not be touched.
 pub struct Config {
+    pub encoding: &'static Encoding,
     pub general_version: u32,
     pub remote_by_name: IndexMap<String, Remote>,
 }
@@ -42,6 +45,7 @@ pub struct Remote {
 impl Default for Config {
     fn default() -> Self {
         Self {
+            encoding: get_os_encoding(),
             general_version: REAPACK_CONFIG_VERSION,
             remote_by_name: create_default_remotes()
                 .map(|r| (r.name.clone(), r))
@@ -88,11 +92,11 @@ const DEFAULT_REMOTES: &[(&str, &str)] = &[
 
 impl Config {
     pub fn load_from_ini_file(path: &Path) -> anyhow::Result<Self> {
-        let ini = load_ini(path)?;
-        Ok(Self::from_ini(&ini))
+        let (ini, encoding) = load_ini(path)?;
+        Ok(Self::from_ini(&ini, encoding))
     }
 
-    pub fn from_ini(ini: &Ini) -> Self {
+    fn from_ini(ini: &Ini, encoding: &'static Encoding) -> Self {
         let general_version = ini
             .get_from(GENERAL_INI_SECTION, "version")
             .and_then(|v| v.parse().ok())
@@ -102,22 +106,29 @@ impl Config {
             .map(get_remotes_from_props)
             .unwrap_or_default();
         Self {
+            encoding,
             general_version,
             remote_by_name: remotes,
         }
     }
 
     pub fn apply_to_ini_file(&self, path: &Path) -> anyhow::Result<()> {
-        let mut ini = load_ini(path).unwrap_or_else(|_| Ini::new());
+        let (mut ini, encoding) =
+            load_ini(path).unwrap_or_else(|_| (Ini::new(), get_os_encoding()));
         self.apply_to_ini(&mut ini);
-        ini.write_to_file_opt(
-            path,
+        // This could be done more efficient, but for ReaBoot's purpose it's totally okay
+        let mut ini_utf8_bytes = Vec::new();
+        ini.write_to_opt(
+            &mut ini_utf8_bytes,
             WriteOption {
                 escape_policy: EscapePolicy::Basics,
                 line_separator: LineSeparator::SystemDefault,
                 kv_separator: "=",
             },
         )?;
+        let ini_text = String::from_utf8(ini_utf8_bytes)?;
+        let (bytes, _, _) = encoding.encode(&ini_text);
+        fs::write(path, bytes)?;
         Ok(())
     }
 
@@ -166,15 +177,18 @@ impl Config {
     }
 }
 
-fn load_ini(path: &Path) -> anyhow::Result<Ini> {
-    let ini = Ini::load_from_file_opt(
-        path,
+fn load_ini(path: &Path) -> anyhow::Result<(Ini, &'static Encoding)> {
+    let encoding = get_os_encoding();
+    let bytes = fs::read(path).context("couldn't read reapack.ini file")?;
+    let (ini_text, encoding, _) = encoding.decode(&bytes);
+    let ini = Ini::load_from_str_opt(
+        &ini_text,
         ParseOption {
             enabled_quote: false,
             enabled_escape: false,
         },
     )?;
-    Ok(ini)
+    Ok((ini, encoding))
 }
 
 impl Remote {
@@ -233,3 +247,50 @@ fn create_default_remotes() -> impl Iterator<Item = Remote> {
 
 const GENERAL_INI_SECTION: Option<&str> = Some("general");
 const REMOTES_INI_SECTION: Option<&str> = Some("remotes");
+
+fn get_os_encoding() -> &'static Encoding {
+    #[cfg(windows)]
+    {
+        let page = unsafe { windows::Win32::Globalization::GetACP() };
+        // https://learn.microsoft.com/en-us/windows/win32/intl/code-page-identifiers
+        let encoding = match page {
+            874 => encoding_rs::WINDOWS_874,
+            1250 => encoding_rs::WINDOWS_1250,
+            1251 => encoding_rs::WINDOWS_1251,
+            1252 => encoding_rs::WINDOWS_1252,
+            1253 => encoding_rs::WINDOWS_1253,
+            1254 => encoding_rs::WINDOWS_1254,
+            1255 => encoding_rs::WINDOWS_1255,
+            1256 => encoding_rs::WINDOWS_1256,
+            1257 => encoding_rs::WINDOWS_1257,
+            1258 => encoding_rs::WINDOWS_1258,
+            // Not sure if the following ISO code pages can even be returned, but better be prepared
+            28591 => encoding_rs::WINDOWS_1252,
+            28592 => encoding_rs::ISO_8859_2,
+            28593 => encoding_rs::ISO_8859_3,
+            28594 => encoding_rs::ISO_8859_4,
+            28595 => encoding_rs::ISO_8859_5,
+            28596 => encoding_rs::ISO_8859_6,
+            28597 => encoding_rs::ISO_8859_7,
+            28598 => encoding_rs::ISO_8859_8,
+            28599 => encoding_rs::WINDOWS_1254,
+            28603 => encoding_rs::ISO_8859_13,
+            28605 => encoding_rs::ISO_8859_15,
+            38598 => encoding_rs::ISO_8859_8,
+            50220 | 50221 | 50222 => encoding_rs::ISO_2022_JP,
+            51932 => encoding_rs::EUC_JP,
+            51949 => encoding_rs::EUC_KR,
+            20866 => encoding_rs::KOI8_R,
+            _ => encoding_rs::UTF_8,
+        };
+        println!(
+            "Identified Windows code page {page}. Using encoding {} for loading/saving INI file.",
+            encoding.name()
+        );
+        encoding
+    }
+    #[cfg(not(windows))]
+    {
+        encoding_rs::UTF_8
+    }
+}
