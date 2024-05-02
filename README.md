@@ -21,3 +21,14 @@ Do this after changing `commons/src/reaboot-logo.svg`:
    npm run tauri icon ../commons/src/reaboot-logo.png
    ```
 3. Copy `reaboot-logo.svg` into `website/src/assets`
+
+### Publish new version
+
+1. Increase version number in `Cargo.toml` (`workspace.package.version`) to `X.Y.Z`
+2. Commit and push
+3. `git tag vX.Y.Z`
+3. `git push origin vX.Y.Z`
+
+### Publish website changes
+
+Just push main branch.
