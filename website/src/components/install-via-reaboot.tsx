@@ -14,7 +14,7 @@ import {UAParser} from "ua-parser-js";
 import {ParsedRecipe} from "reaboot-commons/src/recipe-util";
 import {RecipeRef} from "./recipe-ref";
 
-const LATEST_REABOOT_VERSION = "0.2.0";
+const LATEST_REABOOT_VERSION = "0.3.0";
 
 export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
     const downloadConfig = getDownloadConfig();

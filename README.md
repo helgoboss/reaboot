@@ -27,7 +27,10 @@ Do this after changing `commons/src/reaboot-logo.svg`:
 1. Increase version number in `Cargo.toml` (`workspace.package.version`) to `X.Y.Z`
 2. Commit and push
 3. `git tag vX.Y.Z`
-3. `git push origin vX.Y.Z`
+4. `git push origin vX.Y.Z`
+5. Wait for release draft to be built via GitHub Actions (https://github.com/helgoboss/reaboot/actions)
+6. Publish release draft `https://github.com/helgoboss/reaboot/releases`
+7. Adjust `LATEST_REABOOT_VERSION` in `website` project (so that ReaBoot website refers to latest downloads)
 
 ### Publish website changes
 
