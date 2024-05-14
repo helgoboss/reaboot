@@ -2,11 +2,9 @@ use console::Key;
 use indicatif::{MultiProgress, ProgressBar, ProgressDrawTarget, ProgressStyle};
 use reaboot_core::api::{ConfirmationRequest, InstallationStage};
 use reaboot_core::installer::{InstallerListener, InstallerTask};
-use reaboot_core::reaper_util::get_reaper_eula;
 use std::collections::HashMap;
 use std::fmt::Display;
 use std::sync::RwLock;
-use std::time::Duration;
 use tokio::sync::broadcast::Sender;
 
 pub struct CliInstallerListener {

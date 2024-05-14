@@ -1,4 +1,3 @@
-use anyhow::Context;
 use std::path::PathBuf;
 
 use tauri::State;
