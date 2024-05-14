@@ -707,6 +707,9 @@ impl<L: InstallerListener> Installer<L> {
                 .reaper_resource_dir
                 .get()
                 .join(&file.path);
+            if path.try_exists() == Ok(false) {
+                continue;
+            }
             fs::remove_file(path).context("couldn't remove file of package to be replaced")?;
         }
         Ok(())
