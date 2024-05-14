@@ -31,7 +31,7 @@ jobs:
             dest: 'ReaBoot-windows-x64.exe'
           - platform: 'ubuntu-22.04' # for Tauri v1 you could replace this with ubuntu-20.04.
             args: '--bundles deb'
-            src: 'target/release/bundle/deb/ReaBoot_*_amd64.deb'
+            src: 'target/release/bundle/deb/reaboot_*_amd64.deb'
             dest: 'ReaBoot-linux-x86_64.deb'
 
     runs-on: ${{ matrix.settings.platform }}
