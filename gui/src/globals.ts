@@ -1,8 +1,8 @@
 import {DummyMainService} from "./services/dummy-main-service.ts";
 import {MainStore} from "./store/main-store.ts";
 import {TauriMainService} from "./services/tauri-main-service.ts";
-import {Accessor, createSignal} from "solid-js";
-import {appWindow, Theme} from "@tauri-apps/api/window";
+import {Accessor} from "solid-js";
+import {Theme} from "@tauri-apps/api/window";
 import {PageDescriptor} from "./model/page.ts";
 import {WelcomePage} from "./pages/WelcomePage.tsx";
 import {PickReaperPage} from "./pages/PickReaperPage.tsx";
@@ -75,10 +75,12 @@ export const pages: PageDescriptor[] = [
 ];
 
 function createThemeSignal(): Accessor<Theme | undefined> {
-    const [theme, setTheme] = createSignal<Theme>();
-    appWindow.theme().then(theme => setTheme(theme ?? undefined));
-    appWindow.onThemeChanged((evt) => {
-        setTheme(evt.payload);
-    });
-    return theme;
+    return () => "dark";
+    //// Use the following only when following the OS dark mode
+    // const [theme, setTheme] = createSignal<Theme>();
+    // appWindow.theme().then(theme => setTheme(theme ?? undefined));
+    // appWindow.onThemeChanged((evt) => {
+    //     setTheme(evt.payload);
+    // });
+    // return theme;
 }
