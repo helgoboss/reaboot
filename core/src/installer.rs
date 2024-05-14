@@ -168,8 +168,9 @@ impl<L: InstallerListener> Installer<L> {
         let (successful_downloads, download_errors) =
             weed_out_download_errors(package_download_results);
         // Prepare and simulate installation
-        let mut num_simulation_failures = 0;
+        let mut num_tries = 0;
         let (package_installation_plans, temp_install_failures) = loop {
+            let enough_tries = num_tries >= 2;
             let simulation_future = self.prepare_and_simulate_installation(
                 &downloaded_indexes,
                 successful_downloads.clone(),
@@ -177,19 +178,20 @@ impl<L: InstallerListener> Installer<L> {
                 &first_plan.installed_packages_to_be_removed,
             );
             match simulation_future.await {
-                Ok(tuple) => break tuple,
+                Ok((plans, failures)) => {
+                    if failures.is_empty() || enough_tries {
+                        break (plans, failures);
+                    } else {
+                        num_tries += 1;
+                        self.prompt_user_to_exit_reaper(&mut interactions).await;
+                    }
+                }
                 Err(error) => {
-                    num_simulation_failures += 1;
-                    if num_simulation_failures > 1 {
+                    if enough_tries {
                         return Err(error.into());
                     }
-                    let confirmation_request = ConfirmationRequest {
-                        message: "It looks like REAPER is currently running. If it is, please close it before pressing \"Continue\"!".to_string(),
-                        yes_label: "Continue".to_string(),
-                        no_label: None,
-                    };
-                    self.listener.confirm(confirmation_request);
-                    let _ = interactions.recv().await;
+                    num_tries += 1;
+                    self.prompt_user_to_exit_reaper(&mut interactions).await;
                 }
             }
         };
@@ -247,6 +249,16 @@ impl<L: InstallerListener> Installer<L> {
             manual_reaper_install_path,
         };
         Ok(outcome)
+    }
+
+    async fn prompt_user_to_exit_reaper(&self, interactions: &mut Receiver<bool>) {
+        let confirmation_request = ConfirmationRequest {
+            message: "It looks like REAPER is currently running. If it is, please close it before pressing \"Continue\"!".to_string(),
+            yes_label: "Continue".to_string(),
+            no_label: None,
+        };
+        self.listener.confirm(confirmation_request);
+        let _ = interactions.recv().await;
     }
 
     fn clean_up(self) {
