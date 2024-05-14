@@ -55,7 +55,8 @@ export function CustomizePage() {
                 <div class="grow flex flex-col min-h-0" classList={{"basis-1/2": showFeaturePane()}}>
                     <Show when={mainStore.showAddCustomPackagesButton}>
                         <ButtonRow class="pt-0">
-                            <button class="btn m-0" onClick={() => addPackageUrlsFromClipboard()}>
+                            <button class="btn m-0" onClick={() => addPackageUrlsFromClipboard()}
+                                    title="This expects a list of package URLs in your clipboard.">
                                 <FaSolidCirclePlus size={14}/> Add custom packages from clipboard
                             </button>
                         </ButtonRow>

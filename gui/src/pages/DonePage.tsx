@@ -27,7 +27,7 @@ export function DonePage() {
                                             If above error message looks cryptic or doesn't seem to make sense,
                                             please report it to&nbsp;
                                             <a href="mailto:info@helgoboss.org" class="link"
-                                               target="_blank">info@helgoboss.org</a> (Right click → Copy).
+                                               target="_blank">info@helgoboss.org</a> via right click → copy.
                                             Thanks!
                                         </p>
                                     </>;
