@@ -1,6 +1,6 @@
 use crate::api::{
-    DownloadInfo, InstallationStage, InstallerConfig, MultiDownloadInfo, PackageInfo,
-    ResolvedInstallerConfig,
+    ConfirmationRequest, DownloadInfo, InstallationStage, InstallerConfig, MultiDownloadInfo,
+    PackageInfo, ResolvedInstallerConfig,
 };
 use crate::downloader::{Download, Downloader};
 use crate::file_util::{
@@ -38,6 +38,7 @@ use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
 use tempdir::TempDir;
 use thiserror::Error;
+use tokio::sync::broadcast::Receiver;
 use url::Url;
 
 const REABOOT_TEMP_DIR_PREFIX: &str = "reaboot-";
@@ -59,6 +60,7 @@ pub struct Installer<L> {
     /// The consumer must decide how long-lived this is (important for potential manual REAPER
     /// install).
     temp_dir_for_reaper_download: PathBuf,
+    interactions: Receiver<bool>,
     listener: L,
     /// This will cause the temporary directory to be removed latest on drop.
     _temp_dir_guard: Option<TempDir>,
@@ -72,6 +74,7 @@ impl<L: InstallerListener> Installer<L> {
     pub async fn new(
         config: InstallerConfig,
         temp_dir_for_reaper_download: PathBuf,
+        interactions: Receiver<bool>,
         listener: L,
     ) -> anyhow::Result<Self> {
         let resolved_config = reaboot_util::resolve_config(config).await?;
@@ -107,6 +110,7 @@ impl<L: InstallerListener> Installer<L> {
             temp_dir,
             temp_reaper_resource_dir: ReaperResourceDir::new(temp_reaper_resource_dir)?,
             temp_dir_for_reaper_download,
+            interactions,
             listener,
             _temp_dir_guard: temp_dir_guard,
             resolved_config,
@@ -156,21 +160,39 @@ impl<L: InstallerListener> Installer<L> {
             self.resolved_config.platform,
         );
         // Download packages
+        let mut interactions = self.interactions.resubscribe();
         let package_download_results = self
             .download_packages(first_plan.files_to_be_downloaded)
             .await;
         // Weed out incomplete downloads
         let (successful_downloads, download_errors) =
             weed_out_download_errors(package_download_results);
-        // Prepare ReaPack state
-        let (package_installation_plans, temp_install_failures) = self
-            .prepare_reapack_state(
+        // Prepare and simulate installation
+        let mut num_simulation_failures = 0;
+        let (package_installation_plans, temp_install_failures) = loop {
+            let simulation_future = self.prepare_and_simulate_installation(
                 &downloaded_indexes,
-                successful_downloads,
+                successful_downloads.clone(),
                 &package_status_quo.installed_packages_to_be_replaced,
                 &first_plan.installed_packages_to_be_removed,
-            )
-            .await?;
+            );
+            match simulation_future.await {
+                Ok(tuple) => break tuple,
+                Err(error) => {
+                    num_simulation_failures += 1;
+                    if num_simulation_failures > 1 {
+                        return Err(error.into());
+                    }
+                    let confirmation_request = ConfirmationRequest {
+                        message: "It looks like REAPER is currently running. If it is, please close it before pressing \"Continue\"!".to_string(),
+                        yes_label: "Continue".to_string(),
+                        no_label: None,
+                    };
+                    self.listener.confirm(confirmation_request);
+                    let _ = interactions.recv().await;
+                }
+            }
+        };
         // Create preparation report
         let mut tooling_changes = vec![];
         if let Some(
@@ -318,7 +340,7 @@ impl<L: InstallerListener> Installer<L> {
         Ok(())
     }
 
-    async fn prepare_reapack_state<'a>(
+    async fn prepare_and_simulate_installation<'a>(
         &'a self,
         downloaded_indexes: &'a HashMap<Url, DownloadedIndex>,
         successful_downloads: Vec<DownloadWithPayload<QualifiedSource<'a>>>,
@@ -951,6 +973,8 @@ pub trait InstallerListener {
     fn info(&self, message: impl Display);
 
     fn debug(&self, message: impl Display);
+
+    fn confirm(&self, request: ConfirmationRequest);
 }
 
 pub struct InstallerTask {

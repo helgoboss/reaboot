@@ -5,10 +5,11 @@ import {Match, Show, Switch} from "solid-js";
 import {configureInstaller} from "./epics/install.ts";
 import {MainInstallationIcon, PortableInstallationIcon} from "./components/icons.tsx";
 import {navigateTo, showError, showWarning} from "./epics/common.tsx";
-import {GlobalDialog} from "./components/GlobalDialog.tsx";
+import {GlobalDialog, showDialog} from "./components/GlobalDialog.tsx";
 import {Portal} from "solid-js/web";
 import {Toast} from "@kobalte/core";
 import {applyRecipeFromClipboard} from "./epics/welcome.ts";
+import {ConfirmationRequest} from "../../core/bindings/ConfirmationRequest.ts";
 
 export function App() {
     keepSyncingStateFromBackendToStore();
@@ -99,6 +100,23 @@ function keepSyncingStateFromBackendToStore() {
             case "Error":
                 showError(evt.display_msg);
                 break;
+            case "ConfirmationRequested":
+                void confirm(evt.request);
+                break;
         }
     });
+}
+
+async function confirm(request: ConfirmationRequest) {
+    let answer = await showDialog<boolean>({
+        title: "Attention",
+        content: request.message,
+        buildButtons: close => {
+            return <>
+                <button class="btn" onClick={() => close(true)}>{request.yes_label}</button>
+                {request.no_label && <button class="btn" onClick={() => close(true)}>{request.no_label}</button>}
+            </>;
+        }
+    });
+    await mainService.confirm(answer || false);
 }

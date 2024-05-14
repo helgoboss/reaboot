@@ -1,3 +1,4 @@
+use anyhow::Context;
 use std::path::PathBuf;
 
 use tauri::State;
@@ -33,6 +34,7 @@ pub async fn reaboot_command(
         ReabootCommand::StartInstallation => install(state).await,
         ReabootCommand::StartReaper => start_reaper(state).await,
         ReabootCommand::StartReaperInstaller { path } => start_reaper_installer(path),
+        ReabootCommand::Confirm { answer } => confirm(state, answer),
     };
     result.map_err(|r| r.to_string())?;
     Ok(())
@@ -67,5 +69,10 @@ async fn start_reaper(state: State<'_, ReabootAppState>) -> anyhow::Result<()> {
 
 fn start_reaper_installer(path: PathBuf) -> anyhow::Result<()> {
     reaper_util::start_reaper_installer(&path)?;
+    Ok(())
+}
+
+fn confirm(state: State<'_, ReabootAppState>, answer: bool) -> anyhow::Result<()> {
+    state.interaction_sender.send(answer)?;
     Ok(())
 }

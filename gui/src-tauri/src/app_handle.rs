@@ -1,5 +1,5 @@
 use crate::api::ReabootEvent;
-use reaboot_core::api::InstallationStage;
+use reaboot_core::api::{ConfirmationRequest, InstallationStage};
 use reaboot_core::installer::{InstallerListener, InstallerTask};
 use std::fmt::Display;
 use tauri::{AppHandle, Manager};
@@ -65,5 +65,9 @@ impl InstallerListener for ReabootAppHandle {
 
     fn debug(&self, message: impl Display) {
         tracing::debug!(%message);
+    }
+
+    fn confirm(&self, request: ConfirmationRequest) {
+        self.emit_reaboot_event(ReabootEvent::ConfirmationRequested { request });
     }
 }

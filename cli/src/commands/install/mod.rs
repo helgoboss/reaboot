@@ -89,12 +89,14 @@ pub async fn install(args: InstallArgs) -> anyhow::Result<()> {
         recipe: None,
         selected_features: Default::default(),
     };
-    let listener = CliInstallerListener::new();
+    let (interaction_sender, interaction_receiver) = tokio::sync::broadcast::channel(10);
+    let listener = CliInstallerListener::new(interaction_sender);
     let temp_dir_for_reaper_download = TempDir::new("reaboot-")
         .context("couldn't create temporary directory for REAPER download")?;
     let installer = Installer::new(
         config,
         temp_dir_for_reaper_download.path().to_path_buf(),
+        interaction_receiver,
         listener,
     )
     .await?;

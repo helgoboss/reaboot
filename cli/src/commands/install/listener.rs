@@ -1,24 +1,30 @@
+use console::Key;
 use indicatif::{MultiProgress, ProgressBar, ProgressDrawTarget, ProgressStyle};
-use reaboot_core::api::InstallationStage;
+use reaboot_core::api::{ConfirmationRequest, InstallationStage};
 use reaboot_core::installer::{InstallerListener, InstallerTask};
+use reaboot_core::reaper_util::get_reaper_eula;
 use std::collections::HashMap;
 use std::fmt::Display;
 use std::sync::RwLock;
+use std::time::Duration;
+use tokio::sync::broadcast::Sender;
 
 pub struct CliInstallerListener {
     multi_progress: MultiProgress,
     main_progress_bar: ProgressBar,
     task_progress_bars: RwLock<HashMap<u32, ProgressBar>>,
+    interaction_sender: Sender<bool>,
 }
 
 impl CliInstallerListener {
-    pub fn new() -> Self {
+    pub fn new(interaction_sender: Sender<bool>) -> Self {
         let multi_progress = MultiProgress::new();
         let main_progress_bar = multi_progress.add(create_main_progress_bar());
         Self {
             multi_progress,
             main_progress_bar,
             task_progress_bars: Default::default(),
+            interaction_sender,
         }
     }
 
@@ -71,6 +77,27 @@ impl InstallerListener for CliInstallerListener {
 
     fn debug(&self, _message: impl Display) {
         // self.log(message);
+    }
+
+    fn confirm(&self, request: ConfirmationRequest) {
+        println!("\n{}\n", request.message);
+        println!("Please choose:");
+        println!("- [Enter] {}", request.yes_label);
+        if let Some(label) = request.no_label {
+            println!("- [Escape] {}", label);
+        }
+        let term = console::Term::stdout();
+        let confirmation_result = loop {
+            match term.read_key().ok() {
+                Some(Key::Enter) => break true,
+                Some(Key::Escape) => break false,
+                None => break false,
+                _ => println!("Please press enter or escape!"),
+            };
+        };
+        self.interaction_sender
+            .send(confirmation_result)
+            .expect("couldn't send confirmation result");
     }
 }
 

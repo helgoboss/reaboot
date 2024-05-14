@@ -1,5 +1,6 @@
 use reaboot_core::api::{
-    InstallationStage, InstallerConfig, ReabootBackendInfo, ResolvedInstallerConfig,
+    ConfirmationRequest, InstallationStage, InstallerConfig, ReabootBackendInfo,
+    ResolvedInstallerConfig,
 };
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -18,6 +19,8 @@ pub enum ReabootCommand {
     StartReaper,
     /// Start REAPER installer.
     StartReaperInstaller { path: PathBuf },
+    /// Replies to a confirmation request.
+    Confirm { answer: bool },
 }
 
 /// Event emitted by the backend.
@@ -54,6 +57,9 @@ pub enum ReabootEvent {
     },
     TaskFinished {
         task_id: u32,
+    },
+    ConfirmationRequested {
+        request: ConfirmationRequest,
     },
     InstallationDone {
         #[ts(optional)]

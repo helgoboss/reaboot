@@ -25,4 +25,6 @@ export type MainService = {
     startReaper: () => Promise<void>,
     // Starts the given REAPER installer.
     startReaperInstaller: (path: string) => Promise<void>,
+    // Replies to a confirmation request.
+    confirm: (answer: boolean) => Promise<void>,
 }

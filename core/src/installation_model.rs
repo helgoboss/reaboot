@@ -108,6 +108,7 @@ pub struct FirstPlan<'a> {
     pub installed_packages_to_be_removed: Vec<InstalledPackage>,
 }
 
+#[derive(Clone)]
 pub struct QualifiedSource<'a> {
     pub version: QualifiedVersion<'a>,
     pub source: &'a Source,

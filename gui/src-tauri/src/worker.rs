@@ -11,8 +11,9 @@ use crate::api::ReabootEvent;
 use crate::app_handle::ReabootAppHandle;
 
 pub struct ReabootWorker {
-    receiver: Receiver<ReabootWorkerCommand>,
+    command_receiver: Receiver<ReabootWorkerCommand>,
     app_handle: ReabootAppHandle,
+    interaction_receiver: tokio::sync::broadcast::Receiver<bool>,
 }
 
 pub enum ReabootWorkerCommand {
@@ -23,15 +24,20 @@ pub enum ReabootWorkerCommand {
 }
 
 impl ReabootWorker {
-    pub fn new(receiver: Receiver<ReabootWorkerCommand>, app_handle: ReabootAppHandle) -> Self {
+    pub fn new(
+        command_receiver: Receiver<ReabootWorkerCommand>,
+        app_handle: ReabootAppHandle,
+        interaction_receiver: tokio::sync::broadcast::Receiver<bool>,
+    ) -> Self {
         Self {
-            receiver,
+            command_receiver,
             app_handle,
+            interaction_receiver,
         }
     }
 
     pub async fn keep_processing_incoming_commands(&mut self) {
-        while let Some(command) = self.receiver.recv().await {
+        while let Some(command) = self.command_receiver.recv().await {
             if let Err(e) = self.process_command(command).await {
                 self.app_handle.emit_generic_error(e);
             }
@@ -57,7 +63,13 @@ impl ReabootWorker {
         temp_dir_for_reaper_download: PathBuf,
     ) -> anyhow::Result<()> {
         let listener = self.app_handle.clone();
-        let installer = Installer::new(config, temp_dir_for_reaper_download, listener).await?;
+        let installer = Installer::new(
+            config,
+            temp_dir_for_reaper_download,
+            self.interaction_receiver.resubscribe(),
+            listener,
+        )
+        .await?;
         let (report, actually_installed_things, manual_reaper_install_path) =
             match installer.install().await {
                 Ok(outcome) => (

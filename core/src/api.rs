@@ -244,6 +244,15 @@ pub struct PackageInfo {
     pub name: String,
 }
 
+/// Request for confirmation by the user.
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Serialize, TS)]
+#[ts(export)]
+pub struct ConfirmationRequest {
+    pub message: String,
+    pub yes_label: String,
+    pub no_label: Option<String>,
+}
+
 impl Display for InstallationStage {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let simple_name: &str = self.as_ref();

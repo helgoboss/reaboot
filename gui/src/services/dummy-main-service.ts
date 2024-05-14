@@ -58,6 +58,9 @@ export class DummyMainService implements MainService {
 
     async startReaperInstaller(_path: string) {
     }
+
+    async confirm(_answer: boolean) {
+    }
 }
 
 function timeout(value: number) {

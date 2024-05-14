@@ -64,6 +64,13 @@ export class TauriMainService implements MainService {
         });
     }
 
+    async confirm(answer: boolean) {
+        await this.invokeCommand({
+            kind: "Confirm",
+            answer
+        });
+    }
+
     private async invokeCommand(command: ReabootCommand) {
         await invoke('reaboot_command', {
             command

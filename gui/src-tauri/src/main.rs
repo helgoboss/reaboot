@@ -23,11 +23,13 @@ mod worker;
 
 fn main() {
     let (worker_command_sender, worker_command_receiver) = tauri::async_runtime::channel(1);
+    let (interaction_sender, interaction_receiver) = tokio::sync::broadcast::channel(10);
     let app_state = ReabootAppState {
         worker_command_sender,
         installer_config: Mutex::new(InstallerConfig::default()),
         temp_dir_for_reaper_download: TempDir::new("reaboot-")
             .expect("couldn't create temporary directory for REAPER download"),
+        interaction_sender,
     };
     tauri::Builder::default()
         .plugin(
@@ -44,7 +46,11 @@ fn main() {
         .setup(move |app| {
             // Setup worker
             let app_handle = ReabootAppHandle::new(app.app_handle());
-            let mut worker = ReabootWorker::new(worker_command_receiver, app_handle.clone());
+            let mut worker = ReabootWorker::new(
+                worker_command_receiver,
+                app_handle.clone(),
+                interaction_receiver,
+            );
             tauri::async_runtime::spawn(async move {
                 worker.keep_processing_incoming_commands().await;
             });

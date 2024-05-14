@@ -8,6 +8,7 @@ pub struct MultiDownloader {
     concurrent_downloads: u32,
 }
 
+#[derive(Clone)]
 pub struct DownloadWithPayload<P> {
     pub download: Download,
     pub payload: P,
