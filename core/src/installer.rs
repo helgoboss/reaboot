@@ -479,9 +479,6 @@ impl<L: InstallerListener> Installer<L> {
                     outcome.package_installation_plans.push(plan);
                 }
                 Err(error) => {
-                    self.listener.warn(format!(
-                        "Couldn't update ReaPack DB for package {version_id} because {error}"
-                    ));
                     let failure = TempInstallFailure { version_id, error };
                     outcome.package_failures.push(failure);
                 }
