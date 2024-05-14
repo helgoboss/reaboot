@@ -23,7 +23,7 @@ export function App() {
         <header class="flex-none p-4">
             <Stepper pages={pages} currentPageId={mainStore.currentPage().id}/>
         </header>
-        <main class="grow flex flex-col min-h-0">
+        <main class="grow flex flex-col min-h-0 overflow-y-auto">
             {mainStore.currentPage().content({})}
         </main>
         <Show when={mainStore.currentPage().showFooter != false}>
