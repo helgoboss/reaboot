@@ -15,24 +15,24 @@ jobs:
         settings:
           - platform: 'macos-latest'
             args: '--bundles app --target aarch64-apple-darwin'
-            # We produce this ZIP from the "reaboot.app" directory
-            src: 'target/aarch64-apple-darwin/release/bundle/macos/reaboot.app.zip'
+            # We produce this ZIP from the "ReaBoot.app" directory
+            src: 'target/aarch64-apple-darwin/release/bundle/macos/ReaBoot.app.zip'
             dir_containing_app_bundle: 'target/aarch64-apple-darwin/release/bundle/macos'
-            dest: 'reaboot-macos-arm64.zip'
+            dest: 'ReaBoot-macos-arm64.zip'
           - platform: 'macos-latest'
             args: '--target x86_64-apple-darwin'
-            # We produce this ZIP from the "reaboot.app" directory
-            src: 'target/x86_64-apple-darwin/release/bundle/macos/reaboot.app.zip'
+            # We produce this ZIP from the "ReaBoot.app" directory
+            src: 'target/x86_64-apple-darwin/release/bundle/macos/ReaBoot.app.zip'
             dir_containing_app_bundle: 'target/x86_64-apple-darwin/release/bundle/macos'
-            dest: 'reaboot-macos-x86_64.zip'
+            dest: 'ReaBoot-macos-x86_64.zip'
           - platform: 'windows-latest'
             args: '--bundles msi,nsis'
             src: 'target/release/reaboot.exe'
-            dest: 'reaboot-windows-x64.exe'
+            dest: 'ReaBoot-windows-x64.exe'
           - platform: 'ubuntu-22.04' # for Tauri v1 you could replace this with ubuntu-20.04.
             args: '--bundles deb'
             src: 'target/release/bundle/deb/reaboot_*_amd64.deb'
-            dest: 'reaboot-linux-x86_64.deb'
+            dest: 'ReaBoot-linux-x86_64.deb'
 
     runs-on: ${{ matrix.settings.platform }}
     steps:
@@ -95,7 +95,7 @@ jobs:
         working-directory: ${{ matrix.settings.dir_containing_app_bundle }}
         shell: bash
         run: |
-          zip -r reaboot.app.zip reaboot.app
+          zip -r ReaBoot.app.zip ReaBoot.app
 
       - name: Move main asset
         shell: bash
@@ -103,13 +103,12 @@ jobs:
           mkdir -p release-assets
           mv ${{ matrix.settings.src }} "./release-assets/${{ matrix.settings.dest }}"
 
-      # This is probably just temporary. We don't actually want installers.
       - name: Move Windows installers
         if: matrix.settings.platform == 'windows-latest'
         shell: bash
         run: |
-          mv target/release/bundle/msi/reaboot_*_x64_en-US.msi "./release-assets/reaboot-windows-x64-setup.msi"
-          mv target/release/bundle/nsis/reaboot_*_x64-setup.exe "./release-assets/reaboot-windows-x64-setup.exe"
+          mv target/release/bundle/msi/reaboot_*_x64_en-US.msi "./release-assets/ReaBoot-windows-x64-setup.msi"
+          mv target/release/bundle/nsis/reaboot_*_x64-setup.exe "./release-assets/ReaBoot-windows-x64-setup.exe"
 
       - name: Check if release exists
         id: check_release
