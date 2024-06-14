@@ -26,15 +26,15 @@ export function InstallPage() {
             <p class="text-center font-bold pb-6">
                 {installButtonProps().title}
             </p>
-            <div class="grow flex flex-row items-stretch gap-8 min-h-0">
-                <div class="basis-1/3 flex flex-col gap-4">
+            <div class="grow flex flex-row items-stretch min-h-0">
+                <div class="basis-1/3 grid grid-flow-row gap-4">
                     <Index each={phases()}>
                         {
                             (phase) => <PhasePanel {...phase()} darkMode={themeSignal() == "dark"}/>
                         }
                     </Index>
                 </div>
-                <div class="basis-2/3 card bg-base-300">
+                <div class="ml-8 basis-2/3 card bg-base-300">
                     <div class="card-body min-h-0">
                         <Switch>
                             <Match when={mainStore.installationIsRunning}>

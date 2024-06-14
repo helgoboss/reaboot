@@ -47,12 +47,12 @@ export async function navigateTo(pageId: PageId) {
         const userAgreedToEula = await showDialog<boolean>({
             title: "REAPER license agreement",
             fullScreen: true,
-            content: <div class="flex flex-col min-h-0 gap-4">
+            content: <div class="flex flex-col min-h-0">
                 <div class="text-center">
                     ReaBoot is going to download and install REAPER because it's not yet installed at the location of
                     your choice. In order to continue, you need to accept the REAPER license agreement.
                 </div>
-                <div class="grow card min-h-0 bg-base-300">
+                <div class="grow card min-h-0 bg-base-300 mt-4">
                     <div class="card-body min-h-0">
                         <Switch>
                             <Match when={eulaResource.loading}>

@@ -25,7 +25,7 @@ export function PhasePanel(props: Phase) {
                 return props.darkMode ? "bg-base-300 text-success" : "bg-success text-success-content";
         }
     };
-    return <div class={`grow card flex flex-row items-center px-6 whitespace-nowrap gap-4 ${colorClasses()}`}>
+    return <div class={`grow card flex flex-row items-center px-6 whitespace-nowrap ${colorClasses()}`}>
         <div class="grow">
             {props.index + 1}.&nbsp;
             <Switch>
@@ -43,13 +43,15 @@ export function PhasePanel(props: Phase) {
                 </Match>
             </Switch>
         </div>
-        <Switch>
-            <Match when={props.status === "in-progress"}>
-                <span class="loading loading-ball loading-md"></span>
-            </Match>
-            <Match when={props.status === "done"}>
-                <FaRegularCircleCheck size={24}/>
-            </Match>
-        </Switch>
+        <div class="ml-3">
+            <Switch>
+                <Match when={props.status === "in-progress"}>
+                    <span class="loading loading-ball loading-md"></span>
+                </Match>
+                <Match when={props.status === "done"}>
+                    <FaRegularCircleCheck size={24}/>
+                </Match>
+            </Switch>
+        </div>
     </div>;
 }

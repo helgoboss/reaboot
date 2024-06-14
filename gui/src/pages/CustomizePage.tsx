@@ -22,9 +22,9 @@ export function CustomizePage() {
             <p class="text-center font-bold">
                 Optional: Customize installation
             </p>
-            <div class="grow flex flex-row items-stretch justify-stretch gap-5 min-h-0 min-w-0 pt-3">
+            <div class="grow flex flex-row items-stretch justify-stretch min-h-0 min-w-0 pt-3">
                 <Show when={showFeaturePane()}>
-                    <div class="basis-1/2 card card-compact bg-base-200 min-h-0 min-w-0">
+                    <div class="basis-1/2 card card-compact bg-base-200 min-h-0 min-w-0 mr-5">
                         <div class="card-body min-h-0 overflow-x-hidden">
                             <h2 class="card-title text-base">Toggle features on/off</h2>
                             <div class="basis-3/4 overflow-y-auto">
@@ -32,13 +32,14 @@ export function CustomizePage() {
                                     <For each={mainStore.parsedRecipeFeatures()}>
                                         {([id, feature]) => {
                                             return <li>
-                                                <button class="badge flex flex-row gap-1"
+                                                <button class="badge flex flex-row"
                                                         classList={{"badge-accent": mainStore.featureIsSelected(id)}}
                                                         onClick={() => toggleFeature(id)}
                                                         onMouseEnter={() => setFeatureHelp(feature.raw.description ?? null)}
                                                         onMouseLeave={() => setFeatureHelp(null)}>
                                                     {feature.raw.name}
-                                                    {mainStore.featureIsSelected(id) ? <FaSolidCheck/> : <FaSolidX/>}
+                                                    {mainStore.featureIsSelected(id) ?
+                                                        <FaSolidCheck class="ml-1"/> : null}
                                                 </button>
                                             </li>;
                                         }

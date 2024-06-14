@@ -1,6 +1,7 @@
 import {JSX} from "solid-js";
 
 type Props = {
+    class?: string,
     selected: boolean,
     topRightIndicator?: JSX.Element,
     bottomRightIndicator?: JSX.Element,
@@ -10,7 +11,7 @@ type Props = {
 }
 
 export function ProminentChoice(props: Props) {
-    return <div class="card card-compact w-2/3 min-h-28 bg-base-200 cursor-pointer indicator"
+    return <div class={`card card-compact w-2/3 min-h-28 bg-base-200 cursor-pointer indicator ${props.class ?? ''}`}
                 onClick={props.onClick}>
         {props.topRightIndicator &&
             <span class="indicator-item badge badge-neutral">{props.topRightIndicator}</span>

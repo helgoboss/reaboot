@@ -29,23 +29,23 @@ export function App() {
         <Show when={mainStore.currentPage().showFooter != false}>
             <Show when={resolvedConfig()}>
                 {(conf) =>
-                    <footer class="p-4 bg-base-300 text-base-content flex flex-row text-xs gap-3">
+                    <footer class="p-4 bg-base-300 text-base-content flex flex-row text-xs">
                         <div class="text-left font-bold"
                              title="Folder in which REAPER saves user data, e.g. preferences and scripts.">
                             REAPER resource path:
                         </div>
-                        <div class="grow"></div>
+                        <div class="grow min-w-3"></div>
                         <div>
                             <Switch>
                                 <Match when={conf().portable}><PortableInstallationIcon size={14}/></Match>
                                 <Match when={true}><MainInstallationIcon size={14}/></Match>
                             </Switch>
                         </div>
-                        <div class="font-mono">
+                        <div class="font-mono ml-3">
                             {conf().reaper_resource_dir}
                         </div>
                         <Show when={!conf().reaper_exe_exists}>
-                            <div class="badge badge-secondary badge-sm">new</div>
+                            <div class="badge badge-secondary badge-sm ml-3">new</div>
                         </Show>
                     </footer>
                 }

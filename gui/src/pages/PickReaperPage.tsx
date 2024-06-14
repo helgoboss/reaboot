@@ -29,7 +29,7 @@ export function PickReaperPage() {
                     </Match>
                 </Switch>
             </p>
-            <div class="grow my-4 flex flex-col items-center justify-center gap-4">
+            <div class="grow my-4 flex flex-col items-center justify-center">
                 <ProminentChoice selected={!resolvedConfig.portable}
                                  icon={<MainInstallationIcon size="24"/>}
                                  topRightIndicator="Good default choice"
@@ -48,7 +48,8 @@ export function PickReaperPage() {
                         </Switch>
                     </p>
                 </ProminentChoice>
-                <ProminentChoice selected={resolvedConfig.portable}
+                <ProminentChoice class="mt-4"
+                                 selected={resolvedConfig.portable}
                                  icon={<PortableInstallationIcon size="24"/>}
                                  bottomRightIndicator={mainStore.state.lastPickedPortableReaperDir &&
                                      <button class="btn btn-accent" onClick={(e) => {
@@ -58,28 +59,24 @@ export function PickReaperPage() {
                                          Change directory...
                                      </button>}
                                  onClick={() => configurePortable(false)}>
-                    <div class="flex flex-row items-center gap-4">
-                        <div class="flex flex-col">
-                            <h2 class="card-title">
-                                Portable REAPER installation
-                            </h2>
-                            <div>
-                                <p class="text-base-content/50">
-                                    Add packages to an existing portable REAPER installation or
-                                    create a new one.
-                                </p>
-                            </div>
-                        </div>
+                    <h2 class="card-title">
+                        Portable REAPER installation
+                    </h2>
+                    <div>
+                        <p class="text-base-content/50">
+                            Add packages to an existing portable REAPER installation or
+                            create a new one.
+                        </p>
                     </div>
                 </ProminentChoice>
             </div>
             <Show when={resolvedConfig.reaper_exe_exists}>
-                <KSwitch.Root class="self-center mb-4 flex flex-row gap-2"
+                <KSwitch.Root class="self-center mb-4 flex flex-row"
                               checked={mainStore.state.installerConfig.update_reaper}
                               onChange={on => configureInstaller({updateReaper: on})}>
                     <KSwitch.Label>Update REAPER if new version available</KSwitch.Label>
                     <KSwitch.Input/>
-                    <KSwitch.Control>
+                    <KSwitch.Control class="ml-2">
                         <KSwitch.Thumb class="toggle toggle-primary"
                                        aria-checked={mainStore.state.installerConfig.update_reaper}/>
                     </KSwitch.Control>
