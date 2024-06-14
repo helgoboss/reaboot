@@ -1,13 +1,7 @@
 import {copyTextToClipboard} from "../util/clipboard-util";
 import {Step} from "./step";
 import {For, JSX, Match, Show, Switch} from "solid-js";
-import {
-    FaRegularLightbulb,
-    FaRegularThumbsUp,
-    FaSolidDownload,
-    FaSolidLightbulb,
-    FaSolidThumbsUp
-} from "solid-icons/fa";
+import {FaSolidDownload, FaSolidLightbulb, FaSolidThumbsUp} from "solid-icons/fa";
 import {Collapsible} from "@kobalte/core";
 import {CopyField} from "./copy-field";
 import {UAParser} from "ua-parser-js";
@@ -26,7 +20,7 @@ export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
         await copyTextToClipboard(getRecipeAsJson());
     };
 
-    return <div class="grow flex flex-col max-w-lg items-stretch gap-6">
+    return <div class="grow flex flex-col max-w-lg items-stretch">
         <div class="text-center">
             ReaBoot is the easiest way to install <RecipeRef recipe={props.recipe}/>.
             It automatically installs REAPER and ReaPack if necessary.
@@ -35,7 +29,7 @@ export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
             <Switch>
                 <Match when={downloadConfig.mainDownloads.length > 0}>
                     <>
-                        <div class="flex flex-row justify-center gap-2">
+                        <div class="grid grid-flow-col justify-center gap-2">
                             <For each={downloadConfig.mainDownloads}>
                                 {(d, i) =>
                                     <a href={buildDownloadUrl(d)}
@@ -54,10 +48,10 @@ export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
                     </>
                 </Match>
             </Switch>
-            <div class="mt-1 text-xs">
+            <div class="mt-3 text-xs">
                 {downloadConfig.downloadComment}
             </div>
-            <div class="text-xs">
+            <div class="text-xs mt-3">
                 <div class="divider mt-1">Looking for another download?</div>
                 <div class="flex flex-wrap justify-center gap-3">
                     <For each={otherDownloads}>
@@ -77,9 +71,9 @@ export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
             <div>
                 Start the installer and follow its instructions.
             </div>
-            <Collapsible.Root class="collapse collapse-arrow data-[expanded]:collapse-open bg-base-300 ">
-                <Collapsible.Trigger class="collapse-title flex flex-row items-center justify-center gap-2">
-                    <FaSolidLightbulb/> Having issues?
+            <Collapsible.Root class="mt-3 collapse collapse-arrow data-[expanded]:collapse-open bg-base-300">
+                <Collapsible.Trigger class="collapse-title flex flex-row items-center justify-center">
+                    <FaSolidLightbulb class="mr-2"/> Having issues?
                 </Collapsible.Trigger>
                 <Collapsible.Content class="p-4 prose prose-sm">
                     <dl>

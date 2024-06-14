@@ -12,7 +12,7 @@ export default function Home() {
     );
     return (
         <Page>
-            <div class="flex flex-col gap-4">
+            <div class="flex flex-col">
                 <div class="grow hero">
                     <div class="hero-content text-center">
                         <div class="flex flex-col items-center max-w-md gap-6">
@@ -40,7 +40,7 @@ export default function Home() {
                         </div>
                     </div>
                 </div>
-                <div class="max-w-2xl">
+                <div class="mt-4 max-w-2xl">
                     <h2 class="font-bold text-2xl text-center">Please choose!</h2>
                     <Tabs.Root value={userType()} onChange={setUserType} class="flex flex-col sm:items-center">
                         <Tabs.List class="tabs tabs-boxed m-4 self-center">
@@ -53,15 +53,15 @@ export default function Home() {
                         </Tabs.List>
                         <div class="card bg-base-200">
                             <div class="card-body">
-                                <Tabs.Content value="user" class="flex flex-col gap-6">
+                                <Tabs.Content value="user" class="flex flex-col">
                                     <h3 class="font-bold text-lg text-center">As a normal REAPER user ...</h3>
-                                    <p>
+                                    <p class="mt-6">
                                         ... you are probably here for the&#32;
                                         <em>default installer</em>,
                                         which allows you to easily install some of the most
                                         popular REAPER scripts and extensions out there.
                                     </p>
-                                    <div class="alert alert-info">
+                                    <div class="mt-6 alert alert-info">
                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                              class="stroke-current shrink-0 w-6 h-6">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -72,14 +72,14 @@ export default function Home() {
                                 </span>
                                     </div>
                                 </Tabs.Content>
-                                <Tabs.Content value="dev" class="flex flex-col gap-6">
+                                <Tabs.Content value="dev" class="flex flex-col">
                                     <h3 class="font-bold text-lg text-center">Already familiar with ReaBoot?</h3>
-                                    <div class="text-center">
+                                    <div class="mt-6 text-center">
                                         <A href="/share" class="btn btn-secondary">Start creating installation
                                             links!</A>
                                     </div>
-                                    <h3 class="font-bold text-lg text-center">ReaBoot is for you ...</h3>
-                                    <ul class="list-disc ml-5">
+                                    <h3 class="mt-6 font-bold text-lg text-center">ReaBoot is for you ...</h3>
+                                    <ul class="mt-6 list-disc ml-5">
                                         <li>
                                             If you want to offer your users a really easy way to install your own
                                             scripts or extensions.
@@ -89,8 +89,8 @@ export default function Home() {
                                             extensions with friends.
                                         </li>
                                     </ul>
-                                    <h3 class="font-bold text-lg text-center">How does it work?</h3>
-                                    <ol class="list-decimal ml-5">
+                                    <h3 class="mt-6 font-bold text-lg text-center">How does it work?</h3>
+                                    <ol class="mt-6 list-decimal ml-5">
                                         <li>You use this website to build a so-called &#32;<em>installation
                                             link</em>.
                                         </li>
@@ -100,12 +100,12 @@ export default function Home() {
                                             extensions in seconds.
                                         </li>
                                     </ol>
-                                    <h2 class="font-bold text-lg text-center">Some example links</h2>
-                                    <p>
+                                    <h2 class="mt-6 font-bold text-lg text-center">Some example links</h2>
+                                    <p class="mt-6">
                                         The following links are example links, solely made for demonstrating ReaBoot's
                                         features. Don't share them!
                                     </p>
-                                    <div class="flex flex-wrap justify-center gap-4">
+                                    <div class="mt-6 flex flex-wrap justify-center gap-4">
                                         <Index each={examples}>
                                             {example =>
                                                 <RecipeLink href={example()[2]} class={example()[1]}>
@@ -114,9 +114,9 @@ export default function Home() {
                                             }
                                         </Index>
                                     </div>
-                                    <h3 class="font-bold text-lg text-center">Introduction video</h3>
+                                    <h3 class="mt-6 font-bold text-lg text-center">Introduction video</h3>
                                     <iframe
-                                        class="w-full aspect-video"
+                                        class="mt-6 w-full aspect-video"
                                         width="560" height="315"
                                         src="https://www.youtube-nocookie.com/embed/LFveUpUrHFA?si=04UBLIDqVSpfjMXD"
                                         title="YouTube video player" frameborder="0"

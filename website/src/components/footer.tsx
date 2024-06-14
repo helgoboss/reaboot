@@ -6,7 +6,7 @@ type Props = {
 }
 
 export function Footer(props: Props) {
-    return <footer class="text-xs p-4 bg-base-300 flex flex-row gap-4 items-center"
+    return <footer class="text-xs p-4 bg-base-300 flex flex-row items-center"
                    classList={{
                        "justify-between": props.enablePoweredBy,
                        "justify-center sm:justify-between": !props.enablePoweredBy,
@@ -19,10 +19,10 @@ export function Footer(props: Props) {
             <A href="/" class="text-lg font-bold link">ReaBoot</A>
         </h1>
         }
-        <div class="flex flex-row gap-4">
+        <div class="flex flex-row">
             <A href="/faq" class="link">FAQ</A>
-            <A href="/beta" class="card h-warning px-4">Beta</A>
-            <a href="https://github.com/helgoboss/reaboot">
+            <A href="/beta" class="card h-warning px-4 ml-4">Beta</A>
+            <a href="https://github.com/helgoboss/reaboot" class="ml-4">
                 <FaBrandsGithub/>
             </a>
         </div>
