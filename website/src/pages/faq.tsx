@@ -29,7 +29,7 @@ export default function Faq() {
                         Can I use this to update existing REAPER installations?
                     </dt>
                     <dd>
-                        Absolutely. You can use it over and over again for adding new packages or replacing existing
+                        Absolutely. You can use it over and over again in order to add new packages or replace existing
                         ones.
                     </dd>
                     <dt>
@@ -42,15 +42,15 @@ export default function Faq() {
                         yours! You can even use them interchangeably, it shouldn't make any difference.
                     </dd>
                     <dt>
-                        Why does ReaBoot always installs the ReaPack extension?
+                        Why does ReaBoot always install the ReaPack extension?
                     </dt>
                     <dd>
                         Technically, ReaBoot doesn't need ReaPack to install or replace packages. But ReaPack is
                         important
                         for you at a later stage, for example in order to:
                         <ul>
-                            <li>Remove packages</li>
                             <li>Browse and install packages directly from within REAPER</li>
+                            <li>Remove packages</li>
                             <li>Automatically register installed ReaScripts</li>
                         </ul>
                     </dd>
@@ -58,7 +58,7 @@ export default function Faq() {
                         Can I use ReaBoot while REAPER is running?
                     </dt>
                     <dd>
-                        Yes. If not, let me know at info@helgoboss.org!
+                        Yes. But it might ask you to quit REAPER if it turns out to be an issue.
                     </dd>
                     <dt>
                         Do I lock myself in by relying on ReaBoot installation links?
