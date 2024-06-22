@@ -3,7 +3,7 @@ import {FaSolidX} from "solid-icons/fa";
 
 export function showToast(clazz: string, message: string) {
     toaster.show(props => (
-        <Toast.Root toastId={props.toastId} class={`alert ${clazz}`} duration={4000}>
+        <Toast.Root toastId={props.toastId} class={`alert ${clazz}`} duration={8000}>
             <div class="flex flex-row justify-between">
                 <div>
                     <Toast.Description>
