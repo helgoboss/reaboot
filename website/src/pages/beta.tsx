@@ -41,7 +41,7 @@ export default function Beta() {
                         <tr>
                             <td>macOS 10.15+ x86 64-bit</td>
                             <td class="h-success">Available</td>
-                            <td class="h-warning">Untested</td>
+                            <td class="h-success">Optimal</td>
                             <td class="h-error">Not published yet</td>
                             <td class="h-warning">Untested</td>
                             <td class="h-warning">Untested (should be guided)</td>
@@ -49,8 +49,8 @@ export default function Beta() {
                         </tr>
                         <tr>
                             <td>macOS 10.13-10.14 x86 64-bit</td>
-                            <td class="h-error">Not available (anyone need it?)</td>
-                            <td>-</td>
+                            <td class="h-success">Available</td>
+                            <td class="h-warning">Not ideal</td>
                             <td class="h-error">Not published yet</td>
                             <td class="h-warning">Untested</td>
                             <td class="h-warning">Untested (should not work)</td>
