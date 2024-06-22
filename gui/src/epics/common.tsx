@@ -36,7 +36,7 @@ function showToast(clazz: string, message: string) {
             </div>
         </Toast.Root>
     ));
-};
+}
 
 export async function navigateTo(pageId: PageId) {
     const destPage = getPage(pageId);

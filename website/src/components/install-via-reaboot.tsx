@@ -9,6 +9,7 @@ import {formatRecipeAsJson, ParsedRecipe} from "reaboot-commons/src/recipe-util"
 import {RecipeRef} from "./recipe-ref";
 import {ReaperRef} from "./reaper-ref";
 import {ReaPackRef} from "./reapack-ref";
+import {showToast} from "../util/toast-util";
 
 const LATEST_REABOOT_VERSION = "0.6.0";
 
@@ -18,7 +19,12 @@ export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
         return downloadConfig.mainDownloads.every(optimalDownload => d.label !== optimalDownload?.label);
     });
     const copyRecipeMain = async () => {
-        await copyTextToClipboard(formatRecipeAsJson(props.recipe.raw));
+        const success = await copyTextToClipboard(formatRecipeAsJson(props.recipe.raw));
+        if (success) {
+            showToast("alert-success", "Download started and recipe copied successfully to clipboard!");
+        } else {
+            showToast("alert-warning", "Download started but recipe couldn't be copied to clipboard!")
+        }
     };
 
     return <div class="grow flex flex-col max-w-lg items-stretch">
