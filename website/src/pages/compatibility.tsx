@@ -1,6 +1,6 @@
 import {Page} from "../components/page";
 
-export default function Beta() {
+export default function Compatibility() {
     return (
         <Page>
             <div class="h-responsive-prose">

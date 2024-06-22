@@ -21,9 +21,9 @@ export function Footer(props: Props) {
         }
         <div class="flex flex-row">
             <A href="/faq" class="link">FAQ</A>
-            <A href="/beta" class="card h-warning px-4 ml-4">Beta</A>
-            <a href="https://github.com/helgoboss/reaboot" class="ml-4">
-                <FaBrandsGithub/>
+            <A href="/compatibility" class="link ml-4">Compatibility</A>
+            <a href="https://github.com/helgoboss/reaboot" class="ml-4 flex flex-col">
+                <FaBrandsGithub class="flex-1"/>
             </a>
         </div>
     </footer>;

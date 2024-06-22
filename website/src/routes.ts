@@ -5,7 +5,7 @@ import Install from './pages/install';
 import Faq from './pages/faq';
 import {Share} from "./pages/share";
 import Home from "./pages/home";
-import Beta from "./pages/beta";
+import Compatibility from "./pages/compatibility";
 
 export const routes: RouteDefinition[] = [
     {
@@ -21,8 +21,8 @@ export const routes: RouteDefinition[] = [
         component: Faq,
     },
     {
-        path: '/beta',
-        component: Beta,
+        path: '/compatibility',
+        component: Compatibility,
     },
     {
         path: '/share',
