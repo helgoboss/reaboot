@@ -120,6 +120,10 @@ function parseRecipeFromRawString(text: string): ParsedRecipe {
     return parseRecipe(recipe);
 }
 
+export function formatRecipeAsJson(recipe: Recipe): string {
+    return JSON.stringify(recipe, null, "    ");
+}
+
 function parseRecipe(recipe: Recipe): ParsedRecipe {
     const rawFeatures = getOrEmptyRecord(recipe.features);
     const parsedFeatures: Record<string, ParsedFeature> = {};

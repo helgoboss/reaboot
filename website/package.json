@@ -24,6 +24,7 @@
     "@kobalte/core": "^0.12.6",
     "@solid-primitives/storage": "^3.3.0",
     "@solidjs/router": "^0.13.1",
+    "prism-material-themes": "^1.0.4",
     "reaboot-commons": "file:../commons",
     "solid-icons": "^1.1.0",
     "solid-js": "^1.8.11",

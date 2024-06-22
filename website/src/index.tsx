@@ -1,5 +1,6 @@
 /* @refresh reload */
 import './index.css';
+import 'prism-material-themes/themes/material-ocean.css';
 
 import {render} from 'solid-js/web';
 import {Router} from '@solidjs/router';

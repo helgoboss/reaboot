@@ -4,6 +4,8 @@ import {createSignal, Index, JSX} from "solid-js";
 import ReabootLogo from './../assets/reaboot-logo.svg?component-solid';
 import {Tabs} from "@kobalte/core";
 import {makePersisted} from "@solid-primitives/storage";
+import {ReaperRef} from "../components/reaper-ref";
+import {ReaPackRef} from "../components/reapack-ref";
 
 export default function Home() {
     const [userType, setUserType] = makePersisted(
@@ -19,19 +21,7 @@ export default function Home() {
                             <A href="/"><ReabootLogo class="h-32"/></A>
                             <p>
                                 ReaBoot is a convenient all-in-one online installer for&#32;
-                                <span class="whitespace-nowrap">
-                                    <a href="https://reaper.fm/" target="_blank"
-                                       class="underline"
-                                       title="The DAW we all love">
-                                        REAPER
-                                    </a>,
-                                </span>&#32;
-                                <a href="https://reapack.com/" target="_blank"
-                                   class="underline"
-                                   title="The standard package manager for REAPER">
-                                    ReaPack
-                                </a>
-                                &#32;and arbitrary&#32;
+                                <ReaperRef/>,&#32;<ReaPackRef/>&#32;and arbitrary&#32;
                                 <span class="italic"
                                       title="3rd-party add-ons for REAPER, e.g. scripts, extensions and themes">
                                                 packages

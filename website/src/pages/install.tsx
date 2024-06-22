@@ -6,6 +6,7 @@ import {recipeNameIsSpecial} from "../util/recipe-util";
 import {InstallViaReaboot} from "../components/install-via-reaboot";
 import {InstallViaReapack} from "../components/install-via-reapack";
 import {Page} from "../components/page";
+import {ShowRecipe} from "../components/show-recipe";
 
 export default function Install() {
     const params = useParams();
@@ -40,12 +41,18 @@ export default function Install() {
                                     <Tabs.Trigger value="reapack" class="tab data-[selected]:tab-active">
                                         Via ReaPack
                                     </Tabs.Trigger>
+                                    <Tabs.Trigger value="recipe" class="tab data-[selected]:tab-active">
+                                        Show recipe
+                                    </Tabs.Trigger>
                                 </Tabs.List>
                                 <Tabs.Content value="reaboot">
                                     <InstallViaReaboot recipe={recipe()}/>
                                 </Tabs.Content>
                                 <Tabs.Content value="reapack">
                                     <InstallViaReapack recipe={recipe()}/>
+                                </Tabs.Content>
+                                <Tabs.Content value="recipe">
+                                    <ShowRecipe recipe={recipe()}/>
                                 </Tabs.Content>
                             </Tabs.Root>
                         </>

@@ -5,8 +5,10 @@ import {FaSolidDownload, FaSolidLightbulb, FaSolidThumbsUp} from "solid-icons/fa
 import {Collapsible} from "@kobalte/core";
 import {CopyField} from "./copy-field";
 import {UAParser} from "ua-parser-js";
-import {ParsedRecipe} from "reaboot-commons/src/recipe-util";
+import {formatRecipeAsJson, ParsedRecipe} from "reaboot-commons/src/recipe-util";
 import {RecipeRef} from "./recipe-ref";
+import {ReaperRef} from "./reaper-ref";
+import {ReaPackRef} from "./reapack-ref";
 
 const LATEST_REABOOT_VERSION = "0.6.0";
 
@@ -15,15 +17,14 @@ export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
     const otherDownloads = reabootDownloads.filter(d => {
         return downloadConfig.mainDownloads.every(optimalDownload => d.label !== optimalDownload?.label);
     });
-    const getRecipeAsJson = () => JSON.stringify(props.recipe.raw, null, "    ");
     const copyRecipeMain = async () => {
-        await copyTextToClipboard(getRecipeAsJson());
+        await copyTextToClipboard(formatRecipeAsJson(props.recipe.raw));
     };
 
     return <div class="grow flex flex-col max-w-lg items-stretch">
         <div class="text-center">
             ReaBoot is the easiest way to install <RecipeRef recipe={props.recipe}/>.
-            It automatically installs REAPER and ReaPack if necessary.
+            It automatically installs <ReaperRef/> and <ReaPackRef/> if necessary.
         </div>
         <Step index={0} title="Download ReaBoot">
             <Switch>
@@ -51,8 +52,8 @@ export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
             <div class="mt-3 text-xs">
                 {downloadConfig.downloadComment}
             </div>
-            <div class="text-xs mt-3">
-                <div class="divider mt-1">Looking for another download?</div>
+
+            <CollapsedInfo title="Looking for another download?">
                 <div class="flex flex-wrap justify-center gap-3">
                     <For each={otherDownloads}>
                         {d =>
@@ -65,17 +66,14 @@ export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
                         }
                     </For>
                 </div>
-            </div>
+            </CollapsedInfo>
         </Step>
         <Step index={1} title="Start ReaBoot">
             <div>
-                Start the installer and follow its instructions.
+                After ReaBoot has been downloaded, simply start it and follow its instructions!
             </div>
-            <Collapsible.Root class="mt-3 collapse collapse-arrow data-[expanded]:collapse-open bg-base-300">
-                <Collapsible.Trigger class="collapse-title flex flex-row items-center justify-center">
-                    <FaSolidLightbulb class="mr-2"/> Having issues?
-                </Collapsible.Trigger>
-                <Collapsible.Content class="p-4 prose prose-sm">
+            <CollapsedInfo title="Having issues?">
+                <div class="p-4 prose prose-sm">
                     <dl>
                         <Show when={UA_PARSER_RESULT.os.name === "Windows"}>
                             <dt>
@@ -88,11 +86,11 @@ export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
                             </dd>
                         </Show>
                         <dt>
-                            Does the installer ask you for a recipe?
+                            Does ReaBoot ask you for a recipe?
                         </dt>
                         <dd class="p-0">
                             In that case, press&#32;
-                            <CopyField text={getRecipeAsJson}>Copy recipe</CopyField>
+                            <CopyField text={() => formatRecipeAsJson(props.recipe.raw)}>Copy recipe</CopyField>
                             &#32;and then&#32; paste the recipe into ReaBoot!
                         </dd>
                         <dt>
@@ -103,8 +101,8 @@ export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
                             Try installation via ReaPack instead!
                         </dd>
                     </dl>
-                </Collapsible.Content>
-            </Collapsible.Root>
+                </div>
+            </CollapsedInfo>
         </Step>
     </div>
 }
@@ -244,4 +242,15 @@ const reabootDownloads = [
 
 function buildDownloadUrl(download: ReabootDownload): string {
     return `https://github.com/helgoboss/reaboot/releases/download/v${LATEST_REABOOT_VERSION}/${download.asset}`
+}
+
+function CollapsedInfo(props: { title: string, children: JSX.Element }) {
+    return <Collapsible.Root class="mt-3 collapse collapse-arrow data-[expanded]:collapse-open bg-base-300">
+        <Collapsible.Trigger class="collapse-title flex flex-row items-center justify-center">
+            <FaSolidLightbulb class="mr-2"/> {props.title}
+        </Collapsible.Trigger>
+        <Collapsible.Content>
+            {props.children}
+        </Collapsible.Content>
+    </Collapsible.Root>
 }
