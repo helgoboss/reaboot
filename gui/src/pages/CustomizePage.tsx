@@ -6,9 +6,10 @@ import {configureInstaller} from "../epics/install.ts";
 import {WaitingForDataPage} from "./WaitingForDataPage.tsx";
 import {PackageTable} from "../components/PackageTable.tsx";
 import {clipboard} from "@tauri-apps/api";
-import {FaSolidCheck, FaSolidCirclePlus, FaSolidX} from "solid-icons/fa";
+import {FaSolidCheck, FaSolidCirclePlus} from "solid-icons/fa";
 import {navigateTo, showError} from "../epics/common.tsx";
 import {createSignal, For, Show} from "solid-js";
+import {Switch as KSwitch} from "@kobalte/core";
 
 export function CustomizePage() {
     const resolvedConfig = mainStore.state.resolvedConfig;
@@ -20,13 +21,15 @@ export function CustomizePage() {
     return (
         <Page>
             <p class="text-center font-bold">
-                Optional: Customize installation
+                Customize installation
             </p>
             <div class="grow flex flex-row items-stretch justify-stretch min-h-0 min-w-0 pt-3">
                 <Show when={showFeaturePane()}>
-                    <div class="basis-1/2 card card-compact bg-base-200 min-h-0 min-w-0 mr-5">
+                    <div class={`flex-1 card card-compact bg-base-200 min-h-0 min-w-0 mr-5`}>
                         <div class="card-body min-h-0 overflow-x-hidden">
-                            <h2 class="card-title text-base">Toggle features on/off</h2>
+                            <h2 class="card-title text-base">
+                                Toggle features on/off
+                            </h2>
                             <div class="basis-3/4 overflow-y-auto">
                                 <ul class="flex flex-wrap gap-2">
                                     <For each={mainStore.parsedRecipeFeatures()}>
@@ -47,30 +50,43 @@ export function CustomizePage() {
                                     </For>
                                 </ul>
                             </div>
-                            <div class="basis-1/4 overflow-y-auto">
-                                {featureHelp()}
+                            <div class="basis-1/4 overflow-y-auto flex flex-row justify-center text-center">
+                                {featureHelp() ||
+                                    <KSwitch.Root class="flex flex-row items-center"
+                                                  checked={mainStore.state.expertMode}
+                                                  onChange={on => mainStore.setExpertMode(on)}>
+                                        <KSwitch.Label>Expert mode</KSwitch.Label>
+                                        <KSwitch.Input/>
+                                        <KSwitch.Control class="ml-2">
+                                            <KSwitch.Thumb class="toggle toggle-primary"
+                                                           aria-checked={mainStore.state.expertMode}/>
+                                        </KSwitch.Control>
+                                    </KSwitch.Root>
+                                }
                             </div>
                         </div>
                     </div>
                 </Show>
-                <div class="grow flex flex-col min-h-0" classList={{"basis-1/2": showFeaturePane()}}>
-                    <Show when={mainStore.showAddCustomPackagesButton}>
-                        <ButtonRow class="pt-0">
-                            <button class="btn m-0" onClick={() => addPackageUrlsFromClipboard()}
-                                    title="This expects a list of package URLs in your clipboard.">
-                                <FaSolidCirclePlus size={14}/> Add custom packages from clipboard
-                            </button>
-                        </ButtonRow>
-                    </Show>
-                    <div class="grow card card-compact bg-base-200 min-h-0">
-                        <div class="card-body min-h-0">
-                            <h2 class="card-title text-base">Final package list</h2>
-                            <div class="overflow-y-auto">
-                                <PackageTable packages={resolvedConfig.package_urls}/>
+                <Show when={mainStore.state.expertMode || !showFeaturePane()}>
+                    <div class="flex-1 flex flex-col min-h-0">
+                        <Show when={mainStore.showAddCustomPackagesButton}>
+                            <ButtonRow class="pt-0">
+                                <button class="btn m-0" onClick={() => addPackageUrlsFromClipboard()}
+                                        title="This expects a list of package URLs in your clipboard.">
+                                    <FaSolidCirclePlus size={14}/> Add custom packages from clipboard
+                                </button>
+                            </ButtonRow>
+                        </Show>
+                        <div class="grow card card-compact bg-base-200 min-h-0">
+                            <div class="card-body min-h-0">
+                                <h2 class="card-title text-base">Final package list</h2>
+                                <div class="overflow-y-auto">
+                                    <PackageTable packages={resolvedConfig.package_urls}/>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
+                </Show>
             </div>
             <p class="text-center text-sm px-8 mt-3">
                 Packages which are already installed will be

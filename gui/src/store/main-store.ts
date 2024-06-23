@@ -20,6 +20,8 @@ export type MainStoreState = {
     usePortableReaperDir: boolean,
     // Whether user has agreed to the REAPER EULA already.
     agreedToReaperEula: boolean,
+    // E.g. whether to allow to paste custom packages.
+    expertMode: boolean,
     // Installer config.
     // Dictated by frontend.
     installerConfig: InstallerConfig,
@@ -71,6 +73,10 @@ export class MainStore {
         const [state, setState] = createStore<MainStoreState>(initialState);
         this.state = state;
         this.setState = setState;
+    }
+
+    setExpertMode(on: boolean) {
+        this.setState("expertMode", on);
     }
 
     featureIsSelected(featureId: string) {

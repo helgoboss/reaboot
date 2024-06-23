@@ -30,6 +30,7 @@ export const mainStore = new MainStore({
         selected_features: [""],
     },
     usePortableReaperDir: false,
+    expertMode: false,
     installationStage: {
         stage: {
             kind: "NothingInstalled",
