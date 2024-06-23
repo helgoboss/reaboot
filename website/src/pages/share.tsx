@@ -4,7 +4,7 @@ import {Page} from "../components/page";
 import {CopyField} from "../components/copy-field";
 import {deconstructRecipe} from "../util/recipe-util";
 import {makePersisted} from "@solid-primitives/storage";
-import {HighlightJson} from "../components/highlight-json";
+import {RecipeCode} from "../components/recipe-code";
 
 const MAX_NICE_URL_LENGTH = 250;
 const MAX_URL_LENGTH = 2000;
@@ -141,21 +141,21 @@ export function Share() {
             <p>
                 Here's a very simple example recipe in JSON format:
             </p>
-            <HighlightJson>{`{
+            <RecipeCode>{`{
     "name": "ReaLearn",
     "author": "Helgoboss Projects",
     "website": "https://www.helgoboss.org/projects/realearn/",
     "required_packages": [
         "https://github.com/helgoboss/reaper-packages/raw/master/index.xml#p=Extensions/ReaLearn-x64&v=latest"
     ]
-}`}</HighlightJson>
+}`}</RecipeCode>
             <p>
                 At startup, the installer checks whether the clipboard contains such a recipe. If yes, it
                 pre-configures itself with the data in the recipe. As an alternative, it accepts a package URL or an URL
                 that points to a recipe.
             </p>
             <p>Here's a more complicated recipe which demonstrates the use of optional features:</p>
-            <HighlightJson>{`{
+            <RecipeCode>{`{
     "name": "Helgo's random tool collection",
     "description": "This is just an example recipe for ReaBoot in order to demonstrate how to share a complete collection of packages and make some of them optional.",
     "author": "helgoboss",
@@ -189,7 +189,7 @@ export function Share() {
             ]
         }
     }
-}`}</HighlightJson>
+}`}</RecipeCode>
 
             <h3 id="package-url">Package URL</h3>
             <p>
