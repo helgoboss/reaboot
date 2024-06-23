@@ -20,9 +20,15 @@ export function App() {
     // Try applying recipe from clipboard. Fail silently.
     void applyRecipeFromClipboard().catch(() => undefined);
     const resolvedConfig = () => mainStore.state.resolvedConfig;
+    const visiblePages = () => pages.filter(p => {
+        if (p.id == "customize") {
+            return mainStore.shouldShowCustomizePage;
+        }
+        return true;
+    });
     return <div class="w-screen h-screen flex flex-col min-h-0 select-none">
         <header class="flex-none p-4">
-            <Stepper pages={pages} currentPageId={mainStore.currentPage().id}/>
+            <Stepper pages={visiblePages()} currentPageId={mainStore.currentPage().id}/>
         </header>
         <main class="grow flex flex-col min-h-0 overflow-y-auto">
             {mainStore.currentPage().content({})}

@@ -7,6 +7,7 @@ import {InstallerConfig} from "../../../core/bindings/InstallerConfig.ts";
 import {Accessor, createMemo} from "solid-js";
 import {getPage} from "../epics/common.tsx";
 import {getOrEmptyRecord, ParsedRecipe} from "reaboot-commons/src/recipe-util.ts";
+import {mainStore} from "../globals.ts";
 
 export type MainStoreState = {
     // ID of the currently displayed page
@@ -171,6 +172,21 @@ export class MainStore {
             // click "blindly" through the installation process and wouldn't even realize that the
             // thing they hope to install is not going to be installed or updated (even worse).
             return false;
+        }
+        return true;
+    }
+
+    get shouldShowCustomizePage(): boolean {
+        const recipe = this.state.parsedRecipe;
+        if (!recipe) {
+            return true;
+        }
+        if (recipe.raw.skip_additional_packages) {
+            if (Object.keys(recipe.features).length === 0) {
+                // There's no use in showing the "Customize" page if additional packages
+                // should not be addable and there are no features that the user can pick.
+                return false;
+            }
         }
         return true;
     }

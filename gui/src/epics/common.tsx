@@ -91,11 +91,16 @@ export async function navigateTo(pageId: PageId) {
     }
     // Check feature requirements
     if (pageId === "install") {
-        if (!mainStore.featureConfigIsValid) {
+        if (mainStore.shouldShowCustomizePage && !mainStore.featureConfigIsValid) {
             showToast("alert-warning", "Please select at least one feature!");
             mainStore.setCurrentPageId("customize");
             return;
         }
+    }
+    // Check if customize page should be skipped
+    if (pageId == "customize" && !mainStore.shouldShowCustomizePage) {
+        mainStore.setCurrentPageId("install");
+        return;
     }
     // Finally change page
     mainStore.setCurrentPageId(pageId);
