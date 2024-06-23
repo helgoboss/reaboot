@@ -10,6 +10,7 @@ import {Portal} from "solid-js/web";
 import {Toast} from "@kobalte/core";
 import {applyRecipeFromClipboard} from "./epics/welcome.ts";
 import {ConfirmationRequest} from "../../core/bindings/ConfirmationRequest.ts";
+import {Help} from "./components/Help.tsx";
 
 export function App() {
     keepSyncingStateFromBackendToStore();
@@ -30,10 +31,11 @@ export function App() {
             <Show when={resolvedConfig()}>
                 {(conf) =>
                     <footer class="p-4 bg-base-300 text-base-content flex flex-row text-xs">
-                        <div class="text-left font-bold"
-                             title="Folder in which REAPER saves user data, e.g. preferences and scripts.">
-                            REAPER resource path:
-                        </div>
+                        <Help help="Folder in which REAPER saves user data, e.g. preferences and scripts.">
+                            <div class="text-left font-bold">
+                                REAPER resource path:
+                            </div>
+                        </Help>
                         <div class="grow min-w-3"></div>
                         <div>
                             <Switch>

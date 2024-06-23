@@ -2,6 +2,7 @@ import {navigateTo, showError, showSuccess} from "../epics/common.tsx";
 import {mainStore} from "../globals.ts";
 import {Match, Show, Switch} from "solid-js";
 import {applyRecipeFromClipboard} from "../epics/welcome.ts";
+import {Help} from "../components/Help.tsx";
 
 export function WelcomePage() {
     return (
@@ -13,21 +14,20 @@ export function WelcomePage() {
                         <a href="https://www.reaboot.com/" target="_blank" class="link">ReaBoot</a>
                         &#32;is a convenient all-in-one online installer for&#32;
                         <span class="whitespace-nowrap">
-                            <a href="https://reaper.fm/" target="_blank"
-                               class="underline"
-                               title="The DAW we all love">
-                                REAPER
-                            </a>,&#32;
-                            <a href="https://reapack.com/" target="_blank"
-                               class="underline"
-                               title="The standard package manager for REAPER">
-                                ReaPack
-                            </a>
+                            <Help help="The DAW we all love">
+                                <a href="https://reaper.fm/" target="_blank" class="link">
+                                    REAPER
+                                </a>
+                            </Help>,&#32;
+                            <Help help="The standard package manager for REAPER">
+                                <a href="https://reapack.com/" target="_blank" class="link">
+                                    ReaPack
+                                </a>
+                            </Help>
                             &#32;and arbitrary&#32;
-                            <span class="underline"
-                                  title="3rd-party add-ons for REAPER such as scripts, extensions and themes">
+                            <Help help="3rd-party add-ons for REAPER such as scripts, extensions and themes">
                                 packages
-                            </span>
+                            </Help>
                         </span>.
                     </p>
                     <div class="divider"></div>
@@ -65,10 +65,12 @@ export function WelcomePage() {
                                     <div>
                                         <p>
                                             ReaBoot is currently running&#32;
-                                            <span class="underline"
-                                                  title="That means it's not pre-configured and will by default install REAPER and ReaPack only.">
-                                                without recipe
-                                            </span>.
+                                            <Help
+                                                help="That means it's not pre-configured and will by default install REAPER and ReaPack only.">
+                                                <span>
+                                                    without recipe
+                                                </span>
+                                            </Help>.
                                             If you wanted to install something particular, please paste the recipe now!
                                         </p>
                                         <button class="btn btn-accent btn-xs mt-2"

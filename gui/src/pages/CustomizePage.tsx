@@ -10,6 +10,7 @@ import {FaSolidCheck, FaSolidCirclePlus} from "solid-icons/fa";
 import {navigateTo, showError} from "../epics/common.tsx";
 import {createSignal, For, Show} from "solid-js";
 import {Switch as KSwitch} from "@kobalte/core";
+import {Help} from "../components/Help.tsx";
 
 export function CustomizePage() {
     const resolvedConfig = mainStore.state.resolvedConfig;
@@ -27,10 +28,11 @@ export function CustomizePage() {
                 <Show when={showFeaturePane()}>
                     <div class={`flex-1 card card-compact bg-base-200 min-h-0 min-w-0 mr-5`}>
                         <div class="card-body min-h-0 overflow-x-hidden">
-                            <h2 class="card-title text-base"
-                                title="Features are things that can be installed optionally">
-                                Toggle features on/off
-                            </h2>
+                            <Help help="Features are things that can be installed optionally">
+                                <h2 class="card-title text-base">
+                                    Toggle features on/off
+                                </h2>
+                            </Help>
                             <div class="basis-3/4 overflow-y-auto">
                                 <ul class="flex flex-wrap gap-2">
                                     <For each={mainStore.parsedRecipeFeatures()}>
@@ -72,10 +74,11 @@ export function CustomizePage() {
                     <div class="flex-1 flex flex-col min-h-0">
                         <Show when={mainStore.showAddCustomPackagesButton}>
                             <ButtonRow class="pt-0">
-                                <button class="btn m-0" onClick={() => addPackageUrlsFromClipboard()}
-                                        title="This expects a list of package URLs in your clipboard.">
-                                    <FaSolidCirclePlus size={14}/> Add custom packages from clipboard
-                                </button>
+                                <Help help="This expects a list of package URLs in your clipboard.">
+                                    <button class="btn m-0" onClick={() => addPackageUrlsFromClipboard()}>
+                                        <FaSolidCirclePlus size={14}/> Add custom packages from clipboard
+                                    </button>
+                                </Help>
                             </ButtonRow>
                         </Show>
                         <div class="grow card card-compact bg-base-200 min-h-0">
