@@ -72,10 +72,6 @@ export function InstallPage() {
                                             </li>
                                             <li><b>Platform:</b> <span
                                                 class="font-mono">{resolvedConfig.platform}</span></li>
-                                            <li>
-                                                <b>Error
-                                                    handling:</b> {resolvedConfig.skip_failed_packages ? "Ignoring failing packages" : "Prevent incomplete installations"}
-                                            </li>
                                         </ul>
                                         <h4>Packages</h4>
                                     </div>
