@@ -51,7 +51,7 @@ export type MainStoreState = {
     manualReaperInstallPath?: string,
     // Currently running tasks
     // Set in response to event from backend.
-    current_tasks: ReabootTask[],
+    currentTasks: ReabootTask[],
 }
 
 export type ReabootTask = {
@@ -158,10 +158,27 @@ export class MainStore {
         }
     }
 
+    get featureConfigIsValid(): boolean {
+        const recipe = this.state.installerConfig.recipe;
+        if (!recipe) {
+            return true;
+        }
+        const requiredPackages = recipe.required_packages || [];
+        if (requiredPackages.length == 0 && this.state.installerConfig.selected_features.length == 0) {
+            // Continuing without any required package and selected feature would be confusing. ReaBoot would
+            // implicitly install REAPER and ReaPack, but that's it! None of the things that are
+            // part of the recipe would be installed. This behavior would be confusing because users often
+            // click "blindly" through the installation process and wouldn't even realize that the
+            // thing they hope to install is not going to be installed or updated (even worse).
+            return false;
+        }
+        return true;
+    }
+
     addTask(id: number, label: string) {
         this.setState(
             produce((state) => {
-                state.current_tasks.push({
+                state.currentTasks.push({
                     id,
                     label,
                     progress: 0.0,
@@ -173,7 +190,7 @@ export class MainStore {
     updateTaskProgress(id: number, progress: number) {
         this.setState(
             produce((state) => {
-                const task = state.current_tasks.find(t => t.id === id);
+                const task = state.currentTasks.find(t => t.id === id);
                 if (task) {
                     task.progress = progress;
                 }
@@ -182,6 +199,6 @@ export class MainStore {
     }
 
     removeTask(id: number) {
-        this.setState("current_tasks", tasks => tasks.filter(t => t.id !== id));
+        this.setState("currentTasks", tasks => tasks.filter(t => t.id !== id));
     }
 }

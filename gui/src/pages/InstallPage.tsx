@@ -42,10 +42,10 @@ export function InstallPage() {
                                 <div>
                                     <progress class="progress" value={mainProgressInPercent()} max="100"/>
                                 </div>
-                                <Show when={mainStore.state.current_tasks.length > 0}>
+                                <Show when={mainStore.state.currentTasks.length > 0}>
                                     <table class="table table-xs table-fixed">
                                         <tbody>
-                                        <For each={mainStore.state.current_tasks}>
+                                        <For each={mainStore.state.currentTasks}>
                                             {task =>
                                                 <tr class="border-none">
                                                     <td class="w-1/2 whitespace-nowrap overflow-hidden p-0">

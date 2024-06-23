@@ -38,42 +38,50 @@ function showToast(clazz: string, message: string) {
     ));
 }
 
+async function confirmReaperEula(): Promise<boolean> {
+    const [eulaResource] = createResource(mainService.getReaperEula);
+    const yes = await showDialog<boolean>({
+        title: "REAPER license agreement",
+        fullScreen: true,
+        content: <div class="flex flex-col min-h-0">
+            <div class="text-center">
+                ReaBoot is going to download and install REAPER because it's not yet installed at the location of
+                your choice. In order to continue, you need to accept the REAPER license agreement.
+            </div>
+            <div class="grow card min-h-0 bg-base-300 mt-4">
+                <div class="card-body min-h-0">
+                    <Switch>
+                        <Match when={eulaResource.loading}>
+                            <span class="loading loading-ball loading-md"/>
+                        </Match>
+                        <Match when={true}>
+                            <div class="overflow-y-auto whitespace-pre text-xs select-all">
+                                {eulaResource()}
+                            </div>
+                        </Match>
+                    </Switch>
+                </div>
+            </div>
+        </div>,
+        buildButtons: (close) => {
+            return <>
+                <button class="btn btn-primary" onClick={() => close(true)}>Agree</button>
+                <button class="btn" onClick={() => close(false)}>Disagree</button>
+            </>;
+        }
+    });
+    return yes || false
+}
+
 export async function navigateTo(pageId: PageId) {
+    // Find desired page
     const destPage = getPage(pageId);
-    if (destPage.requiresReaperEulaAgreement
+    // Check REAPER EULA requirements
+    const needReaperEulaAgreement = destPage.requiresReaperEulaAgreement
         && !mainStore.state.agreedToReaperEula
-        && !mainStore.state.resolvedConfig?.reaper_exe_exists) {
-        const [eulaResource] = createResource(mainService.getReaperEula);
-        const userAgreedToEula = await showDialog<boolean>({
-            title: "REAPER license agreement",
-            fullScreen: true,
-            content: <div class="flex flex-col min-h-0">
-                <div class="text-center">
-                    ReaBoot is going to download and install REAPER because it's not yet installed at the location of
-                    your choice. In order to continue, you need to accept the REAPER license agreement.
-                </div>
-                <div class="grow card min-h-0 bg-base-300 mt-4">
-                    <div class="card-body min-h-0">
-                        <Switch>
-                            <Match when={eulaResource.loading}>
-                                <span class="loading loading-ball loading-md"/>
-                            </Match>
-                            <Match when={true}>
-                                <div class="overflow-y-auto whitespace-pre text-xs select-all">
-                                    {eulaResource()}
-                                </div>
-                            </Match>
-                        </Switch>
-                    </div>
-                </div>
-            </div>,
-            buildButtons: (close) => {
-                return <>
-                    <button class="btn btn-primary" onClick={() => close(true)}>Agree</button>
-                    <button class="btn" onClick={() => close(false)}>Disagree</button>
-                </>;
-            }
-        });
+        && !mainStore.state.resolvedConfig?.reaper_exe_exists;
+    if (needReaperEulaAgreement) {
+        const userAgreedToEula = await confirmReaperEula();
         if (userAgreedToEula) {
             mainStore.agreeToEula();
         } else {
@@ -81,6 +89,15 @@ export async function navigateTo(pageId: PageId) {
             return;
         }
     }
+    // Check feature requirements
+    if (pageId === "install") {
+        if (!mainStore.featureConfigIsValid) {
+            showToast("alert-warning", "Please select at least one feature!");
+            mainStore.setCurrentPageId("customize");
+            return;
+        }
+    }
+    // Finally change page
     mainStore.setCurrentPageId(pageId);
 }
 

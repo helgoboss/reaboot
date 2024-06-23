@@ -37,7 +37,7 @@ export const mainStore = new MainStore({
         },
         label: "",
     },
-    current_tasks: [],
+    currentTasks: [],
 });
 
 export const pages: PageDescriptor[] = [
