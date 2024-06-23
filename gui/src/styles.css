@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 .tooltip__trigger {
-    text-decoration: underline;
+    /*text-decoration: underline;*/
 }
 
 .tooltip__content {

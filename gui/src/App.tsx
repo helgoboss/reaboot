@@ -31,7 +31,7 @@ export function App() {
             <Show when={resolvedConfig()}>
                 {(conf) =>
                     <footer class="p-4 bg-base-300 text-base-content flex flex-row text-xs">
-                        <Help help="Folder in which REAPER saves user data, e.g. preferences and scripts.">
+                        <Help help="Folder in which REAPER saves user data, e.g. preferences and scripts">
                             <div class="text-left font-bold">
                                 REAPER resource path:
                             </div>
@@ -39,15 +39,26 @@ export function App() {
                         <div class="grow min-w-3"></div>
                         <div>
                             <Switch>
-                                <Match when={conf().portable}><PortableInstallationIcon size={14}/></Match>
-                                <Match when={true}><MainInstallationIcon size={14}/></Match>
+                                <Match when={conf().portable}>
+                                    <Help help="Portable REAPER installation">
+                                        <PortableInstallationIcon size={14}/>
+                                    </Help>
+                                </Match>
+                                <Match when={true}>
+                                    <Help help="Main REAPER installation">
+                                        <MainInstallationIcon size={14}/>
+                                    </Help>
+                                </Match>
                             </Switch>
                         </div>
                         <div class="font-mono ml-3">
                             {conf().reaper_resource_dir}
                         </div>
                         <Show when={!conf().reaper_exe_exists}>
-                            <div class="badge badge-secondary badge-sm ml-3">new</div>
+                            <Help
+                                help="This REAPER installation doesn't exist yet">
+                                <div class="badge badge-secondary badge-sm ml-3">new</div>
+                            </Help>
                         </Show>
                     </footer>
                 }

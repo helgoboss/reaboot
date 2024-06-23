@@ -55,16 +55,19 @@ export function CustomizePage() {
                             </div>
                             <div class="basis-1/4 overflow-y-auto flex flex-row justify-center text-center">
                                 {featureHelp() ||
-                                    <KSwitch.Root class="flex flex-row items-center"
-                                                  checked={mainStore.state.expertMode}
-                                                  onChange={on => mainStore.setExpertMode(on)}>
-                                        <KSwitch.Label>Expert mode</KSwitch.Label>
-                                        <KSwitch.Input/>
-                                        <KSwitch.Control class="ml-2">
-                                            <KSwitch.Thumb class="toggle toggle-primary"
-                                                           aria-checked={mainStore.state.expertMode}/>
-                                        </KSwitch.Control>
-                                    </KSwitch.Root>
+                                    <Help
+                                        help="Export mode turns on advanced features such as a package view and addition of custom packages">
+                                        <KSwitch.Root class="flex flex-row items-center"
+                                                      checked={mainStore.state.expertMode}
+                                                      onChange={on => mainStore.setExpertMode(on)}>
+                                            <KSwitch.Label>Expert mode</KSwitch.Label>
+                                            <KSwitch.Input/>
+                                            <KSwitch.Control class="ml-2">
+                                                <KSwitch.Thumb class="toggle toggle-primary"
+                                                               aria-checked={mainStore.state.expertMode}/>
+                                            </KSwitch.Control>
+                                        </KSwitch.Root>
+                                    </Help>
                                 }
                             </div>
                         </div>
@@ -74,7 +77,8 @@ export function CustomizePage() {
                     <div class="flex-1 flex flex-col min-h-0">
                         <Show when={mainStore.showAddCustomPackagesButton}>
                             <ButtonRow class="pt-0">
-                                <Help help="This expects a list of package URLs in your clipboard.">
+                                <Help
+                                    help="Allows you to add packages that are not part of the recipe itself. This expects a list of package URLs in your clipboard, one per line.">
                                     <button class="btn m-0" onClick={() => addPackageUrlsFromClipboard()}>
                                         <FaSolidCirclePlus size={14}/> Add custom packages from clipboard
                                     </button>
@@ -83,7 +87,12 @@ export function CustomizePage() {
                         </Show>
                         <div class="grow card card-compact bg-base-200 min-h-0">
                             <div class="card-body min-h-0">
-                                <h2 class="card-title text-base">Final package list</h2>
+                                <h2 class="card-title text-base">
+                                    <Help
+                                        help="With the current configuration, ReaBoot will install the following ReaPack packages">
+                                        Final package list
+                                    </Help>
+                                </h2>
                                 <div class="overflow-y-auto">
                                     <PackageTable packages={resolvedConfig.package_urls}/>
                                 </div>
@@ -93,7 +102,7 @@ export function CustomizePage() {
                 </Show>
             </div>
             <p class="text-center text-sm px-8 mt-3">
-                You can add more packages later at any time, either
+                You can add more stuff later at any time, either
                 by starting ReaBoot again or by using ReaPack in REAPER
                 (Extensions&nbsp;→&nbsp;ReaPack&nbsp;→&nbsp;Browse packages).
             </p>

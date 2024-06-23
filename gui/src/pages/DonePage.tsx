@@ -3,6 +3,7 @@ import {FaSolidCircleCheck, FaSolidFaceSadTear, FaSolidHeart, FaSolidRocket} fro
 import {Match, Show, Switch} from "solid-js";
 import {showDialog} from "../components/GlobalDialog.tsx";
 import {startReaperAndQuit, startReaperInstaller} from "../epics/done.ts";
+import {Help} from "../components/Help.tsx";
 
 export function DonePage() {
     return <div class="grow hero">
@@ -72,14 +73,16 @@ export function DonePage() {
                 </Show>
                 <Show when={mainStore.state.installationReportHtml}>
                     <div>
-                        <button class="btn btn-link" onClick={showInstallationReport}>
-                            Show installation report
-                        </button>
+                        <Help help="Shows a summary of what was installed and replaced">
+                            <button class="btn btn-link" onClick={showInstallationReport}>
+                                Show installation report
+                            </button>
+                        </Help>
                         <Show when={mainStore.state.installationReportContainsDonationLinks}>
                             <div role="alert" class="alert">
                                 <FaSolidHeart class="cursor-pointer" onClick={showInstallationReport}/>
                                 <span>
-                                    This report contains donation links. Please consider supporting the package authors!
+                                    Above installation report contains donation links. Please consider supporting the package authors!
                                 </span>
                             </div>
                         </Show>
