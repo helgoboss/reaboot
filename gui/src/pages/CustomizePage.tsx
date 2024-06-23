@@ -27,7 +27,8 @@ export function CustomizePage() {
                 <Show when={showFeaturePane()}>
                     <div class={`flex-1 card card-compact bg-base-200 min-h-0 min-w-0 mr-5`}>
                         <div class="card-body min-h-0 overflow-x-hidden">
-                            <h2 class="card-title text-base">
+                            <h2 class="card-title text-base"
+                                title="Features are things that can be installed optionally">
                                 Toggle features on/off
                             </h2>
                             <div class="basis-3/4 overflow-y-auto">
@@ -89,8 +90,6 @@ export function CustomizePage() {
                 </Show>
             </div>
             <p class="text-center text-sm px-8 mt-3">
-                Packages which are already installed will be
-                replaced with the new version.
                 You can add more packages later at any time, either
                 by starting ReaBoot again or by using ReaPack in REAPER
                 (Extensions&nbsp;→&nbsp;ReaPack&nbsp;→&nbsp;Browse packages).

@@ -70,8 +70,14 @@ export function InstallPage() {
                                             <li>
                                                 <b>Destination:</b> REAPER {resolvedConfig.portable ? "portable" : "main"} installation
                                             </li>
-                                            <li><b>Platform:</b> <span
-                                                class="font-mono">{resolvedConfig.platform}</span></li>
+                                            <li>
+                                                <b>Platform:</b>
+                                                <span class="font-mono">{resolvedConfig.platform}</span>
+                                            </li>
+                                            <li>
+                                                Packages which are already installed will be
+                                                replaced!
+                                            </li>
                                         </ul>
                                         <h4>Packages</h4>
                                     </div>
