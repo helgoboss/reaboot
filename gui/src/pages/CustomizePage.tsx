@@ -8,7 +8,7 @@ import {PackageTable} from "../components/PackageTable.tsx";
 import {clipboard} from "@tauri-apps/api";
 import {FaSolidCheck, FaSolidCirclePlus} from "solid-icons/fa";
 import {navigateTo, showError} from "../epics/common.tsx";
-import {createSignal, For, Show} from "solid-js";
+import {For, Show} from "solid-js";
 import {Switch as KSwitch} from "@kobalte/core";
 import {Help} from "../components/Help.tsx";
 
@@ -18,15 +18,14 @@ export function CustomizePage() {
         return <WaitingForDataPage/>;
     }
     const showFeaturePane = () => mainStore.parsedRecipeFeatures().length > 0;
-    const [featureHelp, setFeatureHelp] = createSignal<string | null>(null);
     return (
         <Page>
             <p class="text-center font-bold">
                 Customize installation
             </p>
-            <div class="grow flex flex-row items-stretch justify-stretch min-h-0 min-w-0 pt-3">
+            <div class="grow flex flex-row items-stretch justify-stretch min-h-0 min-w-0 pt-3 gap-5">
                 <Show when={showFeaturePane()}>
-                    <div class={`flex-1 card card-compact bg-base-200 min-h-0 min-w-0 mr-5`}>
+                    <div class="flex-1 card card-compact bg-base-200 min-h-0 min-w-0">
                         <div class="card-body min-h-0 overflow-x-hidden">
                             <Help help="Features are things that can be installed optionally">
                                 <h2 class="card-title text-base">
@@ -38,15 +37,15 @@ export function CustomizePage() {
                                     <For each={mainStore.parsedRecipeFeatures()}>
                                         {([id, feature]) => {
                                             return <li>
-                                                <button class="badge flex flex-row"
-                                                        classList={{"badge-accent": mainStore.featureIsSelected(id)}}
-                                                        onClick={() => toggleFeature(id)}
-                                                        onMouseEnter={() => setFeatureHelp(feature.raw.description ?? null)}
-                                                        onMouseLeave={() => setFeatureHelp(null)}>
-                                                    {feature.raw.name}
-                                                    {mainStore.featureIsSelected(id) ?
-                                                        <FaSolidCheck class="ml-1"/> : null}
-                                                </button>
+                                                <Help help={feature.raw.description ?? ""}>
+                                                    <button class="badge flex flex-row"
+                                                            classList={{"badge-accent": mainStore.featureIsSelected(id)}}
+                                                            onClick={() => toggleFeature(id)}>
+                                                        {feature.raw.name}
+                                                        {mainStore.featureIsSelected(id) ?
+                                                            <FaSolidCheck class="ml-1"/> : null}
+                                                    </button>
+                                                </Help>
                                             </li>;
                                         }
                                         }
@@ -54,21 +53,20 @@ export function CustomizePage() {
                                 </ul>
                             </div>
                             <div class="basis-1/4 overflow-y-auto flex flex-row justify-center text-center">
-                                {featureHelp() ||
-                                    <Help
-                                        help="Export mode turns on advanced features such as a package view and addition of custom packages">
-                                        <KSwitch.Root class="flex flex-row items-center"
-                                                      checked={mainStore.state.expertMode}
-                                                      onChange={on => mainStore.setExpertMode(on)}>
-                                            <KSwitch.Label>Expert mode</KSwitch.Label>
-                                            <KSwitch.Input/>
-                                            <KSwitch.Control class="ml-2">
-                                                <KSwitch.Thumb class="toggle toggle-primary"
-                                                               aria-checked={mainStore.state.expertMode}/>
-                                            </KSwitch.Control>
-                                        </KSwitch.Root>
-                                    </Help>
-                                }
+                                <Help
+                                    help="Export mode turns on advanced features such as a package view and addition of custom packages">
+                                    <KSwitch.Root class="flex flex-row items-center"
+                                                  checked={mainStore.state.expertMode}
+                                                  onChange={on => mainStore.setExpertMode(on)}>
+                                        <KSwitch.Label>Expert mode</KSwitch.Label>
+                                        <KSwitch.Input/>
+                                        <KSwitch.Control class="ml-2">
+                                            <KSwitch.Thumb class="toggle toggle-primary"
+                                                           aria-checked={mainStore.state.expertMode}/>
+                                        </KSwitch.Control>
+                                    </KSwitch.Root>
+                                </Help>
+
                             </div>
                         </div>
                     </div>
