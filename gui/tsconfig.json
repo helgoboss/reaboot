@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
-    "target": "es2015",
+    "target": "es2019",
     "useDefineForClassFields": true,
-    "module": "es2015",
+    "module": "ESNext",
     "lib": [
       "ES2020",
       "DOM",
