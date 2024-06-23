@@ -35,13 +35,13 @@ export default function Install() {
                             </h1>
                             <Tabs.Root value={via()} onChange={setVia} class="flex flex-col sm:items-center">
                                 <Tabs.List class="tabs tabs-boxed m-4 self-center">
-                                    <Tabs.Trigger value="reaboot" class="tab data-[selected]:tab-active">
+                                    <Tabs.Trigger value="reaboot" class="tab data-[selected]:tab-active !h-auto">
                                         Via ReaBoot
                                     </Tabs.Trigger>
-                                    <Tabs.Trigger value="reapack" class="tab data-[selected]:tab-active">
+                                    <Tabs.Trigger value="reapack" class="tab data-[selected]:tab-active !h-auto">
                                         Via ReaPack
                                     </Tabs.Trigger>
-                                    <Tabs.Trigger value="recipe" class="tab data-[selected]:tab-active">
+                                    <Tabs.Trigger value="recipe" class="tab data-[selected]:tab-active !h-auto">
                                         Show recipe
                                     </Tabs.Trigger>
                                 </Tabs.List>
