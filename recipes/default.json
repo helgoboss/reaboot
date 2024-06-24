@@ -1,0 +1,23 @@
+{
+  "name": "Popular REAPER add-ons",
+  "sub_title": "by ReaTeam, Helgoboss and others",
+  "description": "This recipe allows you to easily install some of the most popular REAPER scripts and extensions out there. Everything is optional, so you can choose yourself what to install and what not.",
+  "website": "https://www.reaboot.com/",
+  "required_packages": [],
+  "features": {
+    "sws": {
+      "name": "SWS/S&M Extension (beta)",
+      "description": "Popular and established extension that adds a variety of smaller features to REAPER. Considered as must-have by many.",
+      "packages": [
+        "https://raw.githubusercontent.com/ReaTeam/Extensions/master/index.xml#p=Extensions/reaper-oss_SWS.ext&v=latest-pre"
+      ]
+    },
+    "realearn": {
+      "name": "ReaLearn",
+      "description": "Versatile REAPER controller integration tool",
+      "packages": [
+        "https://github.com/helgoboss/reaper-packages/raw/master/index.xml#p=Extensions/ReaLearn-x64&v=latest"
+      ]
+    }
+  }
+}
