@@ -9,9 +9,9 @@ use ts_rs::TS;
 pub struct Recipe {
     pub name: String,
     #[ts(optional = nullable)]
-    pub description: Option<String>,
+    pub sub_title: Option<String>,
     #[ts(optional = nullable)]
-    pub author: Option<String>,
+    pub description: Option<String>,
     #[ts(optional = nullable)]
     pub website: Option<String>,
     #[ts(optional = nullable)]

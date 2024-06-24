@@ -143,7 +143,7 @@ export function Share() {
             </p>
             <RecipeCode>{`{
     "name": "ReaLearn",
-    "author": "Helgoboss Projects",
+    "sub_title": "by Helgoboss Projects",
     "website": "https://www.helgoboss.org/projects/realearn/",
     "required_packages": [
         "https://github.com/helgoboss/reaper-packages/raw/master/index.xml#p=Extensions/ReaLearn-x64&v=latest"
@@ -158,7 +158,7 @@ export function Share() {
             <RecipeCode>{`{
     "name": "Helgo's random tool collection",
     "description": "This is just an example recipe for ReaBoot in order to demonstrate how to share a complete collection of packages and make some of them optional.",
-    "author": "helgoboss",
+    "sub_title": "by helgoboss",
     "website": "https://www.reaboot.com/",
     "required_packages": [
         "https://raw.githubusercontent.com/ReaTeam/Extensions/master/index.xml#p=API/reaper_imgui.ext"

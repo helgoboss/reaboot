@@ -15,15 +15,13 @@ export function Stepper(props: StepperProps) {
             <Index each={props.pages}>
                 {
                     (page, index) => {
-                        const isRandomlyAccessible = page().isRandomlyAccessible ?? true;
                         return (
                             <li
-                                class="step"
+                                class="step cursor-pointer"
                                 classList={{
                                     "step-primary": currentPageIndex() >= index,
-                                    "cursor-pointer": isRandomlyAccessible,
                                 }}
-                                onClick={isRandomlyAccessible ? () => navigateTo(page().id) : undefined}
+                                onClick={() => navigateTo(page().id)}
                             >
                                 {page().title}
                             </li>

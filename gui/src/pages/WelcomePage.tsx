@@ -1,8 +1,9 @@
 import {navigateTo, showError, showSuccess} from "../epics/common.tsx";
 import {mainStore} from "../globals.ts";
 import {Match, Show, Switch} from "solid-js";
-import {applyRecipeFromClipboard} from "../epics/welcome.ts";
+import {applyRecipeFromClipboard, applyRecipeFromText} from "../epics/welcome.ts";
 import {Help} from "../components/Help.tsx";
+import {ButtonRow} from "../components/ButtonRow.tsx";
 
 export function WelcomePage() {
     return (
@@ -40,52 +41,60 @@ export function WelcomePage() {
                                         <span class="loading loading-ball loading-lg"></span>
                                     }>
                                         {recipe =>
-                                            <a href={recipe().website ?? undefined} target="_blank">
-                                                <Switch>
-                                                    <Match when={true}>
-                                                        <a href={recipe().website ?? undefined}
-                                                           target="_blank"
-                                                           class="text-3xl font-bold">
-                                                            {recipe().name}
-                                                        </a>
-                                                        <Show when={recipe().author}>
-                                                            <div class="italic">
-                                                                by {recipe().author}
-                                                            </div>
-                                                        </Show>
-                                                    </Match>
-                                                </Switch>
-                                            </a>
+                                            <Help help={recipe().description} placement="top">
+                                                <a href={recipe().website ?? undefined} target="_blank">
+                                                    <Switch>
+                                                        <Match when={true}>
+                                                            <a href={recipe().website ?? undefined}
+                                                               target="_blank"
+                                                               class="text-3xl font-bold">
+                                                                {recipe().name}
+                                                            </a>
+                                                            <Show when={recipe().sub_title}>
+                                                                <div class="italic">
+                                                                    {recipe().sub_title}
+                                                                </div>
+                                                            </Show>
+                                                        </Match>
+                                                    </Switch>
+                                                </a>
+                                            </Help>
                                         }
                                     </Show>
                                 </div>
+                                <button class="btn btn-primary mt-6"
+                                        onClick={() => navigateTo("pick-reaper")}>
+                                    Let's go!
+                                </button>
                             </Match>
                             <Match when={true}>
                                 <div role="alert" class="alert text-center">
                                     <div>
                                         <p>
-                                            ReaBoot is currently running&#32;
-                                            <Help
-                                                help="That means it's not pre-configured and will by default install REAPER and ReaPack only.">
-                                                <span>
-                                                    without recipe
-                                                </span>
-                                            </Help>.
-                                            If you wanted to install something particular, please paste the recipe now!
+                                            ReaBoot tried to find an installation recipe in your system clipboard
+                                            but there was none. Please choose!
                                         </p>
-                                        <button class="btn btn-accent btn-xs mt-2"
-                                                onClick={() => applyRecipeFromClipboardWithNotifications()}>
-                                            Paste recipe
-                                        </button>
+                                        <ButtonRow>
+                                            <Help
+                                                help="ReaBoot's default recipe allows to you to install some of the most popular REAPER scripts and extensions out there!">
+                                                <button class="btn btn-accent btn-xs mt-2"
+                                                        onClick={() => applyRecipeFromText(RECIPE_DEFAULT_URL)}>
+                                                    Use default recipe
+                                                </button>
+                                            </Help>
+                                            <Help
+                                                help="Choose this if you want to install something that is not contained in the default recipe. First, copy the desired recipe to the clipboard, then paste it here!">
+                                                <button class="btn btn-accent btn-xs mt-2"
+                                                        onClick={() => applyRecipeFromClipboardWithNotifications()}>
+                                                    Paste custom recipe
+                                                </button>
+                                            </Help>
+                                        </ButtonRow>
                                     </div>
                                 </div>
                             </Match>
                         </Switch>
                     </div>
-                    <button class="btn btn-primary mt-6"
-                            onClick={() => navigateTo("pick-reaper")}>
-                        Let's go!
-                    </button>
                 </div>
             </div>
         </div>
@@ -100,3 +109,5 @@ export async function applyRecipeFromClipboardWithNotifications() {
         showError("The clipboard doesn't contain any valid recipe!");
     }
 }
+
+const RECIPE_DEFAULT_URL = "https://raw.githubusercontent.com/helgoboss/reaboot-recipes/main/recipes/realearn.json";

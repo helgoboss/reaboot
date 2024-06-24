@@ -37,7 +37,7 @@ export function CustomizePage() {
                                     <For each={mainStore.parsedRecipeFeatures()}>
                                         {([id, feature]) => {
                                             return <li>
-                                                <Help help={feature.raw.description ?? ""}>
+                                                <Help help={feature.raw.description}>
                                                     <button class="badge flex flex-row"
                                                             classList={{"badge-accent": mainStore.featureIsSelected(id)}}
                                                             onClick={() => toggleFeature(id)}>

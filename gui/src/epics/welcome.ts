@@ -8,6 +8,10 @@ export async function applyRecipeFromClipboard() {
     if (text == null) {
         throw new Error("Clipboard doesn't contain text");
     }
+    await applyRecipeFromText(text);
+}
+
+export async function applyRecipeFromText(text: string) {
     const recipe = await extractRecipe(text);
     await configureInstaller({
         recipe: recipe.raw,
@@ -15,6 +19,7 @@ export async function applyRecipeFromClipboard() {
     });
     mainStore.setParsedRecipe(recipe);
 }
+
 
 function getDefaultFeatureIdsFromRecipe(recipe: ParsedRecipe) {
     const defaults = [];

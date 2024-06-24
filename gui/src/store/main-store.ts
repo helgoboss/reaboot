@@ -7,7 +7,6 @@ import {InstallerConfig} from "../../../core/bindings/InstallerConfig.ts";
 import {Accessor, createMemo} from "solid-js";
 import {getPage} from "../epics/common.tsx";
 import {getOrEmptyRecord, ParsedRecipe} from "reaboot-commons/src/recipe-util.ts";
-import {mainStore} from "../globals.ts";
 
 export type MainStoreState = {
     // ID of the currently displayed page

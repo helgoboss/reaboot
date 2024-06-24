@@ -11,7 +11,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@kobalte/core": "^0.12.6",
+    "@kobalte/core": "^0.13.3",
     "@tauri-apps/api": "^1",
     "reaboot-commons": "file:../commons",
     "rxjs": "^7.8.1",

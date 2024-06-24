@@ -2,12 +2,16 @@ import {JSX} from "solid-js";
 import {Tooltip} from "@kobalte/core";
 
 type Props = {
-    help: string,
+    help?: string | null,
+    placement?: "top" | "bottom" | "left" | "right",
     children: JSX.Element,
 }
 
 export function Help(props: Props) {
-    return <Tooltip.Root openDelay={500}>
+    if (!props.help) {
+        return props.children;
+    }
+    return <Tooltip.Root openDelay={500} placement={props.placement}>
         <Tooltip.Trigger class="tooltip__trigger">
             {props.children}
         </Tooltip.Trigger>

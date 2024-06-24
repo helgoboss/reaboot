@@ -46,32 +46,26 @@ export const pages: PageDescriptor[] = [
         title: "Welcome",
         content: WelcomePage,
         showFooter: false,
-        requiresReaperEulaAgreement: false,
     },
     {
         id: "pick-reaper",
         title: "Pick REAPER",
         content: PickReaperPage,
-        requiresReaperEulaAgreement: false,
     },
     {
         id: "customize",
         title: "Customize",
         content: CustomizePage,
-        requiresReaperEulaAgreement: true,
     },
     {
         id: "install",
         title: "Install",
         content: InstallPage,
-        requiresReaperEulaAgreement: true,
     },
     {
         id: "done",
         title: "Done",
         content: DonePage,
-        isRandomlyAccessible: false,
-        requiresReaperEulaAgreement: false,
     },
 ];
 

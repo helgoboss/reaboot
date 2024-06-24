@@ -6,12 +6,6 @@
     "name"
   ],
   "properties": {
-    "author": {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
     "description": {
       "type": [
         "string",
@@ -42,6 +36,12 @@
     "skip_additional_packages": {
       "type": [
         "boolean",
+        "null"
+      ]
+    },
+    "sub_title": {
+      "type": [
+        "string",
         "null"
       ]
     },

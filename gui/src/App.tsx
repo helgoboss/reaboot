@@ -72,8 +72,8 @@ export function App() {
         </Show>
         <GlobalDialog/>
         <Portal>
-            <Toast.Region>
-                <Toast.List class="toast toast-top toast-end z-50"/>
+            <Toast.Region duration={4000} limit={1}>
+                <Toast.List class="toast toast-bottom toast-center z-50"/>
             </Toast.Region>
         </Portal>
     </div>

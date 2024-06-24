@@ -29,7 +29,7 @@ export class DummyMainService implements MainService {
                 platform: "linux-aarch64",
                 recipe: {
                     name: "ReaLearn",
-                    author: "Helgoboss Projects",
+                    sub_title: "Helgoboss Projects",
                     required_packages: [],
                     website: "https://www.helgoboss.org/projects/realearn/",
                 },

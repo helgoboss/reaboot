@@ -23,7 +23,7 @@ export function showWarning(message: any) {
 
 function showToast(clazz: string, message: string) {
     toaster.show(props => (
-        <Toast.Root toastId={props.toastId} class={`alert ${clazz}`} duration={4000}>
+        <Toast.Root toastId={props.toastId} class={`alert ${clazz}`}>
             <div class="flex flex-row justify-between">
                 <div>
                     <Toast.Description>
@@ -74,33 +74,40 @@ async function confirmReaperEula(): Promise<boolean> {
 }
 
 export async function navigateTo(pageId: PageId) {
-    // Find desired page
-    const destPage = getPage(pageId);
-    // Check REAPER EULA requirements
-    const needReaperEulaAgreement = destPage.requiresReaperEulaAgreement
-        && !mainStore.state.agreedToReaperEula
-        && !mainStore.state.resolvedConfig?.reaper_exe_exists;
-    if (needReaperEulaAgreement) {
-        const userAgreedToEula = await confirmReaperEula();
-        if (userAgreedToEula) {
-            mainStore.agreeToEula();
-        } else {
-            // Don't change page = installation not possible.
-            return;
-        }
-    }
-    // Check feature requirements
-    if (pageId === "install") {
-        if (mainStore.shouldShowCustomizePage && !mainStore.featureConfigIsValid) {
-            showToast("alert-warning", "Please select at least one feature!");
-            mainStore.setCurrentPageId("customize");
-            return;
-        }
-    }
-    // Check if customize page should be skipped
-    if (pageId == "customize" && !mainStore.shouldShowCustomizePage) {
-        mainStore.setCurrentPageId("install");
+    // Check if a recipe has been selected
+    if (!mainStore.state.parsedRecipe) {
+        showToast("alert-warning", "You can continue as soon as you give ReaBoot an installation recipe!");
         return;
+    }
+    // Check on a page-by-page basis
+    switch (pageId) {
+        case "customize":
+            // Check if customize page should be skipped
+            if (!await ensureUserAgreedToEula()) {
+                return;
+            }
+            if (pageId == "customize" && !mainStore.shouldShowCustomizePage) {
+                mainStore.setCurrentPageId("install");
+                return;
+            }
+            break;
+        case "install":
+            // Check feature requirements
+            if (!await ensureUserAgreedToEula()) {
+                return;
+            }
+            if (mainStore.shouldShowCustomizePage && !mainStore.featureConfigIsValid) {
+                showToast("alert-warning", "Please select at least one feature!");
+                mainStore.setCurrentPageId("customize");
+                return;
+            }
+            break;
+        case "done":
+            const kind = mainStore.state.installationStage.stage.kind;
+            if (kind !== "Finished" && kind !== "Failed") {
+                return;
+            }
+            break;
     }
     // Finally change page
     mainStore.setCurrentPageId(pageId);
@@ -108,4 +115,22 @@ export async function navigateTo(pageId: PageId) {
 
 export function getPage(pageId: PageId) {
     return pages.find((p) => p.id == pageId)!;
+}
+
+async function ensureUserAgreedToEula(): Promise<boolean> {
+    if (mainStore.state.resolvedConfig?.reaper_exe_exists) {
+        // If REAPER is already installed, we are not going to install REAPER from scratch, so we don't need
+        // to let the user confirm the EULA again.
+        return true;
+    }
+    if (mainStore.state.agreedToReaperEula) {
+        // User agreed to EULA within this ReaBoot session
+        return true;
+    }
+    if (await confirmReaperEula()) {
+        mainStore.agreeToEula();
+        return true;
+    } else {
+        return false;
+    }
 }
