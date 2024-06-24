@@ -110,4 +110,4 @@ export async function applyRecipeFromClipboardWithNotifications() {
     }
 }
 
-const RECIPE_DEFAULT_URL = "https://raw.githubusercontent.com/helgoboss/reaboot-recipes/main/recipes/realearn.json";
+const RECIPE_DEFAULT_URL = "https://raw.githubusercontent.com/helgoboss/reaboot/main/recipes/default.json";
