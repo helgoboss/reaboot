@@ -3,7 +3,7 @@ resolver = "2"
 members = ["cli", "core", "gui/src-tauri", "reapack"]
 
 [workspace.package]
-version = "0.6.0"
+version = "0.7.0"
 description = "ReaBoot"
 edition = "2021"
 authors = ["Benjamin Klum <benjamin.klum@helgoboss.org>"]
