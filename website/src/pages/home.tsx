@@ -6,6 +6,7 @@ import {Tabs} from "@kobalte/core";
 import {makePersisted} from "@solid-primitives/storage";
 import {ReaperRef} from "../components/reaper-ref";
 import {ReaPackRef} from "../components/reapack-ref";
+import {FaSolidArrowRight} from "solid-icons/fa";
 
 export default function Home() {
     const [userType, setUserType] = makePersisted(
@@ -35,10 +36,10 @@ export default function Home() {
                     <Tabs.Root value={userType()} onChange={setUserType} class="flex flex-col sm:items-center">
                         <Tabs.List class="tabs tabs-boxed m-4 self-center">
                             <Tabs.Trigger value="user" class="tab data-[selected]:tab-active !h-auto">
-                                I'm just a normal REAPER user!
+                                I'm a REAPER user!
                             </Tabs.Trigger>
                             <Tabs.Trigger value="dev" class="tab data-[selected]:tab-active !h-auto">
-                                I'm a script or extension developer!
+                                I'm a package developer!
                             </Tabs.Trigger>
                         </Tabs.List>
                         <div class="card bg-base-200">
@@ -46,21 +47,14 @@ export default function Home() {
                                 <Tabs.Content value="user" class="flex flex-col">
                                     <h3 class="font-bold text-lg text-center">As a normal REAPER user ...</h3>
                                     <p class="mt-6">
-                                        ... you are probably here for the&#32;
-                                        <em>default installer</em>,
-                                        which allows you to easily install some of the most
-                                        popular REAPER scripts and extensions out there.
+                                        ... you are probably here for <strong>ReaBoot Classics</strong>,
+                                        an installation recipe for ReaBoot that allows you to easily install some of the
+                                        most popular REAPER extensions.
                                     </p>
-                                    <div class="mt-6 alert alert-info">
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                             class="stroke-current shrink-0 w-6 h-6">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                        </svg>
-                                        <span>The default installer will be
-                                    available soon!
-                                </span>
-                                    </div>
+                                    <a class="mt-4 btn btn-info"
+                                       href="https://reaboot.com/install/https%3A%2F%2Fraw.githubusercontent.com%2Fhelgoboss%2Freaboot%2Fmain%2Frecipes%2Fdefault.json">
+                                        ReaBoot Classics <FaSolidArrowRight/>
+                                    </a>
                                 </Tabs.Content>
                                 <Tabs.Content value="dev" class="flex flex-col">
                                     <h3 class="font-bold text-lg text-center">Already familiar with ReaBoot?</h3>

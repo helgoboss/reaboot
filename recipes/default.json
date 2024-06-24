@@ -1,7 +1,7 @@
 {
-  "name": "Popular REAPER add-ons",
-  "sub_title": "by ReaTeam, Helgoboss and others",
-  "description": "This recipe allows you to easily install some of the most popular REAPER scripts and extensions out there. Everything is optional, so you can choose yourself what to install and what not.",
+  "name": "ReaBoot Classics",
+  "sub_title": "all-time popular REAPER extensions",
+  "description": "This recipe allows you to easily install some of the most popular REAPER extensions out there. Everything is optional, so you can choose yourself what to install and what not.",
   "website": "https://www.reaboot.com/",
   "required_packages": [],
   "features": {
