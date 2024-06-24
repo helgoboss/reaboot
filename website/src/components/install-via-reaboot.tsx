@@ -11,7 +11,7 @@ import {ReaperRef} from "./reaper-ref";
 import {ReaPackRef} from "./reapack-ref";
 import {showToast} from "../util/toast-util";
 
-const LATEST_REABOOT_VERSION = "0.6.0";
+const LATEST_REABOOT_VERSION = "0.7.0";
 
 export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
     const downloadConfig = getDownloadConfig();
