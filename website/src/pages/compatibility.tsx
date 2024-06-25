@@ -10,21 +10,21 @@ export default function Compatibility() {
                 <h2>OS support</h2>
                 <p>Here's an overview on what's currently supposed to work on which operating system and what not.</p>
                 <div class="overflow-x-auto">
-                    <table class="table table-zebra table-xs">
+                    <table class="table table-zebra table-xs bg-neutral">
                         <thead>
                         <tr>
                             <th></th>
-                            <th colspan="2">GUI</th>
-                            <th colspan="2">CLI</th>
+                            <th colspan="2" class="border-gray-600 border-x-[1px]">GUI</th>
+                            <th colspan="2" class="border-gray-600 border-x-[1px]">CLI</th>
                             <th colspan="2">REAPER installation</th>
                         </tr>
                         <tr>
                             <th>OS/arch</th>
-                            <th>Download</th>
+                            <th class="border-gray-600 border-l-[1px]">Download</th>
                             <th>Execution</th>
-                            <th>Download</th>
+                            <th class="border-gray-600 border-l-[1px]">Download</th>
                             <th>Execution</th>
-                            <th>Main</th>
+                            <th class="border-gray-600 border-l-[1px]">Main</th>
                             <th>Portable</th>
                         </tr>
                         </thead>
@@ -111,14 +111,12 @@ export default function Compatibility() {
                             <td>-</td>
                             <td>-</td>
                             <td>-</td>
-                            <td>-</td>
                         </tr>
                         <tr>
                             <td>Linux * 32-bit</td>
                             <td class="text-neutral-400">Not planned</td>
                             <td>-</td>
                             <td class="h-error">Not available (anyone need it?)</td>
-                            <td>-</td>
                             <td>-</td>
                             <td>-</td>
                             <td>-</td>
