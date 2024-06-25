@@ -21,9 +21,9 @@ export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
     const copyRecipeMain = async () => {
         const success = await copyTextToClipboard(formatRecipeAsJson(props.recipe.raw));
         if (success) {
-            showToast("alert-success", "Download started and installation recipe copied successfully to clipboard!");
+            showToast("alert-success", "Started download and copied installation recipe to clipboard successfully!");
         } else {
-            showToast("alert-warning", "Download started but installation recipe couldn't be copied to clipboard!")
+            showToast("alert-warning", "Started download but couldn't copy installation recipe to clipboard!")
         }
     };
 
