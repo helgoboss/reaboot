@@ -12,11 +12,11 @@ export function Help(props: Props) {
         return props.children;
     }
     return <Tooltip.Root openDelay={500} placement={props.placement}>
-        <Tooltip.Trigger class="tooltip__trigger">
+        <Tooltip.Trigger class="h-tooltip__trigger">
             {props.children}
         </Tooltip.Trigger>
         <Tooltip.Portal>
-            <Tooltip.Content class="tooltip__content">
+            <Tooltip.Content class="h-tooltip__content">
                 <Tooltip.Arrow/>
                 <p>{props.help}</p>
             </Tooltip.Content>

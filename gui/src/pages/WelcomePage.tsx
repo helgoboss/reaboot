@@ -2,8 +2,9 @@ import {navigateTo, showError, showSuccess} from "../epics/common.tsx";
 import {mainStore} from "../globals.ts";
 import {Match, Show, Switch} from "solid-js";
 import {applyRecipeFromClipboard, applyRecipeFromText} from "../epics/welcome.ts";
-import {Help} from "../components/Help.tsx";
+import {Help} from "reaboot-commons/src/components/Help.tsx";
 import {ButtonRow} from "../components/ButtonRow.tsx";
+import {ReabootDescription} from "reaboot-commons/src/components/ReabootDescription.tsx";
 
 export function WelcomePage() {
     return (
@@ -11,26 +12,9 @@ export function WelcomePage() {
             <div class="hero-content text-center">
                 <div class="max-w-lg">
                     <h1 class="text-5xl font-bold">Welcome!</h1>
-                    <p class="pt-6">
-                        <a href="https://www.reaboot.com/" target="_blank" class="link">ReaBoot</a>
-                        &#32;is a convenient all-in-one online installer for&#32;
-                        <span class="whitespace-nowrap">
-                            <Help help="The DAW we all love">
-                                <a href="https://reaper.fm/" target="_blank" class="link">
-                                    REAPER
-                                </a>
-                            </Help>,&#32;
-                            <Help help="The standard package manager for REAPER">
-                                <a href="https://reapack.com/" target="_blank" class="link">
-                                    ReaPack
-                                </a>
-                            </Help>
-                            &#32;and arbitrary&#32;
-                            <Help help="3rd-party add-ons for REAPER such as scripts, extensions and themes">
-                                packages
-                            </Help>
-                        </span>.
-                    </p>
+                    <div class="pt-6">
+                        <ReabootDescription linkToReabootWebsite={true}/>
+                    </div>
                     <div class="divider"></div>
                     <div>
                         <Switch>

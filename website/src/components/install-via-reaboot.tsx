@@ -7,9 +7,10 @@ import {CopyField} from "./copy-field";
 import {UAParser} from "ua-parser-js";
 import {formatRecipeAsJson, ParsedRecipe} from "reaboot-commons/src/recipe-util";
 import {RecipeRef} from "./recipe-ref";
-import {ReaperRef} from "./reaper-ref";
-import {ReaPackRef} from "./reapack-ref";
+import {ReaperRef} from "reaboot-commons/src/components/ReaperRef";
 import {showToast} from "../util/toast-util";
+import {Help} from "reaboot-commons/src/components/Help";
+import {ReapackRef} from "reaboot-commons/src/components/ReapackRef";
 
 const LATEST_REABOOT_VERSION = "0.7.0";
 
@@ -30,7 +31,7 @@ export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
     return <div class="grow flex flex-col max-w-xl items-stretch">
         <div class="text-center">
             ReaBoot is the easiest way to install <RecipeRef recipe={props.recipe}/>.
-            It automatically installs <ReaperRef/> and <ReaPackRef/> if necessary.
+            It automatically installs <ReaperRef/> and <ReapackRef/> if necessary.
         </div>
         <Step index={0} title="Download ReaBoot">
             <Switch>
@@ -39,16 +40,19 @@ export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
                         <div class="grid grid-flow-col justify-center gap-2">
                             <For each={downloadConfig.mainDownloads}>
                                 {(d, i) =>
-                                    <a href={buildDownloadUrl(d)}
-                                       onclick={() => copyRecipeMain()}
-                                       title={d.description}
-                                       class="btn btn-accent">
-                                        <FaSolidDownload/>
-                                        {d.label}
-                                        {downloadConfig.recommendFirstDownload && i() === 0 &&
-                                            <FaSolidThumbsUp title="Good default choice!"/>
-                                        }
-                                    </a>
+                                    <Help help={d.description}>
+                                        <a href={buildDownloadUrl(d)}
+                                           onclick={() => copyRecipeMain()}
+                                           class="btn btn-accent">
+                                            <FaSolidDownload/>
+                                            {d.label}
+                                            {downloadConfig.recommendFirstDownload && i() === 0 &&
+                                                <Help help="Good default choice!">
+                                                    <FaSolidThumbsUp/>
+                                                </Help>
+                                            }
+                                        </a>
+                                    </Help>
                                 }
                             </For>
                         </div>
@@ -60,15 +64,16 @@ export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
             </div>
 
             <CollapsedInfo title="Looking for another download?">
-                <div class="flex flex-wrap justify-center gap-3">
+                <div class="flex flex-wrap justify-center gap-3 mb-4">
                     <For each={otherDownloads}>
                         {d =>
-                            <a href={buildDownloadUrl(d)}
-                               title={d.description}
-                               onclick={() => copyRecipeMain()}
-                               class="btn btn-xs">
-                                {d.label}
-                            </a>
+                            <Help help={d.description}>
+                                <a href={buildDownloadUrl(d)}
+                                   onclick={() => copyRecipeMain()}
+                                   class="btn btn-xs">
+                                    {d.label}
+                                </a>
+                            </Help>
                         }
                     </For>
                 </div>

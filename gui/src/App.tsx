@@ -10,7 +10,7 @@ import {Portal} from "solid-js/web";
 import {Toast} from "@kobalte/core";
 import {applyRecipeFromClipboard} from "./epics/welcome.ts";
 import {ConfirmationRequest} from "../../core/bindings/ConfirmationRequest.ts";
-import {Help} from "./components/Help.tsx";
+import {Help} from "reaboot-commons/src/components/Help.tsx";
 
 export function App() {
     keepSyncingStateFromBackendToStore();

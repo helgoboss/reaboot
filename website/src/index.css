@@ -2,9 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Prose */
+
 .h-responsive-prose {
     @apply prose prose-sm md:prose-lg;
 }
+
+/* Compatibility page */
 
 .h-success {
     @apply bg-success text-success-content;
@@ -22,12 +26,60 @@
     @apply bg-info text-info-content;
 }
 
-.horizontal-list li::after {
+/* Horizontal lists */
+
+.h-horizontal-list li::after {
     content: '|';
     margin-left: 0.5rem;
 }
 
-.horizontal-list li:last-child::after {
+.h-horizontal-list li:last-child::after {
     content: '';
     margin-left: 0;
+}
+
+/* Tooltips */
+
+.h-tooltip__trigger {
+    /*text-decoration: underline;*/
+}
+
+.h-tooltip__content {
+    z-index: 50;
+    max-width: min(calc(100vw - 16px), 380px);
+    border: 1px solid hsl(240 5% 84%);
+    border-radius: 6px;
+    padding: 8px;
+    background-color: hsl(240 4% 16%);
+    color: white;
+    font-size: 14px;
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    transform-origin: var(--kb-tooltip-content-transform-origin);
+    animation: contentHide 250ms ease-in forwards;
+}
+
+.h-tooltip__content[data-expanded] {
+    animation: contentShow 250ms ease-out;
+}
+
+@keyframes contentShow {
+    from {
+        opacity: 0;
+        transform: scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes contentHide {
+    from {
+        opacity: 1;
+        transform: scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: scale(0.96);
+    }
 }

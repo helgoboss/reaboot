@@ -8,7 +8,7 @@
     "build": "vite build",
     "serve": "vite preview"
   },
-  "license": "MIT",
+  "license": "GPL-3.0",
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.12",
     "autoprefixer": "^10.4.17",
@@ -21,12 +21,11 @@
     "vite-plugin-solid-svg": "^0.8.1"
   },
   "dependencies": {
-    "@kobalte/core": "^0.12.6",
+    "@kobalte/core": "^0.13.3",
     "@solid-primitives/storage": "^3.7.1",
     "@solidjs/router": "^0.13.6",
     "prism-material-themes": "^1.0.4",
     "reaboot-commons": "file:../commons",
-    "solid-highlight": "^0.1.26",
     "solid-icons": "^1.1.0",
     "solid-js": "^1.8.17",
     "ua-parser-js": "^2.0.0-beta.3"

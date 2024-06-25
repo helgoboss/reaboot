@@ -7,6 +7,7 @@ import {InstallViaReaboot} from "../components/install-via-reaboot";
 import {InstallViaReapack} from "../components/install-via-reapack";
 import {Page} from "../components/page";
 import {ShowRecipe} from "../components/show-recipe";
+import {Help} from "reaboot-commons/src/components/Help";
 
 export default function Install() {
     const params = useParams();
@@ -44,13 +45,14 @@ function InstallInternal({recipe}: { recipe: ParsedRecipe }) {
             Let's install {displayRecipeHeading(recipe)}!
         </h1>
         <Show when={features().length > 0}>
-            <ul class="mt-2 flex flex-row justify-center gap-2 overflow-x-auto horizontal-list">
+            <ul class="mt-2 flex flex-row justify-center gap-2 overflow-x-auto h-horizontal-list">
                 <For each={features()}>
                     {feature =>
                         <li
-                            class="text-sm whitespace-nowrap opacity-40"
-                            title={feature.raw.description ?? ""}>
-                            {feature.raw.name}
+                            class="text-sm whitespace-nowrap opacity-40">
+                            <Help help={feature.raw.description}>
+                                {feature.raw.name}
+                            </Help>
                         </li>
                     }
                 </For>

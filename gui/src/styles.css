@@ -2,11 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
-.tooltip__trigger {
+/* Tooltips */
+
+.h-tooltip__trigger {
     /*text-decoration: underline;*/
 }
 
-.tooltip__content {
+.h-tooltip__content {
     z-index: 50;
     max-width: min(calc(100vw - 16px), 380px);
     border: 1px solid hsl(240 5% 84%);
@@ -20,7 +22,7 @@
     animation: contentHide 250ms ease-in forwards;
 }
 
-.tooltip__content[data-expanded] {
+.h-tooltip__content[data-expanded] {
     animation: contentShow 250ms ease-out;
 }
 

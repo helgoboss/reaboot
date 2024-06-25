@@ -3,7 +3,7 @@ import {FaSolidCircleCheck, FaSolidFaceSadTear, FaSolidHeart, FaSolidRocket} fro
 import {Match, Show, Switch} from "solid-js";
 import {showDialog} from "../components/GlobalDialog.tsx";
 import {startReaperAndQuit, startReaperInstaller} from "../epics/done.ts";
-import {Help} from "../components/Help.tsx";
+import {Help} from "reaboot-commons/src/components/Help.tsx";
 
 export function DonePage() {
     return <div class="grow hero">
