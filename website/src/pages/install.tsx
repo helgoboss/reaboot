@@ -1,4 +1,4 @@
-import {createResource, Match, Switch} from 'solid-js';
+import {createMemo, createResource, For, Match, Show, Switch} from 'solid-js';
 import {Params, useParams, useSearchParams} from "@solidjs/router";
 import {extractRecipe, ParsedRecipe} from "reaboot-commons/src/recipe-util";
 import {Tabs} from "@kobalte/core";
@@ -10,16 +10,7 @@ import {ShowRecipe} from "../components/show-recipe";
 
 export default function Install() {
     const params = useParams();
-    const [searchParams, setSearchParams] = useSearchParams();
     const [recipeResource] = createResource(params, getRecipeFromParams);
-
-    const via = () => searchParams.via ?? "reaboot";
-
-    const setVia = (via: string) => {
-        setSearchParams({
-            via
-        });
-    };
 
     return (
         <Page disableHeader={true} enablePoweredBy={true}>
@@ -29,39 +20,65 @@ export default function Install() {
                         <span class="loading loading-ball loading-md"/>
                     </Match>
                     <Match when={recipeResource()}>
-                        {recipe => <>
-                            <h1 class="text-center text-xl lg:text-3xl font-bold">
-                                Let's install {displayRecipeHeading(recipe())}!
-                            </h1>
-                            <Tabs.Root value={via()} onChange={setVia} class="flex flex-col sm:items-center">
-                                <Tabs.List class="tabs tabs-boxed m-4 self-center">
-                                    <Tabs.Trigger value="reaboot" class="tab data-[selected]:tab-active !h-auto">
-                                        Via ReaBoot
-                                    </Tabs.Trigger>
-                                    <Tabs.Trigger value="reapack" class="tab data-[selected]:tab-active !h-auto">
-                                        Via ReaPack
-                                    </Tabs.Trigger>
-                                    <Tabs.Trigger value="recipe" class="tab data-[selected]:tab-active !h-auto">
-                                        Show recipe
-                                    </Tabs.Trigger>
-                                </Tabs.List>
-                                <Tabs.Content value="reaboot">
-                                    <InstallViaReaboot recipe={recipe()}/>
-                                </Tabs.Content>
-                                <Tabs.Content value="reapack">
-                                    <InstallViaReapack recipe={recipe()}/>
-                                </Tabs.Content>
-                                <Tabs.Content value="recipe">
-                                    <ShowRecipe recipe={recipe()}/>
-                                </Tabs.Content>
-                            </Tabs.Root>
-                        </>
-                        }
+                        {recipe => <InstallInternal recipe={recipe()}/>}
                     </Match>
                 </Switch>
             </div>
         </Page>
     );
+}
+
+function InstallInternal({recipe}: { recipe: ParsedRecipe }) {
+    const [searchParams, setSearchParams] = useSearchParams();
+    const features = createMemo(() => Object.values(recipe.features));
+    const via = () => searchParams.via ?? "reaboot";
+
+    const setVia = (via: string) => {
+        setSearchParams({
+            via
+        });
+    };
+
+    return <>
+        <h1 class="text-center text-xl lg:text-3xl font-bold">
+            Let's install {displayRecipeHeading(recipe)}!
+        </h1>
+        <Show when={features().length > 0}>
+            <div class="mt-4 flex flex-row justify-center gap-8 overflow-x-auto">
+                <For each={features()}>
+                    {feature =>
+                        <span
+                            class="text-sm whitespace-nowrap opacity-40"
+                            title={feature.raw.description ?? ""}>
+                            {feature.raw.name}
+                        </span>
+                    }
+                </For>
+            </div>
+        </Show>
+        <Tabs.Root value={via()} onChange={setVia} class="flex flex-col sm:items-center">
+            <Tabs.List class="tabs tabs-boxed m-4 self-center">
+                <Tabs.Trigger value="reaboot" class="tab data-[selected]:tab-active !h-auto">
+                    Via ReaBoot
+                </Tabs.Trigger>
+                <Tabs.Trigger value="reapack" class="tab data-[selected]:tab-active !h-auto">
+                    Via ReaPack
+                </Tabs.Trigger>
+                <Tabs.Trigger value="recipe" class="tab data-[selected]:tab-active !h-auto">
+                    Show recipe
+                </Tabs.Trigger>
+            </Tabs.List>
+            <Tabs.Content value="reaboot">
+                <InstallViaReaboot recipe={recipe}/>
+            </Tabs.Content>
+            <Tabs.Content value="reapack">
+                <InstallViaReapack recipe={recipe}/>
+            </Tabs.Content>
+            <Tabs.Content value="recipe">
+                <ShowRecipe recipe={recipe}/>
+            </Tabs.Content>
+        </Tabs.Root>
+    </>
 }
 
 async function getRecipeFromParams(params: Partial<Params>): Promise<ParsedRecipe> {
