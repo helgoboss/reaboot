@@ -1,6 +1,6 @@
 import {copyTextToClipboard} from "../util/clipboard-util";
 import {Step} from "./step";
-import {For, JSX, Match, Show, Switch} from "solid-js";
+import {createMemo, For, JSX, Match, Show, Switch} from "solid-js";
 import {FaSolidDownload, FaSolidLightbulb, FaSolidThumbsUp} from "solid-icons/fa";
 import {Collapsible} from "@kobalte/core";
 import {CopyField} from "./copy-field";
@@ -14,6 +14,7 @@ import {showToast} from "../util/toast-util";
 const LATEST_REABOOT_VERSION = "0.7.0";
 
 export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
+    const features = createMemo(() => Object.values(props.recipe.features));
     const downloadConfig = getDownloadConfig();
     const otherDownloads = reabootDownloads.filter(d => {
         return downloadConfig.mainDownloads.every(optimalDownload => d.label !== optimalDownload?.label);
@@ -27,7 +28,7 @@ export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
         }
     };
 
-    return <div class="grow flex flex-col max-w-lg items-stretch">
+    return <div class="grow flex flex-col max-w-xl items-stretch">
         <div class="text-center">
             ReaBoot is the easiest way to install <RecipeRef recipe={props.recipe}/>.
             It automatically installs <ReaperRef/> and <ReaPackRef/> if necessary.
@@ -110,6 +111,33 @@ export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
                 </div>
             </CollapsedInfo>
         </Step>
+        <Show when={features().length > 0}>
+            <h2 class="mt-6 text-center text-xl font-bold">Contained features</h2>
+            <p class="mt-2 text-sm text-center">
+                This installation recipe allows you to install the following optional
+                features:
+            </p>
+            <div class="mt-4 overflow-x-auto">
+                <table class="table table-zebra table-xs bg-neutral">
+                    <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Description</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <For each={features()}>
+                        {feature =>
+                            <tr>
+                                <td>{feature.raw.name}</td>
+                                <td>{feature.raw.description}</td>
+                            </tr>
+                        }
+                    </For>
+                    </tbody>
+                </table>
+            </div>
+        </Show>
     </div>
 }
 
