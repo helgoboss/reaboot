@@ -21,3 +21,13 @@
 .h-info {
     @apply bg-info text-info-content;
 }
+
+.horizontal-list li::after {
+    content: '|';
+    margin-left: 0.5rem;
+}
+
+.horizontal-list li:last-child::after {
+    content: '';
+    margin-left: 0;
+}

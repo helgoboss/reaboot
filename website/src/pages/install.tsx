@@ -1,4 +1,4 @@
-import {createMemo, createResource, For, Match, Show, Switch} from 'solid-js';
+import {createMemo, createResource, For, Index, Match, Show, Switch} from 'solid-js';
 import {Params, useParams, useSearchParams} from "@solidjs/router";
 import {extractRecipe, ParsedRecipe} from "reaboot-commons/src/recipe-util";
 import {Tabs} from "@kobalte/core";
@@ -44,17 +44,17 @@ function InstallInternal({recipe}: { recipe: ParsedRecipe }) {
             Let's install {displayRecipeHeading(recipe)}!
         </h1>
         <Show when={features().length > 0}>
-            <div class="mt-4 flex flex-row justify-center gap-8 overflow-x-auto">
+            <ul class="mt-2 flex flex-row justify-center gap-2 overflow-x-auto horizontal-list">
                 <For each={features()}>
                     {feature =>
-                        <span
+                        <li
                             class="text-sm whitespace-nowrap opacity-40"
                             title={feature.raw.description ?? ""}>
                             {feature.raw.name}
-                        </span>
+                        </li>
                     }
                 </For>
-            </div>
+            </ul>
         </Show>
         <Tabs.Root value={via()} onChange={setVia} class="flex flex-col sm:items-center">
             <Tabs.List class="tabs tabs-boxed m-4 self-center">
