@@ -15,3 +15,8 @@ Cargo.lock
 
 # JetBrains IDEs
 .idea
+
+# npm
+node_modules
+dist
+target

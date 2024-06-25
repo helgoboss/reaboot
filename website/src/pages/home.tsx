@@ -4,9 +4,7 @@ import {createSignal, Index, JSX} from "solid-js";
 import ReabootLogo from './../assets/reaboot-logo.svg?component-solid';
 import {Tabs} from "@kobalte/core";
 import {makePersisted} from "@solid-primitives/storage";
-import {ReaperRef} from "reaboot-commons/src/components/ReaperRef";
 import {FaSolidArrowRight} from "solid-icons/fa";
-import {ReapackRef} from "reaboot-commons/src/components/ReapackRef";
 import {ReabootDescription} from "reaboot-commons/src/components/ReabootDescription";
 
 export default function Home() {

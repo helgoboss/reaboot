@@ -1,0 +1,9 @@
+{
+  "name": "reaboot",
+  "private": true,
+  "workspaces": [
+    "commons",
+    "gui",
+    "website"
+  ]
+}
