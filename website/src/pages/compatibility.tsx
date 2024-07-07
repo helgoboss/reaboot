@@ -30,7 +30,7 @@ export default function Compatibility() {
                         </thead>
                         <tbody>
                         <tr>
-                            <td>macOS 10.15+ ARM 64-bit</td>
+                            <td>macOS 11+ ARM 64-bit</td>
                             <td class="h-success">Available</td>
                             <td class="h-success">Optimal</td>
                             <td class="h-error">Not published yet</td>
@@ -48,7 +48,7 @@ export default function Compatibility() {
                             <td class="h-warning">Untested (should be fully automated)</td>
                         </tr>
                         <tr>
-                            <td>macOS 10.13-10.14 x86 64-bit</td>
+                            <td>macOS 10.14 x86 64-bit</td>
                             <td class="h-success">Available</td>
                             <td class="h-warning">Not ideal</td>
                             <td class="h-error">Not published yet</td>

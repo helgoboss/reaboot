@@ -12,9 +12,9 @@
         "https://raw.githubusercontent.com/ReaTeam/Extensions/master/index.xml#p=Extensions/reaper-oss_SWS.ext&v=latest-pre"
       ]
     },
-    "realearn": {
-      "name": "ReaLearn",
-      "description": "Versatile REAPER controller integration tool",
+    "helgobox": {
+      "name": "Helgobox (ReaLearn & Playtime)",
+      "description": "Suite that provides ReaLearn (a versatile controller integration tool) and Playtime (a modern session view / clip launcher)",
       "packages": [
         "https://github.com/helgoboss/reaper-packages/raw/master/index.xml#p=Extensions/ReaLearn-x64&v=latest"
       ]
