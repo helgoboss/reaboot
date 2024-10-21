@@ -15,7 +15,8 @@ import {ReapackRef} from "reaboot-commons/src/components/ReapackRef";
 const LATEST_REABOOT_VERSION = "0.7.0";
 
 export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
-    const downloadConfig = getDownloadConfig();
+    const osName = UA_PARSER_RESULT.os.name;
+    const downloadConfig = getDownloadConfig(osName);
     const otherDownloads = reabootDownloads.filter(d => {
         return downloadConfig.mainDownloads.every(optimalDownload => d.label !== optimalDownload?.label);
     });
@@ -30,10 +31,10 @@ export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
 
     return <div class="grow flex flex-col max-w-xl items-stretch">
         <div class="text-center">
-            ReaBoot is the easiest way to install <RecipeRef recipe={props.recipe}/>.
+            Using the installer is the easiest way to install <RecipeRef recipe={props.recipe}/>.
             It automatically installs <ReapackRef/> and even <ReaperRef/>, if necessary.
         </div>
-        <Step index={0} title="Download ReaBoot">
+        <Step index={0} title="Download Installer">
             <Switch>
                 <Match when={downloadConfig.mainDownloads.length > 0}>
                     <>
@@ -79,9 +80,9 @@ export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
                 </div>
             </CollapsedInfo>
         </Step>
-        <Step index={1} title="Start ReaBoot">
+        <Step index={1} title="Start Installer">
             <div>
-                After ReaBoot has been downloaded, simply start it and follow its instructions!
+                After the installer has been downloaded, simply start it and follow its instructions!
             </div>
             <CollapsedInfo title="Having issues?">
                 <div class="p-4 prose prose-sm">
@@ -97,19 +98,21 @@ export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
                             </dd>
                         </Show>
                         <dt>
-                            Does ReaBoot ask you for a recipe?
+                            Does the installer ask you for a recipe?
                         </dt>
                         <dd class="p-0">
                             In that case, press&#32;
                             <CopyField text={() => formatRecipeAsJson(props.recipe.raw)}>Copy recipe</CopyField>
-                            &#32;and then&#32; paste the recipe into ReaBoot!
+                            &#32;and then&#32; paste the recipe into the installer!
                         </dd>
                         <dt>
                             Doesn't work on your system?
                         </dt>
                         <dd class="p-0">
-                            It's possible that your system is not modern enough to run ReaBoot.
-                            Try installation via ReaPack instead!
+                            It's possible that your system is not modern enough to run the installer.
+                            Try&nbsp;
+                            <a href="?via=reapack" className="link">installation via ReaPack</a>
+                            &nbsp;instead!
                         </dd>
                     </dl>
                 </div>
@@ -130,9 +133,9 @@ type ReabootDownload = {
     description: string,
 }
 
-function getDownloadConfig(): ReabootDownloadConfig {
-    switch (UA_PARSER_RESULT.os.name) {
-        case "macOS":
+function getDownloadConfig(osName: string): ReabootDownloadConfig {
+    switch (osName) {
+        case "macOSs":
             switch (UA_PARSER_RESULT.cpu.architecture) {
                 case "arm64":
                     return {
@@ -164,42 +167,46 @@ function getDownloadConfig(): ReabootDownloadConfig {
                             <a class="link" href="https://go.microsoft.com/fwlink/p/?LinkId=2124703">
                                 Microsoft Edge WebView2 runtime
                             </a>
-                            first, otherwise ReaBoot will not work.
+                            first, otherwise the installer will not work.
                         </>,
-                        mainDownloads: [windowsX64NsisDownload, windowsX64ExeDownload],
-                        recommendFirstDownload: true,
+                        mainDownloads: [windowsX64ExeDownload],
+                        recommendFirstDownload: false,
                     };
                 case "11":
                     return {
                         downloadComment: <>
                             {SUSPICIOUS_DOWNLOAD_COMMENT}
                         </>,
-                        mainDownloads: [windowsX64ExeDownload, windowsX64MsiDownload],
-                        recommendFirstDownload: true,
+                        mainDownloads: [windowsX64ExeDownload],
+                        recommendFirstDownload: false,
                     };
                 // Windows 10 or not detected
                 default:
                     return {
                         downloadComment: <>
                             {SUSPICIOUS_DOWNLOAD_COMMENT} If the portable download doesn't work, either use the
-                            installer or first install the&#32;
+                            MSI installer or first install the&#32;
                             <a class="link" href="https://go.microsoft.com/fwlink/p/?LinkId=2124703">
                                 Microsoft Edge WebView2 runtime
                             </a>.
                         </>,
-                        mainDownloads: [windowsX64ExeDownload, windowsX64MsiDownload],
-                        recommendFirstDownload: true,
+                        mainDownloads: [windowsX64ExeDownload],
+                        recommendFirstDownload: false,
                     };
             }
-        case "Linux":
-            return {
-                downloadComment: <>Requires at least glibc 2.35 (e.g. Ubuntu 22.04+)</>,
-                mainDownloads: [linuxX86_64Download],
-                recommendFirstDownload: false,
-            };
+        // case "Linux":
+        //     return {
+        //         downloadComment: <>Requires at least glibc 2.35 (e.g. Ubuntu 22.04+)</>,
+        //         mainDownloads: [linuxX86_64Download],
+        //         recommendFirstDownload: false,
+        //     };
         default:
             return {
-                downloadComment: <>ReaBoot is not available for your system. Try installation via ReaPack instead!</>,
+                downloadComment: <>
+                    The installer is not available for your system. Try
+                    <a href="?via=reapack" class="link">installation via ReaPack</a>
+                    instead!
+                </>,
                 mainDownloads: [],
                 recommendFirstDownload: false,
             };

@@ -8,7 +8,7 @@ export function ShowRecipe(props: { recipe: ParsedRecipe }) {
         <div class="text-center">
             Here is the ReaBoot recipe for installing&#32;<RecipeRef recipe={props.recipe}/>.
             You can inspect it, use it as a starting
-            point for your own recipe or just copy and paste it into ReaBoot.
+            point for your own recipe or just copy and paste it into the installer.
         </div>
         <div class="text-right">
             <CopyField text={() => formatRecipeAsJson(props.recipe.raw)}>Copy recipe to clipboard</CopyField>

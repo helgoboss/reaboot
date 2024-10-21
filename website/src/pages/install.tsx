@@ -61,7 +61,7 @@ function InstallInternal({recipe}: { recipe: ParsedRecipe }) {
         <Tabs.Root value={via()} onChange={setVia} class="flex flex-col sm:items-center">
             <Tabs.List class="tabs tabs-boxed m-4 self-center">
                 <Tabs.Trigger value="reaboot" class="tab data-[selected]:tab-active !h-auto">
-                    Via ReaBoot
+                    Via installer
                 </Tabs.Trigger>
                 <Tabs.Trigger value="reapack" class="tab data-[selected]:tab-active !h-auto">
                     Via ReaPack
