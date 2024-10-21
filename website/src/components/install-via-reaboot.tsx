@@ -135,7 +135,7 @@ type ReabootDownload = {
 
 function getDownloadConfig(osName: string): ReabootDownloadConfig {
     switch (osName) {
-        case "macOSs":
+        case "macOS":
             switch (UA_PARSER_RESULT.cpu.architecture) {
                 case "arm64":
                     return {
@@ -203,9 +203,9 @@ function getDownloadConfig(osName: string): ReabootDownloadConfig {
         default:
             return {
                 downloadComment: <>
-                    The installer is not available for your system. Try
+                    The installer is not available for your system. Try&nbsp;
                     <a href="?via=reapack" class="link">installation via ReaPack</a>
-                    instead!
+                    &nbsp;instead!
                 </>,
                 mainDownloads: [],
                 recommendFirstDownload: false,
