@@ -31,7 +31,7 @@ export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
     return <div class="grow flex flex-col max-w-xl items-stretch">
         <div class="text-center">
             ReaBoot is the easiest way to install <RecipeRef recipe={props.recipe}/>.
-            It automatically installs <ReaperRef/> and <ReapackRef/> if necessary.
+            It automatically installs <ReapackRef/> and even <ReaperRef/>, if necessary.
         </div>
         <Step index={0} title="Download ReaBoot">
             <Switch>
