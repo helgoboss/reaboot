@@ -4,7 +4,7 @@
 use std::sync::Mutex;
 
 use tauri::Manager;
-use tauri_plugin_log::LogTarget;
+use tauri_plugin_log::{Target, TargetKind};
 use tempdir::TempDir;
 use tracing::log::LevelFilter;
 
@@ -39,7 +39,7 @@ fn main() {
         .plugin(
             tauri_plugin_log::Builder::default()
                 .level(LevelFilter::Info)
-                .targets([LogTarget::Stdout])
+                .targets([Target::new(TargetKind::Stdout)])
                 .build(),
         )
         .manage(app_state)
@@ -49,7 +49,7 @@ fn main() {
         ])
         .setup(move |app| {
             // Setup worker
-            let app_handle = ReabootAppHandle::new(app.app_handle());
+            let app_handle = ReabootAppHandle::new(app.app_handle().clone());
             let mut worker = ReabootWorker::new(
                 worker_command_receiver,
                 app_handle.clone(),

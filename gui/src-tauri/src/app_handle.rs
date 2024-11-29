@@ -2,7 +2,7 @@ use crate::api::ReabootEvent;
 use reaboot_core::api::{ConfirmationRequest, InstallationStage};
 use reaboot_core::installer::{InstallerListener, InstallerTask};
 use std::fmt::Display;
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter};
 
 #[derive(Clone)]
 pub struct ReabootAppHandle(AppHandle);
@@ -19,11 +19,11 @@ impl ReabootAppHandle {
     }
 
     pub fn emit_reaboot_event(&self, evt: ReabootEvent) {
-        self.0.emit_all("reaboot_event", evt).unwrap();
+        self.0.emit("reaboot_event", evt).unwrap();
     }
 
     pub fn emit_progress(&self, progress: f64) {
-        self.0.emit_all("reaboot_progress", progress).unwrap();
+        self.0.emit("reaboot_progress", progress).unwrap();
     }
 }
 
