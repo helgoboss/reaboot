@@ -5,12 +5,13 @@ import {mainStore} from "../globals.ts";
 import {configureInstaller} from "../epics/install.ts";
 import {WaitingForDataPage} from "./WaitingForDataPage.tsx";
 import {PackageTable} from "../components/PackageTable.tsx";
-import {clipboard} from "@tauri-apps/api";
+import {} from "@tauri-apps/api";
 import {FaSolidCheck, FaSolidCirclePlus} from "solid-icons/fa";
 import {navigateTo, showError} from "../epics/common.tsx";
 import {For, Show} from "solid-js";
 import {Switch as KSwitch} from "@kobalte/core";
 import {Help} from "reaboot-commons/src/components/Help.tsx";
+import * as clipboard from "@tauri-apps/plugin-clipboard-manager"
 
 export function CustomizePage() {
     const resolvedConfig = mainStore.state.resolvedConfig;

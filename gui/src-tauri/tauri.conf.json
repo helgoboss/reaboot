@@ -2,54 +2,40 @@
   "build": {
     "beforeDevCommand": "npm run dev",
     "beforeBuildCommand": "npm run build",
-    "devPath": "http://localhost:1420",
-    "distDir": "../dist"
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:1420"
   },
-  "package": {
-    "productName": "ReaBoot"
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "windows": {
+      "certificateThumbprint": "8fa3ef06974c7598c526e280974a951a4657377b",
+      "digestAlgorithm": "sha256",
+      "timestampUrl": "http://timestamp.comodoca.com"
+    },
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
   },
-  "tauri": {
-    "allowlist": {
-      "all": false,
-      "shell": {
-        "open": true
-      },
-      "dialog": {
-        "open": true
-      },
-      "process": {
-        "exit": true
-      },
-      "clipboard": {
-        "readText": true
-      }
+  "productName": "ReaBoot",
+  "mainBinaryName": "ReaBoot",
+  "identifier": "org.helgoboss.reaboot",
+  "plugins": {},
+  "app": {
+    "security": {
+      "csp": null
     },
     "windows": [
       {
         "title": "ReaBoot",
         "width": 800,
-        "height": 600
+        "height": 600,
+        "useHttpsScheme": true
       }
-    ],
-    "security": {
-      "csp": null
-    },
-    "bundle": {
-      "active": true,
-      "targets": "all",
-      "identifier": "org.helgoboss.reaboot",
-      "icon": [
-        "icons/32x32.png",
-        "icons/128x128.png",
-        "icons/128x128@2x.png",
-        "icons/icon.icns",
-        "icons/icon.ico"
-      ],
-      "windows": {
-        "certificateThumbprint": "8fa3ef06974c7598c526e280974a951a4657377b",
-        "digestAlgorithm": "sha256",
-        "timestampUrl": "http://timestamp.comodoca.com"
-      }
-    }
+    ]
   }
 }

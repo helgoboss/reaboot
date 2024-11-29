@@ -1,6 +1,6 @@
 import {MainService} from "./main-service.ts";
 import {Observable} from "rxjs";
-import {invoke} from "@tauri-apps/api/tauri";
+import {invoke} from "@tauri-apps/api/core";
 import {listen} from "@tauri-apps/api/event";
 import {debug} from "tauri-plugin-log-api";
 import {InstallerConfig} from "../../../core/bindings/InstallerConfig.ts";

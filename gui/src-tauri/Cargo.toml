@@ -9,14 +9,14 @@ authors.workspace = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [build-dependencies]
-tauri-build = { version = "1", features = [] }
+tauri-build = { version = "2", features = [] }
 
 [dependencies]
 reaboot-core.workspace = true
 reaboot-reapack.workspace = true
 # GUI framework
 # TODO-high Use workspace value again (was changed for Tauri migration)
-tauri = { version = "1", features = ["shell-open", "dialog-open", "process-exit", "clipboard-read-text", "devtools"] }
+tauri = { version = "2", features = [ "devtools"] }
 # For (de)serializing commands and events
 serde = { workspace = true, features = ["derive"] }
 # For (de)serializing commands and events
@@ -26,7 +26,7 @@ tokio = { workspace = true, features = ["time"] }
 # For easier error handling
 anyhow.workspace = true
 # For logging in frontend
-tauri-plugin-log = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
+tauri-plugin-log = { version = "2" }
 # For logging in backend
 tracing.workspace = true
 # For generating TypeScript types
@@ -35,6 +35,10 @@ ts-rs.workspace = true
 markdown.workspace = true
 # For getting a correctly removed temporary REAPER download directory
 tempdir.workspace = true
+tauri-plugin-process = "2"
+tauri-plugin-shell = "2"
+tauri-plugin-clipboard-manager = "2.0.2"
+tauri-plugin-dialog = "2"
 
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!

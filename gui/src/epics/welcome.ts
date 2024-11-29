@@ -1,7 +1,8 @@
-import {clipboard} from "@tauri-apps/api";
+import {} from "@tauri-apps/api";
 import {extractRecipe, getOrEmptyRecord, ParsedRecipe} from "reaboot-commons/src/recipe-util.ts";
 import {configureInstaller} from "./install.ts";
 import {mainStore} from "../globals.ts";
+import * as clipboard from "@tauri-apps/plugin-clipboard-manager"
 
 export async function applyRecipeFromClipboard() {
     const text = await clipboard.readText();

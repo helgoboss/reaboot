@@ -2,7 +2,7 @@ import {DummyMainService} from "./services/dummy-main-service.ts";
 import {MainStore} from "./store/main-store.ts";
 import {TauriMainService} from "./services/tauri-main-service.ts";
 import {Accessor} from "solid-js";
-import {Theme} from "@tauri-apps/api/window";
+import {Theme} from "@tauri-apps/api/webviewWindow";
 import {PageDescriptor} from "./model/page.ts";
 import {WelcomePage} from "./pages/WelcomePage.tsx";
 import {PickReaperPage} from "./pages/PickReaperPage.tsx";

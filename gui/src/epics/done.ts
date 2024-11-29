@@ -1,5 +1,5 @@
 import {mainService} from "../globals.ts";
-import {exit} from '@tauri-apps/api/process';
+import {exit} from '@tauri-apps/plugin-process';
 
 export async function startReaperAndQuit() {
     await mainService.startReaper();

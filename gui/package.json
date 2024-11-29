@@ -13,6 +13,10 @@
   "dependencies": {
     "@kobalte/core": "^0.13.3",
     "@tauri-apps/api": "^1",
+    "@tauri-apps/plugin-clipboard-manager": "^2.0.0",
+    "@tauri-apps/plugin-dialog": "^2.0.1",
+    "@tauri-apps/plugin-process": "^2.0.0",
+    "@tauri-apps/plugin-shell": "^2.0.1",
     "reaboot-commons": "^0.0.0",
     "rxjs": "^7.8.1",
     "solid-icons": "^1.1.0",

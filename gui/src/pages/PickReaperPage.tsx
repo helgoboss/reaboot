@@ -2,7 +2,7 @@ import {ProminentChoice} from "../components/ProminentChoice.tsx";
 import {ButtonRow} from "../components/ButtonRow.tsx";
 import {NavButton} from "../components/NavButton.tsx";
 import {Page} from "../components/Page.tsx";
-import {open} from "@tauri-apps/api/dialog";
+import {open} from "@tauri-apps/plugin-dialog";
 import {mainStore} from "../globals.ts";
 import {Match, Show, Switch} from "solid-js";
 import {configureInstaller} from "../epics/install.ts";
