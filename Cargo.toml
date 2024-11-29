@@ -11,7 +11,6 @@ authors = ["Benjamin Klum <benjamin.klum@helgoboss.org>"]
 [workspace.dependencies]
 reaboot-core = { path = "core" }
 reaboot-reapack = { path = "reapack" }
-tauri = "1"
 serde = "1"
 serde_json = "1"
 tokio = "1"
@@ -31,7 +30,6 @@ tinyvec = "1.6.0"
 ormlite = "0.18.0"
 sqlx = "0.7.4"
 dirs = "5.0.1"
-tauri-plugin-log = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
 tracing = "0.1.40"
 atomic = "0.6.0"
 bytemuck = "1.15.0"
