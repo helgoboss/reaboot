@@ -43,7 +43,7 @@ export function InstallViaReapack(props: { recipe: ParsedRecipe }) {
             </li>
             <li>
                 Open the file manager and copy the downloaded ReaPack shared library to the folder
-                <span class="font-mono">UserPlugins</span> within the
+                &nbsp;<span class="font-mono">UserPlugins</span>&nbsp;within the
                 REAPER resource folder (REAPER → Options → Show REAPER resource path in explorer/finder...)
             </li>
             <li>
