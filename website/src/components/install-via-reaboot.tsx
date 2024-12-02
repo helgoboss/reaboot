@@ -111,7 +111,7 @@ export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
                         <dd class="p-0">
                             It's possible that your system is not modern enough to run the installer.
                             Try&nbsp;
-                            <a href="?via=reapack" className="link">installation via ReaPack</a>
+                            <a href="?via=reapack" class="link">installation via ReaPack</a>
                             &nbsp;instead!
                         </dd>
                     </dl>
