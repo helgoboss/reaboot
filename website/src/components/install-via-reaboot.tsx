@@ -162,8 +162,7 @@ function getDownloadConfig(osName: string): ReabootDownloadConfig {
                 case "8":
                     return {
                         downloadComment: <>
-                            You are running an older Windows version. If you want to use the portable download, you will
-                            probably have to install the&#32;
+                            You are running an old Windows version. You have to install the&#32;
                             <a class="link" href="https://go.microsoft.com/fwlink/p/?LinkId=2124703">
                                 Microsoft Edge WebView2 runtime
                             </a>
@@ -184,7 +183,7 @@ function getDownloadConfig(osName: string): ReabootDownloadConfig {
                 default:
                     return {
                         downloadComment: <>
-                            {SUSPICIOUS_DOWNLOAD_COMMENT} If the portable download doesn't work, either use the
+                            {SUSPICIOUS_DOWNLOAD_COMMENT} If the normal download doesn't work, either use the
                             MSI installer or first install the&#32;
                             <a class="link" href="https://go.microsoft.com/fwlink/p/?LinkId=2124703">
                                 Microsoft Edge WebView2 runtime
@@ -215,7 +214,7 @@ function getDownloadConfig(osName: string): ReabootDownloadConfig {
 
 const UA_PARSER_RESULT = UAParser();
 
-const PREFER_PORTABLE_COMMENT = "If possible, take the portable download instead, because installing an installer is not optimal ;)";
+const PREFER_PORTABLE_COMMENT = "If possible, take the normal download instead, because installing an installer is not optimal ;)";
 const SUSPICIOUS_DOWNLOAD_COMMENT = "It's possible that some browsers flag the download as suspicious. In this case, you need to ignore the warning!";
 
 const macOsArm64Download = {
@@ -234,7 +233,7 @@ const linuxX86_64Download = {
     description: "This is a package suitable for Debian and Debian derivatives (e.g. Ubuntu). If you need other Linux package formats, write to info@helgoboss.org.",
 };
 const windowsX64ExeDownload = {
-    label: "Windows x64 (Portable)",
+    label: "Windows x64",
     asset: "ReaBoot-windows-x64.exe",
     description: "This runs ReaBoot directly without having to install it first (recommended)."
 };
