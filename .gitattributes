@@ -3,3 +3,5 @@
 
 # Force certain file types to specific endings
 *.ts   eol=lf
+*.sql  eol=lf
+*.json  eol=lf

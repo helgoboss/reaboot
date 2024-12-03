@@ -110,16 +110,17 @@ async fn case_minimal() {
 }
 
 fn assert_dirs_equal_if_exist(dir1: &Path, dir2: &Path) {
-    if !dir1.exists() && !dir2.exists() {
-        // None of the directories exist. That's also okay.
-        return;
-    }
     assert_dir_contains(dir1, dir2);
     assert_dir_contains(dir2, dir1);
 }
 
 fn assert_dir_contains(dir1: &Path, dir2: &Path) {
-    for entry1 in fs::read_dir(dir1).unwrap() {
+    if !dir1.exists() {
+        // Main directory doesn't exist. That's also okay.
+        return;
+    }
+    for entry1 in fs::read_dir(dir1).unwrap_or_else(|_| panic!("couldn't read directory {dir1:?}"))
+    {
         let entry1 = entry1.unwrap();
         let entry1_path = entry1.path();
         let entry2_path = dir2.join(entry1.file_name());
