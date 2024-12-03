@@ -65,6 +65,12 @@ similar-asserts = "1.6.0"
 axum = "0.7.9"
 axum-server = "0.7.1"
 tower-http = "0.6.2"
+tauri = "2.1.1"
+tauri-plugin-log = "2.0.3"
+tauri-plugin-process = "2"
+tauri-plugin-shell = "2"
+tauri-plugin-clipboard-manager = "2.0.2"
+tauri-plugin-dialog = "2"
 
 [profile.release]
 # Those are the settings recommended on https://tauri.app/v1/guides/building/app-size/.

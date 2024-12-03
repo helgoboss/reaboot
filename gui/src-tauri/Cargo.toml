@@ -2,7 +2,7 @@
 name = "reaboot-gui"
 description = "ReaBoot - a convenient all-in-one online installer for REAPER, ReaPack and arbitrary packages."
 # TODO-high Use workspace value again (was changed for Tauri migration)
-version = "0.7.0"
+version.workspace = true
 edition.workspace = true
 authors.workspace = true
 
@@ -15,8 +15,7 @@ tauri-build = { version = "2", features = [] }
 reaboot-core.workspace = true
 reaboot-reapack.workspace = true
 # GUI framework
-# TODO-high Use workspace value again (was changed for Tauri migration)
-tauri = { version = "2", features = [ "devtools"] }
+tauri = { workspace = true, features = ["devtools"] }
 # For (de)serializing commands and events
 serde = { workspace = true, features = ["derive"] }
 # For (de)serializing commands and events
@@ -26,7 +25,7 @@ tokio = { workspace = true, features = ["time"] }
 # For easier error handling
 anyhow.workspace = true
 # For logging in frontend
-tauri-plugin-log = { version = "2" }
+tauri-plugin-log.workspace = true
 # For logging in backend
 tracing.workspace = true
 # For generating TypeScript types
@@ -35,10 +34,10 @@ ts-rs.workspace = true
 markdown.workspace = true
 # For getting a correctly removed temporary REAPER download directory
 tempdir.workspace = true
-tauri-plugin-process = "2"
-tauri-plugin-shell = "2"
-tauri-plugin-clipboard-manager = "2.0.2"
-tauri-plugin-dialog = "2"
+tauri-plugin-process.workspace = true
+tauri-plugin-shell.workspace = true
+tauri-plugin-clipboard-manager.workspace = true
+tauri-plugin-dialog.workspace = true
 
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!
