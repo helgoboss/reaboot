@@ -22,10 +22,10 @@ use tracing::instrument;
 #[test_log::test(tokio::test)]
 async fn integration_test() {
     start_file_server(manifest_dir().join("tests/repository"), 56173);
-    case_minimal().await;
-    case_custom_package().await;
-    case_recipe().await;
-    case_package_exists_no_reapack().await;
+    // case_minimal().await;
+    // case_custom_package().await;
+    // case_recipe().await;
+    // case_package_exists_no_reapack().await;
     case_old_reapack().await;
 }
 

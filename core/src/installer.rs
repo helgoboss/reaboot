@@ -726,6 +726,8 @@ impl<L: InstallerListener> Installer<L> {
         reapack_db_file: &Path,
     ) -> anyhow::Result<PackageStatusQuo> {
         let mut db = Database::open(reapack_db_file).await?;
+        // When querying the installed packages, the database might be migrated to the latest
+        // schema. That's okay because we are working on a copy of the original DB file only.
         let already_installed_packages = db.installed_packages().await?;
         let package_ids_to_be_installed: HashSet<LightPackageId> = self
             .resolved_config

@@ -123,7 +123,16 @@ impl Database {
         Ok(db)
     }
 
+    /// Returns all installed packages.
+    ///
+    /// # Attention
+    ///
+    /// This will permanently migrate the database to the latest schema, if necessary!
     pub async fn installed_packages(&mut self) -> anyhow::Result<Vec<InstalledPackage>> {
+        // It's important to migrate here already, if necessary! Because we query columns such
+        // as "flags" that were not yet part ofolder ReaPack versions (e.g. v1.2.3.1).
+        // See https://github.com/helgoboss/reaboot/issues/1.
+        self.migrate().await?;
         let entries = self.entries().await?;
         let files = self.files().await?;
         let mut files_by_entry_id: HashMap<i32, Vec<DbFile>> = HashMap::new();
@@ -333,11 +342,11 @@ impl<'a> DatabaseTransaction<'a> {
             self.convert_implicit_sections().await?;
         }
         if t <= (0, 5) {
-            // This was actually a backward-incompatible change
+            // This was actually a backward-incompatible change (also in the original ReaPack!)
             self.exec("ALTER TABLE entries RENAME COLUMN pinned TO flags;")
                 .await?;
         }
-        self.set_user_version(v).await?;
+        self.set_user_version(REAPACK_DB_USER_VERSION).await?;
         Ok(())
     }
 
