@@ -4579,6 +4579,7 @@ dependencies = [
  "serde_json",
  "sha2",
  "similar-asserts",
+ "sqlx",
  "strum",
  "tempdir",
  "test-log",

@@ -1,0 +1,10 @@
+PRAGMA foreign_keys = 1;
+PRAGMA user_version = 6;
+CREATE TABLE entries (  id INTEGER PRIMARY KEY,  remote TEXT NOT NULL,  category TEXT NOT NULL,  package TEXT NOT NULL,  desc TEXT NOT NULL,  type INTEGER NOT NULL,  version TEXT NOT NULL,  author TEXT NOT NULL,  flags INTEGER DEFAULT 0,  UNIQUE(remote, category, package));
+CREATE TABLE files (  id INTEGER PRIMARY KEY,  entry INTEGER NOT NULL,  path TEXT UNIQUE NOT NULL,  main INTEGER NOT NULL,  type INTEGER NOT NULL,  FOREIGN KEY(entry) REFERENCES entries(id));
+INSERT INTO entries (id, remote, category, package, desc, type, version, author, flags) VALUES (1, 'ReaPack', 'Extensions', 'ReaPack.ext', '', 2, '1.2.3.1', 'cfillion', 0);
+INSERT INTO entries (id, remote, category, package, desc, type, version, author, flags) VALUES (2, 'ReaTeam JSFX', 'Utility', 'ReaperBlog_-12dB Dim.jsfx', '-12dB Dim', 3, '1.0', 'The REAPER Blog', 0);
+INSERT INTO entries (id, remote, category, package, desc, type, version, author, flags) VALUES (3, 'My Repository', 'Example', 'Hello World.lua', 'Print Hello World', 1, '1.0.1', 'cfillion', 0);
+INSERT INTO files (id, entry, path, main, type) VALUES (1, 1, 'UserPlugins/reaper_reapack-arm64.dylib', 0, 0);
+INSERT INTO files (id, entry, path, main, type) VALUES (2, 2, 'Effects/ReaTeam JSFX/Utility/ReaperBlog_-12dB Dim.jsfx', 0, 0);
+INSERT INTO files (id, entry, path, main, type) VALUES (3, 3, 'Scripts/My Repository/Example/Hello World.lua', 2, 0);

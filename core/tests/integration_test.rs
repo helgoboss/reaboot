@@ -3,6 +3,8 @@ use fs_extra::dir::CopyOptions;
 use reaboot_core::api::{ConfirmationRequest, InstallationStage, InstallerConfig};
 use reaboot_core::installer::{InstallerListener, InstallerNewArgs, InstallerTask};
 use reaboot_core::recipe::Recipe;
+use sqlx::sqlite::SqliteConnectOptions;
+use sqlx::{Column, Connection, Row, SqliteConnection, Value, ValueRef};
 use std::fmt::{Debug, Display};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -41,8 +43,7 @@ async fn case_package_exists_no_reapack() {
             "http://localhost:56173/index.xml#p=Example/Hello%20World.lua&v=latest"
         )],
     };
-    let executed = case.execute().await;
-    executed.assert_dirs_equal("Scripts");
+    case.execute().await;
 }
 
 /// If an old ReaPack index exists, ReaBoot should migrate it exactly as a new ReaPack version would
@@ -57,8 +58,7 @@ async fn case_old_reapack() {
             "http://localhost:56173/index.xml#p=Example/Hello%20World.lua&v=latest"
         )],
     };
-    let executed = case.execute().await;
-    executed.assert_dirs_equal("Scripts");
+    case.execute().await;
 }
 
 /// ReaBoot should be able to install a simple recipe.
@@ -80,8 +80,7 @@ async fn case_recipe() {
         recipe: serde_json::from_str(recipe).unwrap(),
         package_urls: vec![],
     };
-    let executed = case.execute().await;
-    executed.assert_dirs_equal("Scripts");
+    case.execute().await;
 }
 
 /// ReaBoot should be able to install a simple custom package.
@@ -94,8 +93,7 @@ async fn case_custom_package() {
             "http://localhost:56173/index.xml#p=Example/Hello%20World.lua&v=latest"
         )],
     };
-    let executed = case.execute().await;
-    executed.assert_dirs_equal("Scripts");
+    case.execute().await;
 }
 
 /// ReaBoot should be able to run even if not package is provided.
@@ -111,7 +109,11 @@ async fn case_minimal() {
     case.execute().await;
 }
 
-fn assert_dirs_equal(dir1: &Path, dir2: &Path) {
+fn assert_dirs_equal_if_exist(dir1: &Path, dir2: &Path) {
+    if !dir1.exists() && !dir2.exists() {
+        // None of the directories exist. That's also okay.
+        return;
+    }
     assert_dir_contains(dir1, dir2);
     assert_dir_contains(dir2, dir1);
 }
@@ -221,15 +223,23 @@ impl TestCase {
         assert_eq!(resolved_config.reaper_ini_exists, true);
         assert_eq!(resolved_config.portable, true);
         installer.install().await.unwrap();
+        // Dump ReaPack registry.db to text (we don't want to compare binary DB files because
+        // of OS differences)
+        let registry_sql = dump_sqlite_database_as_sql(&actual_dir.join("ReaPack/registry.db"))
+            .await
+            .unwrap();
+        fs::write(actual_dir.join("ReaPack/registry.sql"), registry_sql).unwrap();
         // Do basic assertions
         let executed = ExecutedTestCase {
             expected_dir,
             actual_dir,
         };
-        executed.assert_dirs_equal("ReaPack");
-        executed.assert_dirs_equal("ReaBoot");
+        executed.assert_dirs_equal_if_exist("ReaPack/Cache");
+        executed.assert_dirs_equal_if_exist("ReaBoot");
+        executed.assert_dirs_equal_if_exist("Scripts");
         executed.assert_files_equal("reapack.ini");
         executed.assert_files_equal("reaper.ini");
+        executed.assert_files_equal("ReaPack/registry.sql");
         executed
     }
 }
@@ -247,8 +257,8 @@ impl ExecutedTestCase {
         );
     }
 
-    fn assert_dirs_equal(&self, rel_path: &str) {
-        assert_dirs_equal(
+    fn assert_dirs_equal_if_exist(&self, rel_path: &str) {
+        assert_dirs_equal_if_exist(
             &self.actual_dir.join(rel_path),
             &self.expected_dir.join(rel_path),
         );
@@ -305,4 +315,81 @@ fn start_file_server(directory: impl AsRef<Path>, port: u16) {
 
 fn manifest_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+}
+
+/// A very simplistic function converting the SQLite database at the given path to SQL.
+///
+/// This is used for asserting database contents.
+async fn dump_sqlite_database_as_sql(db_file: &Path) -> anyhow::Result<String> {
+    let options = SqliteConnectOptions::new()
+        .filename(db_file)
+        .create_if_missing(false);
+    let mut con = SqliteConnection::connect_with(&options).await?;
+    let mut dump = String::new();
+    // Pragmas
+    let pragmas = ["foreign_keys", "user_version"];
+    for pragma in pragmas {
+        use std::fmt::Write;
+
+        let value: i32 = sqlx::query_scalar(&format!("PRAGMA {pragma};"))
+            .fetch_one(&mut con)
+            .await?;
+        writeln!(&mut dump, "PRAGMA {pragma} = {value};").unwrap();
+    }
+    // Schema dump
+    let schema_rows = sqlx::query("SELECT sql FROM sqlite_master WHERE type IN ('table', 'index', 'trigger') AND sql IS NOT NULL")
+        .fetch_all(&mut con)
+        .await?;
+    for row in schema_rows {
+        let sql: String = row.get("sql");
+        dump.push_str(&sql);
+        dump.push_str(";\n");
+    }
+    // Data dump for each table
+    let table_rows = sqlx::query(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+    )
+    .fetch_all(&mut con)
+    .await?;
+    for table_row in table_rows {
+        let table_name: String = table_row.get("name");
+        // Fetch rows from the table
+        let query = format!("SELECT * FROM {}", table_name);
+        let rows = sqlx::query(&query).fetch_all(&mut con).await?;
+        if rows.is_empty() {
+            continue;
+        }
+        let column_names: Vec<_> = rows[0]
+            .columns()
+            .iter()
+            .map(|col| col.name().to_string())
+            .collect();
+        for row in rows {
+            let values: Vec<String> = column_names
+                .iter()
+                .enumerate()
+                .map(|(i, column_name)| {
+                    let raw_value = row.try_get_raw(i).unwrap().to_owned();
+                    if raw_value.is_null() {
+                        "NULL".to_string()
+                    } else if let Ok(v) = raw_value.try_decode::<String>() {
+                        format!("'{}'", v.replace("'", "''"))
+                    } else if let Ok(v) = raw_value.try_decode::<i64>() {
+                        v.to_string()
+                    } else {
+                        panic!("Unknown type of raw value {} (table name {table_name}, column {column_name})", raw_value.type_info())
+                    }
+                })
+                .collect();
+
+            let insert_statement = format!(
+                "INSERT INTO {} ({}) VALUES ({});\n",
+                table_name,
+                column_names.join(", "),
+                values.join(", ")
+            );
+            dump.push_str(&insert_statement);
+        }
+    }
+    Ok(dump)
 }
