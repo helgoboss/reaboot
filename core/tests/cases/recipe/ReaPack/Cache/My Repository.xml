@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<index version="1" name="My Repository">
+    <category name="Example">
+        <reapack name="Hello World.lua" type="script" desc="Print Hello World">
+            <version name="1.0" author="cfillion" time="2016-06-10T21:17:24Z">
+                <source main="midi_editor">http://example.com/dl/1.0/Hello%20World.lua</source>
+                <source file="Hello World.jsfx" platform="windows" type="effect">
+                    http://example.com/dl/1.0/Hello%20World.jsfx
+                </source>
+                <changelog><![CDATA[Initial Release]]></changelog>
+            </version>
+            <version name="1.0.1" author="cfillion" time="2016-12-25T00:00:00Z">
+                <source main="midi_editor">http://localhost:56173/hello-world/1.0.1/Hello%20World.lua</source>
+                <changelog><![CDATA[Fixed a small UI glitch when the window is resized]]></changelog>
+            </version>
+            <metadata>
+                <link rel="website">http://example.com</link>
+                <link rel="donation" href="http://example.com">Optional Label</link>
+                <link rel="screenshot" href="http://example.com/a.png">First Feature</link>
+                <link rel="screenshot" href="http://example.com/b.png">Second Feature</link>
+                <description>
+                    <![CDATA[{\rtf1 {\fonttbl {\f0 Helvetica;}} \f0\fs60 Documentation for this package!}]]></description>
+            </metadata>
+        </reapack>
+    </category>
+    <metadata>
+        <link rel="website">http://example.com</link>
+        <link rel="donation" href="http://example.com">Label</link>
+        <link rel="screenshot">http://example.com</link>
+        <description>
+            <![CDATA[{\rtf1 {\fonttbl {\f0 Helvetica;}} \f0\fs60 Description of the repository!}]]></description>
+    </metadata>
+</index>

@@ -12,31 +12,55 @@ use tracing::instrument;
 #[test_log::test(tokio::test)]
 async fn integration_test() {
     let manifest_dir = manifest_dir();
-    let port = 56173;
-    start_file_server(manifest_dir.join("tests/repository"), port);
-    // Minimal
-    {
-        let case = TestCase {
-            id: "minimal",
-            installation: "vanilla",
-            recipe: Recipe::default(),
-            package_urls: vec![],
-        };
-        case.execute().await;
-    }
-    // Custom package
-    {
-        let case = TestCase {
-            id: "custom-package",
-            installation: "vanilla",
-            recipe: Recipe::default(),
-            package_urls: vec![format!(
-                "http://localhost:{port}/index.xml#p=Example/Hello%20World.lua&v=latest"
-            )],
-        };
-        let executed = case.execute().await;
-        executed.assert_dirs_equal("Scripts");
-    }
+    start_file_server(manifest_dir.join("tests/repository"), 56173);
+    case_minimal().await;
+    case_custom_package().await;
+    case_recipe().await;
+}
+
+async fn case_recipe() {
+    let recipe = r#"
+{
+    "name": "Example",
+    "required_packages": [
+        "http://localhost:56173/index.xml#p=Example/Hello%20World.lua"
+    ],
+    "skip_additional_packages": false,
+    "website": "https://www.example.com",
+    "sub_title": "by Exampler"
+}
+"#;
+    let case = TestCase {
+        id: "recipe",
+        installation: "vanilla",
+        recipe: serde_json::from_str(recipe).unwrap(),
+        package_urls: vec![],
+    };
+    let executed = case.execute().await;
+    executed.assert_dirs_equal("Scripts");
+}
+
+async fn case_custom_package() {
+    let case = TestCase {
+        id: "custom-package",
+        installation: "vanilla",
+        recipe: Recipe::default(),
+        package_urls: vec![format!(
+            "http://localhost:56173/index.xml#p=Example/Hello%20World.lua&v=latest"
+        )],
+    };
+    let executed = case.execute().await;
+    executed.assert_dirs_equal("Scripts");
+}
+
+async fn case_minimal() {
+    let case = TestCase {
+        id: "minimal",
+        installation: "vanilla",
+        recipe: Recipe::default(),
+        package_urls: vec![],
+    };
+    case.execute().await;
 }
 
 fn assert_dirs_equal(dir1: &Path, dir2: &Path) {
