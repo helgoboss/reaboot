@@ -16,6 +16,11 @@ reaboot-core.workspace = true
 reaboot-reapack.workspace = true
 # GUI framework
 tauri = { workspace = true, features = ["devtools"] }
+tauri-plugin-process.workspace = true
+tauri-plugin-shell.workspace = true
+tauri-plugin-clipboard-manager.workspace = true
+tauri-plugin-dialog.workspace = true
+tauri-plugin-os.workspace = true
 # For (de)serializing commands and events
 serde = { workspace = true, features = ["derive"] }
 # For (de)serializing commands and events
@@ -34,10 +39,6 @@ ts-rs.workspace = true
 markdown.workspace = true
 # For getting a correctly removed temporary REAPER download directory
 tempdir.workspace = true
-tauri-plugin-process.workspace = true
-tauri-plugin-shell.workspace = true
-tauri-plugin-clipboard-manager.workspace = true
-tauri-plugin-dialog.workspace = true
 
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!

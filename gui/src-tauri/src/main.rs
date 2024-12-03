@@ -36,6 +36,7 @@ fn main() {
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_os::init())
         .plugin(
             tauri_plugin_log::Builder::default()
                 .level(LevelFilter::Info)

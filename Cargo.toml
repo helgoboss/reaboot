@@ -71,6 +71,7 @@ tauri-plugin-process = "2"
 tauri-plugin-shell = "2"
 tauri-plugin-clipboard-manager = "2.0.2"
 tauri-plugin-dialog = "2"
+tauri-plugin-os = "2.0.1"
 
 [profile.release]
 # Those are the settings recommended on https://tauri.app/v1/guides/building/app-size/.
