@@ -39,7 +39,7 @@ export function CustomizePage() {
                                         {([id, feature]) => {
                                             return <li>
                                                 <Help help={feature.raw.description}>
-                                                    <button class="badge flex flex-row"
+                                                    <button class="badge flex flex-row h-auto"
                                                             classList={{"badge-accent": mainStore.featureIsSelected(id)}}
                                                             onClick={() => toggleFeature(id)}>
                                                         {feature.raw.name}
