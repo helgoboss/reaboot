@@ -3,4 +3,7 @@ import type { DownloadInfo } from "./DownloadInfo";
 import type { MultiDownloadInfo } from "./MultiDownloadInfo";
 import type { PackageInfo } from "./PackageInfo";
 
+/**
+ * Status of the installation process.
+ */
 export type InstallationStage = { "kind": "NothingInstalled" } | { "kind": "CheckingLatestReaperVersion" } | { "kind": "DownloadingReaper", download: DownloadInfo, } | { "kind": "PreparingReaper" } | { "kind": "InstalledReaper" } | { "kind": "PreparingTempDirectory" } | { "kind": "DownloadingRepositoryIndexes", download: MultiDownloadInfo, } | { "kind": "ParsingRepositoryIndexes" } | { "kind": "PreparingPackageDownloading" } | { "kind": "DownloadingPackageFiles", download: MultiDownloadInfo, } | { "kind": "PreparingReaPackState" } | { "kind": "InstallingReaper" } | { "kind": "ApplyingReaPackState" } | { "kind": "InstallingPackage", package: PackageInfo, } | { "kind": "Failed", display_msg: string, } | { "kind": "Finished" };

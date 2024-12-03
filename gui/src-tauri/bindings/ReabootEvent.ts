@@ -4,4 +4,7 @@ import type { InstallationStage } from "./InstallationStage";
 import type { ReabootBackendInfo } from "./ReabootBackendInfo";
 import type { ResolvedInstallerConfig } from "./ResolvedInstallerConfig";
 
+/**
+ * Event emitted by the backend.
+ */
 export type ReabootEvent = { "kind": "Error", display_msg: string, } | { "kind": "Warn", display_msg: string, } | { "kind": "Info", display_msg: string, } | { "kind": "BackendInfoChanged", info: ReabootBackendInfo, } | { "kind": "ConfigResolved", config: ResolvedInstallerConfig, } | { "kind": "InstallationStageChanged", label: string, stage: InstallationStage, } | { "kind": "TaskStarted", task_id: number, label: string, } | { "kind": "TaskProgressed", task_id: number, progress: number, } | { "kind": "TaskFinished", task_id: number, } | { "kind": "ConfirmationRequested", request: ConfirmationRequest, } | { "kind": "InstallationDone", report_html?: string, report_contains_donation_links: boolean, manual_reaper_install_path?: string, };

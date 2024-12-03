@@ -47,7 +47,7 @@ num_download_retries?: number,
  */
 temp_parent_dir?: string, 
 /**
- * Whether to keep the temporary directory or not.
+ * Whether to keep the temporary directory or not (by default false).
  */
 keep_temp_dir: boolean, 
 /**
@@ -55,7 +55,7 @@ keep_temp_dir: boolean,
  */
 concurrent_downloads?: number, 
 /**
- * If `true`, nothing will be installed.
+ * If `true`, nothing will be installed (by default false).
  *
  * A good way to check if the installation would (most likely) succeed.
  */
@@ -65,7 +65,7 @@ dry_run: boolean,
  */
 reaper_version?: VersionRef, 
 /**
- * If `true`, the installer will succeed even if there are failed packages.
+ * If `true`, the installer will succeed even if there are failed packages (by default false).
  */
 skip_failed_packages: boolean, 
 /**
@@ -79,6 +79,10 @@ recipe?: Recipe,
  */
 selected_features: Array<string>, 
 /**
- * Update REAPER if there's a new version available.
+ * Update REAPER if there's a new version available (by default false).
  */
-update_reaper: boolean, };
+update_reaper: boolean, 
+/**
+ * Install ReaPack (by default true).
+ */
+install_reapack?: boolean, };
