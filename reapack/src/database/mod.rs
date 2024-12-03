@@ -5,9 +5,8 @@ use crate::model::{
 
 use enumset::EnumSet;
 use num_enum::TryFromPrimitive;
-use ormlite::model::Insertable;
 use ormlite::sqlite::{Sqlite, SqliteConnectOptions, SqliteConnection};
-use ormlite::{Connection, Model};
+use ormlite::{Connection, Insert, Model};
 
 use sqlx::Transaction;
 use std::cmp::Ordering;
