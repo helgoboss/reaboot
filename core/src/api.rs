@@ -77,19 +77,19 @@ pub struct InstallerConfig {
     /// If not provided, this will be `{REAPER_RESOURCE_DIR}/ReaBoot`.
     #[ts(optional)]
     pub temp_parent_dir: Option<PathBuf>,
-    /// Whether to keep the temporary directory or not.
+    /// Whether to keep the temporary directory or not (by default false).
     pub keep_temp_dir: bool,
     /// Maximum number of concurrent downloads.
     #[ts(optional)]
     pub concurrent_downloads: Option<u32>,
-    /// If `true`, nothing will be installed.
+    /// If `true`, nothing will be installed (by default false).
     ///
     /// A good way to check if the installation would (most likely) succeed.
     pub dry_run: bool,
     /// Which REAPER version to install if it doesn't exist already.
     #[ts(optional)]
     pub reaper_version: Option<VersionRef>,
-    /// If `true`, the installer will succeed even if there are failed packages.
+    /// If `true`, the installer will succeed even if there are failed packages (by default false).
     pub skip_failed_packages: bool,
     /// An optional recipe.
     #[ts(optional)]
@@ -98,12 +98,15 @@ pub struct InstallerConfig {
     ///
     /// Features not contained in the recipe will be ignored.
     pub selected_features: HashSet<String>,
-    /// Update REAPER if there's a new version available.
+    /// Update REAPER if there's a new version available (by default false).
     pub update_reaper: bool,
+    /// Install ReaPack (by default true).
+    #[ts(optional)]
+    pub install_reapack: Option<bool>,
 }
 
 /// Resolved installer configuration (derived from the frontend installer config).
-#[derive(Clone, Debug, Serialize, TS)]
+#[derive(Clone, Eq, PartialEq, Debug, Serialize, TS)]
 pub struct ResolvedInstallerConfig {
     /// Resolved REAPER resource directory.
     pub reaper_resource_dir: ReaperResourceDir,
@@ -139,6 +142,7 @@ pub struct ResolvedInstallerConfig {
     pub reaper_version: VersionRef,
     pub skip_failed_packages: bool,
     pub update_reaper: bool,
+    pub install_reapack: bool,
     #[ts(optional)]
     pub recipe: Option<Recipe>,
 }

@@ -30,7 +30,7 @@ use reaboot_reapack::model::{
     LightPackageId, LightVersionId, Remote, Section,
 };
 use std::collections::{HashMap, HashSet};
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 
 use std::fs;
 use std::io::BufReader;
@@ -66,18 +66,20 @@ pub struct Installer<L> {
     _temp_dir_guard: Option<TempDir>,
 }
 
+pub struct InstallerNewArgs<L: InstallerListener> {
+    pub config: InstallerConfig,
+    pub temp_dir_for_reaper_download: PathBuf,
+    pub interactions: Receiver<bool>,
+    pub listener: L,
+}
+
 impl<L: InstallerListener> Installer<L> {
     /// Creates a new installer with all the values that stay the same throughout the complete
     /// installation process.
     ///
     /// Creates a temporary directly already.
-    pub async fn new(
-        config: InstallerConfig,
-        temp_dir_for_reaper_download: PathBuf,
-        interactions: Receiver<bool>,
-        listener: L,
-    ) -> anyhow::Result<Self> {
-        let resolved_config = reaboot_util::resolve_config(config).await?;
+    pub async fn new(args: InstallerNewArgs<L>) -> anyhow::Result<Self> {
+        let resolved_config = reaboot_util::resolve_config(args.config).await?;
         // Do some early sanity checks
         let dest_reapack_db_file = resolved_config
             .reaper_resource_dir
@@ -109,9 +111,9 @@ impl<L: InstallerListener> Installer<L> {
             downloader: Downloader::new(resolved_config.num_download_retries),
             temp_dir,
             temp_reaper_resource_dir: ReaperResourceDir::new(temp_reaper_resource_dir)?,
-            temp_dir_for_reaper_download,
-            interactions,
-            listener,
+            temp_dir_for_reaper_download: args.temp_dir_for_reaper_download,
+            interactions: args.interactions,
+            listener: args.listener,
             _temp_dir_guard: temp_dir_guard,
             resolved_config,
         };
@@ -980,15 +982,16 @@ pub trait InstallerListener {
     /// Called when a concurrent task within the installation stage has finished.
     fn task_finished(&self, task_id: u32);
 
-    fn warn(&self, message: impl Display);
+    fn warn(&self, message: impl Display + Debug);
 
-    fn info(&self, message: impl Display);
+    fn info(&self, message: impl Display + Debug);
 
-    fn debug(&self, message: impl Display);
+    fn debug(&self, message: impl Display + Debug);
 
     fn confirm(&self, request: ConfirmationRequest);
 }
 
+#[derive(Debug)]
 pub struct InstallerTask {
     pub label: String,
 }

@@ -5,7 +5,7 @@ use clap::Args;
 use tempdir::TempDir;
 
 use reaboot_core::api::InstallerConfig;
-use reaboot_core::installer::{InstallError, Installer};
+use reaboot_core::installer::{InstallError, Installer, InstallerNewArgs};
 
 use crate::commands::install::license_agreement::confirm_license;
 use crate::commands::install::listener::CliInstallerListener;
@@ -88,18 +88,19 @@ pub async fn install(args: InstallArgs) -> anyhow::Result<()> {
         skip_failed_packages: args.skip_failed_packages,
         recipe: None,
         selected_features: Default::default(),
+        install_reapack: None,
     };
     let (interaction_sender, interaction_receiver) = tokio::sync::broadcast::channel(10);
     let listener = CliInstallerListener::new(interaction_sender);
     let temp_dir_for_reaper_download = TempDir::new("reaboot-")
         .context("couldn't create temporary directory for REAPER download")?;
-    let installer = Installer::new(
+    let installer_new_args = InstallerNewArgs {
         config,
-        temp_dir_for_reaper_download.path().to_path_buf(),
-        interaction_receiver,
+        temp_dir_for_reaper_download: temp_dir_for_reaper_download.path().to_path_buf(),
+        interactions: interaction_receiver,
         listener,
-    )
-    .await?;
+    };
+    let installer = Installer::new(installer_new_args).await?;
     // Show REAPER EULA if necessary
     let skip_license_prompts = args.non_interactive || args.accept_licenses;
     if !skip_license_prompts

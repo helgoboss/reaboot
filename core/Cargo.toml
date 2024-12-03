@@ -70,3 +70,9 @@ dmgwiz.workspace = true
 # For easily mounting the REAPER IMG file. Internally, this uses hdiutil, so this one could be easily replaced.
 # But the code in the crate looks good, so why not use it.
 dmg.workspace = true
+
+[dev-dependencies]
+fs_extra.workspace = true
+jiff.workspace = true
+test-log = { workspace = true, features = ["trace"] }
+similar-asserts.workspace = true

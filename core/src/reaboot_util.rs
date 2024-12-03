@@ -88,7 +88,10 @@ pub async fn resolve_config(config: InstallerConfig) -> anyhow::Result<ResolvedI
         .collect();
     // Add ReaPack package (this is good to have for updates within REAPER and also necessary
     // for scripts being registered at runtime)
-    package_urls.insert(create_reapack_package_url());
+    let install_reapack = config.install_reapack.unwrap_or(true);
+    if install_reapack {
+        package_urls.insert(create_reapack_package_url());
+    }
     // Add recipe package URLs
     if let Some(r) = config.recipe.as_ref() {
         let all_recipe_packages = r.resolve_all_packages(&config.selected_features);
@@ -114,6 +117,7 @@ pub async fn resolve_config(config: InstallerConfig) -> anyhow::Result<ResolvedI
         update_reaper: config.update_reaper,
         skip_failed_packages: config.skip_failed_packages,
         recipe: config.recipe,
+        install_reapack,
     };
     Ok(resolved)
 }

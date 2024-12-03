@@ -108,7 +108,7 @@ impl Database {
 
     /// Closes the database, making sure that everything has been written to disk when the future
     /// is finished.
-    #[instrument]
+    #[instrument(level = "trace")]
     pub async fn close(self) -> anyhow::Result<()> {
         self.connection.close().await?;
         Ok(())
@@ -188,7 +188,7 @@ impl Database {
     }
 
     /// Creates tables and sets the initial user version.
-    #[instrument]
+    #[instrument(level = "debug")]
     async fn init(&mut self) -> anyhow::Result<()> {
         let transaction = self.with_transaction(|mut t| async {
             t.init().await?;
@@ -199,7 +199,7 @@ impl Database {
     }
 
     /// Migrates from an older DB version if necessary.
-    #[instrument]
+    #[instrument(level = "debug")]
     pub async fn migrate(&mut self) -> anyhow::Result<()> {
         let v = self.user_version().await?;
         if v > REAPACK_DB_USER_VERSION {

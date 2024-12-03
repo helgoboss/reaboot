@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashSet};
 use ts_rs::TS;
 
-#[derive(Clone, Debug, Serialize, Deserialize, TS, JsonSchema)]
+#[derive(Clone, Eq, PartialEq, Debug, Default, Serialize, Deserialize, TS, JsonSchema)]
 #[ts(export)]
 pub struct Recipe {
     pub name: String,
@@ -37,7 +37,7 @@ impl Recipe {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, TS, JsonSchema)]
+#[derive(Clone, Eq, PartialEq, Debug, Serialize, Deserialize, TS, JsonSchema)]
 #[ts(export)]
 pub struct Feature {
     pub name: String,
