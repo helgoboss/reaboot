@@ -2,7 +2,7 @@ import {ButtonRow} from "../components/ButtonRow.tsx";
 import {NavButton} from "../components/NavButton.tsx";
 import {Page} from "../components/Page.tsx";
 import {Phase, PhasePanel, PhaseStatus} from "../components/PhasePanel.tsx";
-import {mainService, mainStore, themeSignal} from "../globals.ts";
+import {mainService, mainStore} from "../globals.ts";
 import {createMemo, For, from, Index, Match, Show, Switch} from "solid-js";
 import {InstallationStage} from "../../../core/bindings/InstallationStage.ts";
 import {WaitingForDataPage} from "./WaitingForDataPage.tsx";
@@ -30,7 +30,7 @@ export function InstallPage() {
                 <div class="basis-1/3 grid grid-flow-row gap-4">
                     <Index each={phases()}>
                         {
-                            (phase) => <PhasePanel {...phase()} darkMode={themeSignal() == "dark"}/>
+                            (phase) => <PhasePanel {...phase()} darkMode={true}/>
                         }
                     </Index>
                 </div>

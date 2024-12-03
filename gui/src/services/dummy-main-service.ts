@@ -33,6 +33,7 @@ export class DummyMainService implements MainService {
                     required_packages: [],
                     website: "https://www.helgoboss.org/projects/realearn/",
                 },
+                install_reapack: true,
             }
         });
     }

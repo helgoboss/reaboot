@@ -1,8 +1,6 @@
 import {DummyMainService} from "./services/dummy-main-service.ts";
 import {MainStore} from "./store/main-store.ts";
 import {TauriMainService} from "./services/tauri-main-service.ts";
-import {Accessor} from "solid-js";
-import {Theme} from "@tauri-apps/api/webviewWindow";
 import {PageDescriptor} from "./model/page.ts";
 import {WelcomePage} from "./pages/WelcomePage.tsx";
 import {PickReaperPage} from "./pages/PickReaperPage.tsx";
@@ -13,8 +11,6 @@ import {DonePage} from "./pages/DonePage.tsx";
 export const useDummyService = false;
 
 export const mainService = useDummyService ? new DummyMainService() : new TauriMainService();
-
-export const themeSignal = createThemeSignal();
 
 export const mainStore = new MainStore({
     currentPageId: "welcome",
@@ -68,14 +64,3 @@ export const pages: PageDescriptor[] = [
         content: DonePage,
     },
 ];
-
-function createThemeSignal(): Accessor<Theme | undefined> {
-    return () => "dark";
-    //// Use the following only when following the OS dark mode
-    // const [theme, setTheme] = createSignal<Theme>();
-    // appWindow.theme().then(theme => setTheme(theme ?? undefined));
-    // appWindow.onThemeChanged((evt) => {
-    //     setTheme(evt.payload);
-    // });
-    // return theme;
-}

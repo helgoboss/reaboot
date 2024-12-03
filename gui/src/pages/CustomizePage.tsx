@@ -5,7 +5,6 @@ import {mainStore} from "../globals.ts";
 import {configureInstaller} from "../epics/install.ts";
 import {WaitingForDataPage} from "./WaitingForDataPage.tsx";
 import {PackageTable} from "../components/PackageTable.tsx";
-import {} from "@tauri-apps/api";
 import {FaSolidCheck, FaSolidCirclePlus} from "solid-icons/fa";
 import {navigateTo, showError} from "../epics/common.tsx";
 import {For, Show} from "solid-js";
@@ -133,10 +132,10 @@ async function addPackageUrls(text: string) {
     await configureInstaller({packageUrls: [...allPackages]});
 }
 
-function toggleFeature(featureId: string) {
-    configureInstaller({
+async function toggleFeature(featureId: string) {
+    await configureInstaller({
         selectedFeatures: mainStore.featureIsSelected(featureId)
             ? mainStore.state.installerConfig.selected_features.filter(id => id !== featureId)
             : [...mainStore.state.installerConfig.selected_features, featureId]
-    });
+    })
 }

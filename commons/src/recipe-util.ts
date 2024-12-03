@@ -128,7 +128,7 @@ function parseRecipe(recipe: Recipe): ParsedRecipe {
     const rawFeatures = getOrEmptyRecord(recipe.features);
     const parsedFeatures: Record<string, ParsedFeature> = {};
     for (const featureId in rawFeatures) {
-        const rawFeature = rawFeatures[featureId];
+        const rawFeature = rawFeatures[featureId]!;
         parsedFeatures[featureId] = parseFeature(rawFeature);
     }
 
