@@ -37,6 +37,9 @@ pub fn collect_backend_info() -> ReabootBackendInfo {
     }
 }
 
+const DEFAULT_CONCURRENT_DOWNLOADS: u32 = 6;
+const DEFAULT_NUM_DOWNLOAD_RETRIES: u32 = 3;
+
 pub async fn resolve_config(config: InstallerConfig) -> anyhow::Result<ResolvedInstallerConfig> {
     // Check if this is the main REAPER resource directory
     let main_reaper_resource_dir = reaper_util::get_default_main_reaper_resource_dir()?;
@@ -108,10 +111,14 @@ pub async fn resolve_config(config: InstallerConfig) -> anyhow::Result<ResolvedI
         portable,
         platform: reaper_platform,
         package_urls: package_urls.into_iter().collect(),
-        num_download_retries: config.num_download_retries.unwrap_or(3),
+        num_download_retries: config
+            .num_download_retries
+            .unwrap_or(DEFAULT_NUM_DOWNLOAD_RETRIES),
         temp_parent_dir,
         keep_temp_dir: config.keep_temp_dir,
-        concurrent_downloads: config.concurrent_downloads.unwrap_or(5),
+        concurrent_downloads: config
+            .concurrent_downloads
+            .unwrap_or(DEFAULT_CONCURRENT_DOWNLOADS),
         dry_run: config.dry_run,
         reaper_version: config.reaper_version.unwrap_or_default(),
         update_reaper: config.update_reaper,
