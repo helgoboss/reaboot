@@ -6,10 +6,10 @@
   "required_packages": [],
   "features": {
     "sws": {
-      "name": "SWS/S&M Extension (beta)",
+      "name": "SWS/S&M Extension",
       "description": "Popular and established extension that adds a variety of smaller features to REAPER. Considered as must-have by many.",
       "packages": [
-        "https://raw.githubusercontent.com/ReaTeam/Extensions/master/index.xml#p=Extensions/reaper-oss_SWS.ext&v=latest-pre"
+        "https://raw.githubusercontent.com/ReaTeam/Extensions/master/index.xml#p=Extensions/reaper-oss_SWS.ext&v=latest"
       ]
     },
     "helgobox": {
