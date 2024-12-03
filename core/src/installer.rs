@@ -694,7 +694,10 @@ impl<L: InstallerListener> Installer<L> {
                 .reaper_resource_dir
                 .get()
                 .join(download.payload.relative_path);
-            move_file(&src_file, &dest_file, false)?;
+            // Overwriting the destination file is important! We take exclusive ownership
+            // of any previously unmanaged file and overwrite it.
+            // See https://github.com/helgoboss/reaboot/issues/2
+            move_file(&src_file, &dest_file, true)?;
         }
         Ok(())
     }
@@ -1095,7 +1098,9 @@ fn dry_remove_file(path: &Path) -> anyhow::Result<()> {
 
 fn dry_move_file(src: &Path, dest: PathBuf) -> anyhow::Result<()> {
     ensure!(src.exists(), "Source file {src:?} doesn't exist");
-    ensure!(!dest.exists(), "Destination file {dest:?} exists already");
+    // It's okay if the destination file exists already, not managed by ReaPack! See
+    // https://github.com/helgoboss/reaboot/issues/2!
+    // In this case, ReaPack/ReaBoot takes ownership.
     let first_existing_parent = get_first_existing_parent_dir(dest.clone())?;
     let writable = existing_file_or_dir_is_writable(&first_existing_parent);
     ensure!(
