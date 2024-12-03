@@ -1,32 +1,92 @@
+use axum::http::StatusCode;
 use fs_extra::dir::CopyOptions;
 use reaboot_core::api::{ConfirmationRequest, InstallationStage, InstallerConfig};
 use reaboot_core::installer::{InstallerListener, InstallerNewArgs, InstallerTask};
 use reaboot_core::recipe::Recipe;
 use std::fmt::{Debug, Display};
-use std::path::PathBuf;
+use std::fs;
+use std::path::{Path, PathBuf};
+use tokio::spawn;
 use tracing::instrument;
 
 #[test_log::test(tokio::test)]
-async fn install_minimal() {
-    let case = TestCase {
-        id: "minimal",
-        installation: "vanilla",
-        recipe: Recipe::default(),
-        package_urls: vec![],
-    };
-    case.execute().await;
+async fn integration_test() {
+    let manifest_dir = manifest_dir();
+    let port = 47891;
+    start_file_server(manifest_dir.join("tests/repository"), port);
+    // Minimal
+    {
+        let case = TestCase {
+            id: "minimal",
+            installation: "vanilla",
+            recipe: Recipe::default(),
+            package_urls: vec![],
+        };
+        case.execute().await;
+    }
+    // Custom package
+    {
+        let case = TestCase {
+            id: "custom-package",
+            installation: "vanilla",
+            recipe: Recipe::default(),
+            package_urls: vec![format!(
+                "http://localhost:{port}/index.xml#p=Example/Hello%20World.lua&v=latest"
+            )],
+        };
+        let executed = case.execute().await;
+        executed.assert_dirs_equal("Scripts");
+    }
 }
 
-fn assert_binary_files_equal(path1: &PathBuf, path2: &PathBuf) {
+fn assert_dirs_equal(dir1: &Path, dir2: &Path) {
+    assert_dir_contains(dir1, dir2);
+    assert_dir_contains(dir2, dir1);
+}
+
+fn assert_dir_contains(dir1: &Path, dir2: &Path) {
+    for entry1 in fs::read_dir(dir1).unwrap() {
+        let entry1 = entry1.unwrap();
+        let entry1_path = entry1.path();
+        let entry2_path = dir2.join(entry1.file_name());
+        let entry1_is_dir = entry1.file_type().unwrap().is_dir();
+        let entry2_is_dir = entry2_path.is_dir();
+        if entry1_is_dir && entry2_is_dir {
+            // Both are directories
+            assert_dir_contains(&entry1_path, &entry2_path);
+        } else if !entry1_is_dir && !entry2_is_dir {
+            // Both are files
+            assert_files_equal(&entry1_path, &entry2_path);
+        } else {
+            panic!("Directory entries {dir1:?} and {dir2:?} have different types");
+        }
+    }
+}
+
+fn assert_files_equal(path1: &Path, path2: &Path) {
+    if assert_text_files_equal(path1, path2).is_err() {
+        assert_binary_files_equal(path1, path2);
+    }
+}
+
+fn assert_binary_files_equal(path1: &Path, path2: &Path) {
     let path1_bytes = std::fs::read(path1).unwrap();
     let path2_bytes = std::fs::read(path2).unwrap();
-    assert_eq!(path1_bytes, path2_bytes);
+    assert_eq!(
+        path1_bytes, path2_bytes,
+        "Binary files {path1:?} and {path2:?} differ"
+    );
 }
 
-fn assert_text_files_equal(path1: &PathBuf, path2: &PathBuf) {
-    let path1_text = std::fs::read_to_string(path1).unwrap();
-    let path2_text = std::fs::read_to_string(path2).unwrap();
+/// # Errors
+///
+/// Returns an error if at least one of the file is not a valid UTF-8-encoded text file or doesn't
+/// exist at all.
+fn assert_text_files_equal(path1: &Path, path2: &Path) -> std::io::Result<()> {
+    let path1_text = std::fs::read_to_string(path1)?;
+    let path2_text = std::fs::read_to_string(path2)?;
     similar_asserts::assert_eq!(path1_text, path2_text);
+    Ok(())
 }
 
 struct TestCase {
@@ -38,7 +98,8 @@ struct TestCase {
 
 impl TestCase {
     async fn execute(self) -> ExecutedTestCase {
-        let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        println!("\n\n==== Executing test case [{}] ====\n", self.id);
+        let manifest_dir = manifest_dir();
         let expected_cases_dir = manifest_dir.join("tests/cases");
         let expected_dir = expected_cases_dir.join(self.id);
         let src_installations_dir = manifest_dir.join("tests/installations");
@@ -90,9 +151,10 @@ impl TestCase {
             expected_dir,
             actual_dir,
         };
-        executed.assert_binary_files_equal("ReaPack/registry.db");
-        executed.assert_text_files_equal("reapack.ini");
-        executed.assert_text_files_equal("reaper.ini");
+        executed.assert_dirs_equal("ReaPack");
+        executed.assert_dirs_equal("ReaBoot");
+        executed.assert_files_equal("reapack.ini");
+        executed.assert_files_equal("reaper.ini");
         executed
     }
 }
@@ -103,15 +165,15 @@ struct ExecutedTestCase {
 }
 
 impl ExecutedTestCase {
-    fn assert_text_files_equal(&self, rel_path: &str) {
-        assert_text_files_equal(
+    fn assert_files_equal(&self, rel_path: &str) {
+        assert_files_equal(
             &self.actual_dir.join(rel_path),
             &self.expected_dir.join(rel_path),
         );
     }
 
-    fn assert_binary_files_equal(&self, rel_path: &str) {
-        assert_binary_files_equal(
+    fn assert_dirs_equal(&self, rel_path: &str) {
+        assert_dirs_equal(
             &self.actual_dir.join(rel_path),
             &self.expected_dir.join(rel_path),
         );
@@ -146,4 +208,26 @@ impl InstallerListener for TestInstallerListener {
 
     #[instrument]
     fn confirm(&self, _request: ConfirmationRequest) {}
+}
+
+fn start_file_server(directory: impl AsRef<Path>, port: u16) {
+    use axum::{routing::get_service, Router};
+    use tower_http::services::ServeDir;
+    let app = Router::new().nest_service(
+        "/",
+        get_service(ServeDir::new(directory))
+            .handle_error(|_| async { (StatusCode::INTERNAL_SERVER_ERROR, "Error serving file") }),
+    );
+
+    let addr = ([127, 0, 0, 1], port).into();
+    spawn(async move {
+        axum_server::Server::bind(addr)
+            .serve(app.into_make_service())
+            .await
+            .unwrap();
+    });
+}
+
+fn manifest_dir() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
 }
