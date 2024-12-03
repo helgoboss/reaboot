@@ -10,7 +10,7 @@
                 <changelog><![CDATA[Initial Release]]></changelog>
             </version>
             <version name="1.0.1" author="cfillion" time="2016-12-25T00:00:00Z">
-                <source main="midi_editor">http://localhost:47891/hello-world/1.0.1/Hello%20World.lua</source>
+                <source main="midi_editor">http://localhost:56173/hello-world/1.0.1/Hello%20World.lua</source>
                 <changelog><![CDATA[Fixed a small UI glitch when the window is resized]]></changelog>
             </version>
             <metadata>

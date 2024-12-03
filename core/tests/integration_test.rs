@@ -12,7 +12,7 @@ use tracing::instrument;
 #[test_log::test(tokio::test)]
 async fn integration_test() {
     let manifest_dir = manifest_dir();
-    let port = 47891;
+    let port = 56173;
     start_file_server(manifest_dir.join("tests/repository"), port);
     // Minimal
     {
