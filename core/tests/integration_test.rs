@@ -9,6 +9,16 @@ use std::path::{Path, PathBuf};
 use tokio::spawn;
 use tracing::instrument;
 
+/// This integration test performs multiple test installations and checks if the resulting
+/// REAPER resource directory has the correct contents.
+///
+/// No files are downloaded from the internet.
+/// Instead, we start a local server that provides the repository index and referenced package
+/// files.
+///
+/// We disable the download and installation of both ReaPack and REAPER.
+/// We primarily check that the generated files are correct (most importantly, "reapack.ini"
+/// and "ReaPack/registry.db").
 #[test_log::test(tokio::test)]
 async fn integration_test() {
     let manifest_dir = manifest_dir();
@@ -16,8 +26,26 @@ async fn integration_test() {
     case_minimal().await;
     case_custom_package().await;
     case_recipe().await;
+    case_package_exists_no_reapack().await;
 }
 
+/// If a file of a package exists already but hasn't been installed via ReaPack, ReaBoot should
+/// not complain! It should take exclusive ownership of that file (until uninstalled) and overwrite
+/// it. cfillion confirmed that this is the behavior of ReaPack.
+async fn case_package_exists_no_reapack() {
+    let case = TestCase {
+        id: "package-exists-no-reapack",
+        installation: "package-exists-no-reapack",
+        recipe: Recipe::default(),
+        package_urls: vec![format!(
+            "http://localhost:56173/index.xml#p=Example/Hello%20World.lua&v=latest"
+        )],
+    };
+    let executed = case.execute().await;
+    executed.assert_dirs_equal("Scripts");
+}
+
+/// ReaBoot should be able to install a simple recipe.
 async fn case_recipe() {
     let recipe = r#"
 {
@@ -40,6 +68,7 @@ async fn case_recipe() {
     executed.assert_dirs_equal("Scripts");
 }
 
+/// ReaBoot should be able to install a simple custom package.
 async fn case_custom_package() {
     let case = TestCase {
         id: "custom-package",
@@ -53,6 +82,9 @@ async fn case_custom_package() {
     executed.assert_dirs_equal("Scripts");
 }
 
+/// ReaBoot should be able to run even if not package is provided.
+///
+/// In reality, this would still at the very least install/update ReaPack. And maybe even REAPER.
 async fn case_minimal() {
     let case = TestCase {
         id: "minimal",
