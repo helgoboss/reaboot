@@ -1,2 +1,5 @@
 # Normalize text files to LF in the repository
 * text=auto
+
+# Force certain file types to specific endings
+*.ts   eol=lf
