@@ -2,13 +2,21 @@
 
 ReaBoot is a convenient all-in-one online installer for REAPER, ReaPack and arbitrary packages.
 
+## User docs
+
 User docs are available at https://reaboot.com.
 
-## Development of GUI installer
+## Developer docs
+
+### Currently modeled ReaPack version
+
+ReaBoot currently imitates the index interpretation and installation behavior of ReaPack 1.2.4.6.
+
+### Development of GUI installer
 
 See Tauri v1 docs for details.
 
-### Start frontend and backend
+#### Start frontend and backend
 
 I always start frontend and backend separately because I use different IDEs.
 
@@ -26,11 +34,11 @@ cd gui
 cargo run --bin reaboot-gui
 ```
 
-### Regenerate TypeScript and JsonSchema type definitions
+#### Regenerate TypeScript and JsonSchema type definitions
 
 `cargo test`
 
-### Generate all icons from initial SVG icon
+#### Generate all icons from initial SVG icon
 
 Do this after changing `commons/src/reaboot-logo.svg`:
 
@@ -42,7 +50,7 @@ Do this after changing `commons/src/reaboot-logo.svg`:
    ```
 3. Copy `reaboot-logo.svg` into `website/src/assets`
 
-### Publish new version
+#### Publish new version
 
 1. Increase version number in `Cargo.toml` (`workspace.package.version`) to `X.Y.Z`
 2. Commit and push
@@ -54,6 +62,6 @@ Do this after changing `commons/src/reaboot-logo.svg`:
 7. Adjust `LATEST_REABOOT_VERSION` in `website` project (so that ReaBoot website refers to latest
    downloads)
 
-### Publish website changes
+#### Publish website changes
 
 Just push main branch.
