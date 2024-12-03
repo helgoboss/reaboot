@@ -59,7 +59,7 @@ termimad = "0.31.1"
 markdown = "1.0.0-alpha.16"
 schemars = "0.8.16"
 dunce = "1.0.4"
-windows = "0.56.0"
+windows = "0.58.0"
 test-log = "0.2.16"
 similar-asserts = "1.6.0"
 
