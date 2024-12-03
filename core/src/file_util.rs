@@ -80,19 +80,23 @@ pub fn copy_dir_recursively(
     Ok(())
 }
 
-/// Moves `src_file` to `dest_file`, creating a backup file of `dest_file` if it already exists, before overwriting it.
+/// Moves `src_file` to `dest_file`, creating a backup file of `dest_file` if it already exists,
+/// before overwriting it.
+///
+/// It's okay if the provided backup directory doesn't exist yet.
 pub fn move_file_overwriting_with_backup(
     src_file: impl AsRef<Path>,
     dest_file: impl AsRef<Path>,
+    backup_dir: impl AsRef<Path>,
 ) -> anyhow::Result<()> {
     let dest_file = dest_file.as_ref();
+    let backup_dir = backup_dir.as_ref();
     if dest_file.exists() {
         let dest_file_name = dest_file
             .file_name()
-            .context("destination path has no file name")?
-            .to_str()
-            .context("destination file name is not valid UTF-8")?;
-        let backup_file = dest_file.with_file_name(format!("{dest_file_name}.bak"));
+            .context("destination path has no file name")?;
+        let backup_file = backup_dir.join(dest_file_name);
+        fs::create_dir_all(backup_dir).context("couldn't create backup file directory")?;
         fs::rename(dest_file, backup_file)?;
     }
     move_file(src_file, dest_file, true)

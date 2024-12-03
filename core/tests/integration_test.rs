@@ -22,10 +22,10 @@ use tracing::instrument;
 #[test_log::test(tokio::test)]
 async fn integration_test() {
     start_file_server(manifest_dir().join("tests/repository"), 56173);
-    // case_minimal().await;
-    // case_custom_package().await;
-    // case_recipe().await;
-    // case_package_exists_no_reapack().await;
+    case_minimal().await;
+    case_custom_package().await;
+    case_recipe().await;
+    case_package_exists_no_reapack().await;
     case_old_reapack().await;
 }
 
@@ -142,8 +142,10 @@ fn assert_files_equal(path1: &Path, path2: &Path) {
 }
 
 fn assert_binary_files_equal(path1: &Path, path2: &Path) {
-    let path1_bytes = std::fs::read(path1).unwrap();
-    let path2_bytes = std::fs::read(path2).unwrap();
+    let path1_bytes =
+        std::fs::read(path1).unwrap_or_else(|_| panic!("File {path1:?} does not exist"));
+    let path2_bytes =
+        std::fs::read(path2).unwrap_or_else(|_| panic!("File {path2:?} does not exist"));
     assert_eq!(
         path1_bytes, path2_bytes,
         "Binary files {path1:?} and {path2:?} differ"
@@ -177,10 +179,10 @@ impl TestCase {
         let src_installations_dir = manifest_dir.join("tests/installations");
         let src_installation_dir = src_installations_dir.join(self.installation);
         let target_dir = PathBuf::from(env!("CARGO_TARGET_TMPDIR"));
-        let ts = jiff::Timestamp::now()
+        let formatted_timestamp = jiff::Timestamp::now()
             .strftime("%Y-%m-%d_%H-%M-%S")
             .to_string();
-        let target_test_dir = target_dir.join(ts);
+        let target_test_dir = target_dir.join(&formatted_timestamp);
         let target_cases_dir = target_test_dir.join("cases");
         let actual_dir = target_cases_dir.join(self.id);
         // Copy desired installation to test directory
@@ -200,6 +202,7 @@ impl TestCase {
             recipe: Some(self.recipe),
             selected_features: Default::default(),
             install_reapack: Some(false),
+            installation_id: Some("test".to_string()),
             ..Default::default()
         };
         let (_, interaction_receiver) = tokio::sync::broadcast::channel(10);

@@ -63,6 +63,8 @@ serde_json.workspace = true
 schemars.workspace = true
 # For not getting unnecessary user-facing UNC "\\?\C:\..." paths on Windows when canonicalizing
 dunce.workspace = true
+# For coming up with a backup directory name based on the current date time
+jiff.workspace = true
 
 [target.'cfg(target_os = "macos")'.dependencies]
 # For converting the REAPER DMG file to a hfs+ IMG file. The DMG file itself can't be mounted silently.
@@ -73,7 +75,6 @@ dmg.workspace = true
 
 [dev-dependencies]
 fs_extra.workspace = true
-jiff.workspace = true
 test-log = { workspace = true, features = ["trace"] }
 similar-asserts.workspace = true
 axum.workspace = true

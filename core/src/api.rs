@@ -77,6 +77,14 @@ pub struct InstallerConfig {
     /// If not provided, this will be `{REAPER_RESOURCE_DIR}/ReaBoot`.
     #[ts(optional)]
     pub temp_parent_dir: Option<PathBuf>,
+    /// Installation ID.
+    ///
+    /// Currently used in order to get a unique backup directory for this particular installation.
+    /// If provided, it should be unique and contain only characters that are file-system-friendly.
+    ///
+    /// By default, an ID based on the current date is generated.
+    #[ts(optional)]
+    pub installation_id: Option<String>,
     /// Whether to keep the temporary directory or not (by default false).
     pub keep_temp_dir: bool,
     /// Maximum number of concurrent downloads.
@@ -134,6 +142,8 @@ pub struct ResolvedInstallerConfig {
     /// This includes manually configured packages, packages that will be installed anyway
     /// and packages that were selected via features.
     pub package_urls: Vec<PackageUrl>,
+    /// Directory into which ReaBoot writes backups of modified configuration files.
+    pub backup_dir: PathBuf,
     pub num_download_retries: u32,
     pub temp_parent_dir: PathBuf,
     pub keep_temp_dir: bool,

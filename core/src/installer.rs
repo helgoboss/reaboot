@@ -630,6 +630,7 @@ impl<L: InstallerListener> Installer<L> {
         move_file_overwriting_with_backup(
             self.temp_reaper_resource_dir.reapack_ini_file(),
             self.resolved_config.reaper_resource_dir.reapack_ini_file(),
+            &self.resolved_config.backup_dir,
         )
         .context("moving ReaPack INI file failed")?;
         move_file_overwriting_with_backup(
@@ -637,6 +638,7 @@ impl<L: InstallerListener> Installer<L> {
             self.resolved_config
                 .reaper_resource_dir
                 .reapack_registry_db_file(),
+            &self.resolved_config.backup_dir,
         )
         .context("moving ReaPack registry DB file failed")?;
         let dest_cache_dir = self.resolved_config.reaper_resource_dir.reapack_cache_dir();
@@ -652,8 +654,12 @@ impl<L: InstallerListener> Installer<L> {
                 .file_name()
                 .context("ReaPack index file should have a name at this point")?;
             let dest_index_file = dest_cache_dir.join(src_index_file_name);
-            move_file_overwriting_with_backup(&downloaded_index_file, dest_index_file)
-                .context("moving cached ReaPack repository index failed")?;
+            move_file_overwriting_with_backup(
+                &downloaded_index_file,
+                dest_index_file,
+                &self.resolved_config.backup_dir,
+            )
+            .context("moving cached ReaPack repository index failed")?;
         }
         Ok(())
     }

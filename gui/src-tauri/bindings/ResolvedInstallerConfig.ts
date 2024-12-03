@@ -48,4 +48,8 @@ platform: ReaperPlatform,
  * This includes manually configured packages, packages that will be installed anyway
  * and packages that were selected via features.
  */
-package_urls: Array<PackageUrl>, num_download_retries: number, temp_parent_dir: string, keep_temp_dir: boolean, concurrent_downloads: number, dry_run: boolean, reaper_version: VersionRef, skip_failed_packages: boolean, update_reaper: boolean, install_reapack: boolean, recipe?: Recipe, };
+package_urls: Array<PackageUrl>, 
+/**
+ * Directory into which ReaBoot writes backups of modified configuration files.
+ */
+backup_dir: string, num_download_retries: number, temp_parent_dir: string, keep_temp_dir: boolean, concurrent_downloads: number, dry_run: boolean, reaper_version: VersionRef, skip_failed_packages: boolean, update_reaper: boolean, install_reapack: boolean, recipe?: Recipe, };

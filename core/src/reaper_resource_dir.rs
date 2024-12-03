@@ -85,6 +85,12 @@ impl ReaperResourceDir {
     pub fn temp_reaboot_dir(&self) -> PathBuf {
         self.join("ReaBoot")
     }
+
+    /// When ReaBoot overwrites existing configuration files, it will make backups of the existing
+    /// ones before. They end up in an execution-specific subfolder of this folder.
+    pub fn backup_parent_dir(&self) -> PathBuf {
+        self.temp_reaboot_dir().join("backups")
+    }
 }
 
 impl From<PathBuf> for ReaperResourceDir {

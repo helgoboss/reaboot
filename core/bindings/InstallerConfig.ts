@@ -47,6 +47,15 @@ num_download_retries?: number,
  */
 temp_parent_dir?: string, 
 /**
+ * Installation ID.
+ *
+ * Currently used in order to get a unique backup directory for this particular installation.
+ * If provided, it should be unique and contain only characters that are file-system-friendly.
+ *
+ * By default, an ID based on the current date is generated.
+ */
+installation_id?: string, 
+/**
  * Whether to keep the temporary directory or not (by default false).
  */
 keep_temp_dir: boolean, 

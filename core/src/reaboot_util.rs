@@ -103,6 +103,12 @@ pub async fn resolve_config(config: InstallerConfig) -> anyhow::Result<ResolvedI
         package_urls.extend(recipe_package_urls);
     }
     // Create config value
+    let installation_id = config
+        .installation_id
+        .unwrap_or_else(create_default_installation_id);
+    let backup_dir = reaper_resource_dir
+        .backup_parent_dir()
+        .join(installation_id);
     let resolved = ResolvedInstallerConfig {
         reaper_ini_exists: reaper_resource_dir.contains_reaper_ini(),
         reaper_exe_exists: reaper_exe.exists(),
@@ -111,6 +117,7 @@ pub async fn resolve_config(config: InstallerConfig) -> anyhow::Result<ResolvedI
         portable,
         platform: reaper_platform,
         package_urls: package_urls.into_iter().collect(),
+        backup_dir,
         num_download_retries: config
             .num_download_retries
             .unwrap_or(DEFAULT_NUM_DOWNLOAD_RETRIES),
@@ -127,6 +134,12 @@ pub async fn resolve_config(config: InstallerConfig) -> anyhow::Result<ResolvedI
         install_reapack,
     };
     Ok(resolved)
+}
+
+fn create_default_installation_id() -> String {
+    jiff::Timestamp::now()
+        .strftime("%Y-%m-%d_%H-%M-%S")
+        .to_string()
 }
 
 fn parse_package_urls(

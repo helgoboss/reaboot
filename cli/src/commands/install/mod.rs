@@ -80,6 +80,7 @@ pub async fn install(args: InstallArgs) -> anyhow::Result<()> {
         package_urls: args.package_url.unwrap_or_default(),
         num_download_retries: None,
         temp_parent_dir: args.temp_parent_dir,
+        installation_id: None,
         keep_temp_dir: args.keep_temp_dir,
         concurrent_downloads: Some(args.concurrent_downloads),
         dry_run: args.dry_run,
