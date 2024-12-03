@@ -21,12 +21,12 @@ use tracing::instrument;
 /// and "ReaPack/registry.db").
 #[test_log::test(tokio::test)]
 async fn integration_test() {
-    let manifest_dir = manifest_dir();
-    start_file_server(manifest_dir.join("tests/repository"), 56173);
+    start_file_server(manifest_dir().join("tests/repository"), 56173);
     case_minimal().await;
     case_custom_package().await;
     case_recipe().await;
     case_package_exists_no_reapack().await;
+    case_old_reapack().await;
 }
 
 /// If a file of a package exists already but hasn't been installed via ReaPack, ReaBoot should
@@ -36,6 +36,22 @@ async fn case_package_exists_no_reapack() {
     let case = TestCase {
         id: "package-exists-no-reapack",
         installation: "package-exists-no-reapack",
+        recipe: Recipe::default(),
+        package_urls: vec![format!(
+            "http://localhost:56173/index.xml#p=Example/Hello%20World.lua&v=latest"
+        )],
+    };
+    let executed = case.execute().await;
+    executed.assert_dirs_equal("Scripts");
+}
+
+/// If an old ReaPack index exists, ReaBoot should migrate it exactly as a new ReaPack version would
+/// do it. While migration was built into ReaBoot right from the start, there was a bug that
+/// prevented it from happening: https://github.com/helgoboss/reaboot/issues/1
+async fn case_old_reapack() {
+    let case = TestCase {
+        id: "old-reapack",
+        installation: "old-reapack",
         recipe: Recipe::default(),
         package_urls: vec![format!(
             "http://localhost:56173/index.xml#p=Example/Hello%20World.lua&v=latest"
