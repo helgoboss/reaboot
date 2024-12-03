@@ -37,6 +37,9 @@ jobs:
       - name: cargo build
         run: cargo build
 
+      - name: cargo test
+        run: cargo test
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
