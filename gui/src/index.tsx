@@ -8,6 +8,7 @@ import * as os from "@tauri-apps/plugin-os";
 import * as process from "@tauri-apps/plugin-process";
 import * as dialog from '@tauri-apps/plugin-dialog';
 
+// TODO-high CONTINUE Activate as soon as we are sure on which OS it runs nicely and which not
 async function verifyOs() {
     const minMacosVersion = "11";
     const osType = os.type();
@@ -26,6 +27,6 @@ No worries. You can always use ReaPack to install the desired REAPER packages! J
     }
 }
 
-verifyOs();
+// verifyOs();
 
 render(() => <App/>, document.getElementById("root") as HTMLElement);
