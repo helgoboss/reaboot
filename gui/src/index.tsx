@@ -26,6 +26,6 @@ No worries. You can always use ReaPack to install the desired REAPER packages! J
     }
 }
 
-await verifyOs();
+verifyOs();
 
 render(() => <App/>, document.getElementById("root") as HTMLElement);
