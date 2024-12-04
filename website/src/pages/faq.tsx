@@ -10,20 +10,68 @@ export default function Faq() {
                         What is ReaBoot?
                     </dt>
                     <dd>
-                        ReaBoot is a convenient all-in-one online installer for REAPER, ReaPack and arbitrary packages.
-                        You probably ended up here because someone wanted to give you an easy way to install REAPER
-                        scripts or extensions.
+                        <p>
+                            ReaBoot is a convenient all-in-one online installer for
+                            &nbsp;<a href="https://reaper.fm">REAPER</a>, <a href="https://reapack.com">ReaPack</a> and
+                            arbitrary
+                            packages. It allows you to easily
+                            install a
+                            specific REAPER add-on at the press of a button or create full-fledged REAPER installations
+                            with user-selectable add-ons in no time.
+                        </p>
+                        <p>
+                            You probably ended up here because someone wanted to give you an easy way to install REAPER
+                            scripts or extensions.
+                        </p>
+                    </dd>
+                    <dt>
+                        Why does it exist?
+                    </dt>
+                    <dd>
+                        <p><strong>One word: Convenience</strong></p>
+                        <p>
+                            In the REAPER ecosystem, users rarely stop at just installing REAPER itself. They often
+                            add scripts, extensions, JS effects, and more. These are commonly referred to
+                            as <em>packages</em> or <em>add-ons</em>.
+                            Many years ago, <a href="https://cfillion.ca/" class="link px-1">Christian Fillion</a>
+                            introduced the brilliant <a href="https://reapack.com">ReaPack</a>, revolutionizing how
+                            users install and update these add-ons by making the process more organized and streamlined.
+                            However, ReaPack itself lacks an installer, leaving the setup process somewhat manual and
+                            requiring a bit of tinkering.
+                        </p>
+                        <p>
+                            <strong>Enter ReaBoot</strong> — a solution designed to simplify this further. Think of it
+                            as
+                            the missing installer for ReaPack. ReaBoot not only helps you set up ReaPack but can also
+                            install REAPER itself and any ReaPack-compatible add-ons.
+                            <strong class="px-1">It takes you from zero to fully set up with just a few clicks!</strong>
+                        </p>
+                        <p>
+                            Initially, I created ReaBoot as a simple, user-friendly way to install <a
+                            href="https://www.helgoboss.org/projects/playtime">Playtime 2</a>.
+                            But it
+                            quickly became clear that ReaBoot could be much more — a universal installer for all kinds
+                            of
+                            ReaPack packages.
+                        </p>
                     </dd>
                     <dt>
                         I'm afraid that ReaBoot creates dirty installations. Is it safer to install REAPER and ReaPack
-                        by
-                        hand?
+                        by hand?
                     </dt>
                     <dd>
                         It's ReaBoot's highest priority to create installations that are not different from what you
                         would get by installing everything by hand. The result should be exactly the same. Nice and
                         clean.
                         If you discover an exception, please report it as a bug!
+                    </dd>
+                    <dt>
+                        Why do I have a folder <span class="font-mono">ReaBoot</span> in my REAPER resource path?
+                    </dt>
+                    <dd>
+                        This directory should either be empty or contain backups of files that ReaBoot changed during
+                        the installation process (INI files and ReaPack database). ReaBoot creates backups just in case.
+                        If you want, you can delete this directory, it is not necessary for correct operation.
                     </dd>
                     <dt>
                         Can I use this to update existing REAPER installations?
