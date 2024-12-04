@@ -2,14 +2,16 @@
 
 All notable changes to the installer (not the website) will be documented in this file, starting from 0.8.0.
 
-## [0.8.0] - 2024-12-04 (coming soon)
-
 ## [Unreleased]
+
+## [0.8.0] - 2024-12-04
 
 ### Improved
 
-- #10 Improved location of backup files (now in dedicated directory
-  `ReaBoot/backups`)
+- #10 Improved location of backup files (now in dedicated directory `ReaBoot/backups`)
+- Improved long-term reliability by adding a suite of integration tests that verify correct behavior in different
+  installation scenarios
+- Internal change: Migrated from Tauri 1 to Tauri 2
 
 ### Fixed
 
@@ -19,7 +21,3 @@ All notable changes to the installer (not the website) will be documented in thi
 - #4 macOS: Fixed missing "New directory" button in portable REAPER
   installation picker (a side effect of updating to Tauri 2)
 - #8 Fixed overflowing feature text if not enough horizontal space
-
-### Changed
-
-- Internal change: Migrated from Tauri 1 to Tauri 2
