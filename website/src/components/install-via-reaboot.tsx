@@ -162,11 +162,12 @@ function getDownloadConfig(osName: string): ReabootDownloadConfig {
                 case "8":
                     return {
                         downloadComment: <>
-                            You are running an old Windows version. You have to install the&#32;
+                            You are running an older version of Windows. To proceed, you must first install the&#32;
                             <a class="link" href="https://go.microsoft.com/fwlink/p/?LinkId=2124703">
                                 Microsoft Edge WebView2 runtime
-                            </a>
-                            first, otherwise the installer will not work.
+                            </a>, or the installer will not work. Alternatively, you can opt for &nbsp;
+                            <a href="?via=reapack" class="link">installation via ReaPack</a>
+                            &nbsp;instead.
                         </>,
                         mainDownloads: [windowsX64ExeDownload],
                         recommendFirstDownload: false,
