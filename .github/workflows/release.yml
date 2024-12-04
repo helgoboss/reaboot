@@ -26,7 +26,7 @@ jobs:
             dir_containing_app_bundle: 'target/x86_64-apple-darwin/release/bundle/macos'
             dest: 'ReaBoot-macos-x86_64.zip'
           - platform: 'windows-latest'
-            args: '--bundles msi,nsis'
+            args: ''
             src: 'target/release/ReaBoot.exe'
             dest: 'ReaBoot-windows-x64.exe'
           - platform: 'ubuntu-22.04' # for Tauri v1 you could replace this with ubuntu-20.04.
