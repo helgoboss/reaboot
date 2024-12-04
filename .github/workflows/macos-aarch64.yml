@@ -38,6 +38,8 @@ jobs:
         run: cargo build
 
       - name: cargo test
+        env:
+          RUST_LOG: info
         run: cargo test
 
       - uses: tauri-apps/tauri-action@v0
