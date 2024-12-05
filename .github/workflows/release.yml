@@ -19,20 +19,27 @@ jobs:
             src: 'target/aarch64-apple-darwin/release/bundle/macos/ReaBoot.app.zip'
             dir_containing_app_bundle: 'target/aarch64-apple-darwin/release/bundle/macos'
             dest: 'ReaBoot-macos-arm64.zip'
+            toolchain: 1.83.0
           - platform: 'macos-latest'
             args: '--target x86_64-apple-darwin'
             # We produce this ZIP from the "ReaBoot.app" directory
             src: 'target/x86_64-apple-darwin/release/bundle/macos/ReaBoot.app.zip'
             dir_containing_app_bundle: 'target/x86_64-apple-darwin/release/bundle/macos'
             dest: 'ReaBoot-macos-x86_64.zip'
+            toolchain: 1.83.0
           - platform: 'windows-latest'
             args: ''
             src: 'target/release/ReaBoot.exe'
             dest: 'ReaBoot-windows-x64.exe'
+            # 1.77.2 is the latest toolchain that still supports Windows 7.
+            # We even downgraded cargo-platform dependency to 0.1.8 in order to be able to
+            # build with this toolchain.
+            toolchain: 1.77.2
           - platform: 'ubuntu-22.04' # for Tauri v1 you could replace this with ubuntu-20.04.
             args: '--bundles deb'
             src: 'target/release/bundle/deb/ReaBoot_*_amd64.deb'
             dest: 'ReaBoot-linux-x86_64.deb'
+            toolchain: 1.83.0
 
     runs-on: ${{ matrix.settings.platform }}
     steps:
@@ -52,8 +59,9 @@ jobs:
           cache-dependency-path: gui/package-lock.json
 
       - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: ${{ matrix.settings.toolchain }}
           # Those targets are only used on macos runners so it's in an `if` to slightly speed up windows and linux builds.
           targets: ${{ matrix.settings.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
