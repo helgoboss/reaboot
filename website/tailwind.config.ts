@@ -1,11 +1,13 @@
 import type {Config} from 'tailwindcss';
+import typography from "@tailwindcss/typography";
+import daisyui from "daisyui";
 
 const config: Config = {
     content: ['./src/**/*.{js,jsx,ts,tsx}'],
     theme: {
         extend: {},
     },
-    plugins: [require("@tailwindcss/typography"), require("daisyui")],
+    plugins: [typography, daisyui],
     daisyui: {
         themes: ["dim"], // false: only light + dark | true: all themes | array: specific themes like this ["light", "dark", "cupcake"]
         darkTheme: "dim", // name of one of the included themes for dark mode

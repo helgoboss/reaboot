@@ -1,10 +1,13 @@
+import typography from "@tailwindcss/typography";
+import daisyui from "daisyui";
+
 /** @type {import('tailwindcss').Config} */
 export default {
     content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
     theme: {
         extend: {},
     },
-    plugins: [require("@tailwindcss/typography"), require("daisyui")],
+    plugins: [typography, daisyui],
     daisyui: {
         // Remember: In case we want to go back to "light theme for light mode" and "dark theme for dark mode",
         // modify `createThemeSignal` in `globals.ts`.
