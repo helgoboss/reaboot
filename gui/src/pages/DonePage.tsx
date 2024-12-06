@@ -43,10 +43,10 @@ export function DonePage() {
                                                 {path =>
                                                     <>
                                                         <p class="mb-3 alert alert-warning text-center text-sm">
-                                                            ReaBoot couldn't install REAPER automatically
-                                                            but it has downloaded the installer for you. Please install
-                                                            REAPER manually and close ReaBoot when you are
-                                                            done.
+                                                            We couldn't install REAPER automatically.
+                                                            However, the installer has been downloaded for you.
+                                                            Please install REAPER manually, then close this window when
+                                                            you're finished.
                                                         </p>
                                                         <button class="btn btn-primary"
                                                                 onClick={() => startReaperInstaller(path())}>
