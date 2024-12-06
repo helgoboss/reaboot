@@ -81,3 +81,7 @@ codegen-units = 1 # Compile crates one after another so the compiler can optimiz
 lto = true # Enables link to optimizations
 opt-level = "s" # Optimize for binary size
 strip = true # Remove debug symbols
+
+[profile.dev.package.objc2]
+# This fixes running in dev mode on macOS 10.15. See https://github.com/tauri-apps/tauri/issues/11501.
+debug-assertions = false

@@ -43,7 +43,3 @@ tempdir.workspace = true
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!
 custom-protocol = ["tauri/custom-protocol"]
-
-[profile.dev.package.objc2]
-# This fixes running in dev mode on macOS 10.15. See https://github.com/tauri-apps/tauri/issues/11501.
-debug-assertions = false
