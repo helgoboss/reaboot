@@ -15,6 +15,7 @@ export default defineConfig({
         port: 3000,
     },
     build: {
-        target: 'es2019',
+        // See "vite.config.ts" for "gui" module for further explanation
+        target: 'safari11',
     },
 });

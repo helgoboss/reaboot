@@ -19,6 +19,12 @@ export default defineConfig(async () => ({
         },
     },
     build: {
-        target: 'es2019',
+        // See https://v2.tauri.app/reference/webview-versions/.
+        //
+        // - macOS: We want to support 10.13+. 10.13 with latest update has Safari 11.1.2 / WebKit 605.3.8.
+        // - Windows: WebView2 can be assumed to be very modern.
+        // - Linux: All WebKit versions listed on above website are > 605.3.8, so we should be fine (though Linux
+        //          is not a target anyway at the moment due to distribution size).
+        target: 'safari11',
     },
 }));
