@@ -4532,7 +4532,7 @@ dependencies = [
 
 [[package]]
 name = "reaboot-cli"
-version = "0.9.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -4550,7 +4550,7 @@ dependencies = [
 
 [[package]]
 name = "reaboot-core"
-version = "0.9.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "atomic",
@@ -4593,7 +4593,7 @@ dependencies = [
 
 [[package]]
 name = "reaboot-gui"
-version = "0.9.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "markdown",
@@ -4617,7 +4617,7 @@ dependencies = [
 
 [[package]]
 name = "reaboot-reapack"
-version = "0.9.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "camino",
