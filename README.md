@@ -14,7 +14,7 @@ ReaBoot currently imitates the index interpretation and installation behavior of
 
 ### Development of GUI installer
 
-See Tauri v1 docs for details.
+See Tauri v2 docs for details.
 
 #### Start frontend and backend
 
