@@ -2,6 +2,12 @@
 
 All notable changes to the installer (not the website) will be documented in this file, starting from 0.8.0.
 
+## [1.0.0] - 2024-12-07
+
+### Improved
+
+- Improved usability by showing descriptive error message when using macOS versions < 10.15 (Catalina)
+
 ## [0.10.0] - 2024-12-06
 
 ### Improved
