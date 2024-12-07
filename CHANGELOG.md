@@ -2,7 +2,18 @@
 
 All notable changes to the installer (not the website) will be documented in this file, starting from 0.8.0.
 
-## [Unreleased]
+## [0.10.0] - 2024-12-06
+
+### Improved
+
+- #12 Added compatibility with macOS 10.15 Catalina
+
+## [0.9.0] - 2024-12-05
+
+### Improved
+
+- #11 Added compatibility with Windows 7 (fixes startup error "The application was unable to start correctly (
+  0xc0000005)", installing WebView2 is *still* a precondition!)
 
 ## [0.8.0] - 2024-12-04
 
