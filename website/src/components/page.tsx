@@ -16,8 +16,6 @@ export function Page(props: Props) {
                 <A href="/" class="btn btn-ghost text-2xl">
                     ReaBoot
                 </A>
-                <A href="/compatibility"
-                   class="card h-warning px-4">Beta</A>
             </div>
             <div class="navbar-end"></div>
         </header>
