@@ -60,7 +60,7 @@ export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
                     </>
                 </Match>
             </Switch>
-            <div class="mt-3 text-xs">
+            <div class="mt-3">
                 {downloadConfig.downloadComment}
             </div>
 
@@ -82,7 +82,7 @@ export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
         </Step>
         <Step index={1} title="Start Installer">
             <div>
-                After the installer has been downloaded, simply start it and follow its instructions!
+                Once you've downloaded the installer, please run it and follow the instructions!
             </div>
             <CollapsedInfo title="Having issues?">
                 <div class="p-4 prose prose-sm">
@@ -92,24 +92,33 @@ export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
                                 Issues with SmartScreen?
                             </dt>
                             <dd class="p-0">
-                                Microsoft Defender SmartScreen might complain when you try to start the installer:
-                                "Windows protected your PC". In that case, just click
+                                Microsoft Defender SmartScreen may warn you with
+                                "Windows protected your PC" when starting the installer. If that happens, click
                                 "More info" and then "Run anyway".
+                            </dd>
+                            <dt>
+                                Does the windows open and immediately close again?
+                            </dt>
+                            <dd class="p-0">
+                                First, install the&#32;
+                                <a class="link" href="https://go.microsoft.com/fwlink/p/?LinkId=2124703">
+                                    Microsoft Edge WebView2 runtime
+                                </a>, then try running the installer again.
                             </dd>
                         </Show>
                         <dt>
-                            Does the installer ask you for a recipe?
+                            Is the installer asking for a recipe?
                         </dt>
                         <dd class="p-0">
-                            In that case, press&#32;
+                            If so, press&#32;
                             <CopyField text={() => formatRecipeAsJson(props.recipe.raw)}>Copy recipe</CopyField>
                             &#32;and then&#32; paste the recipe into the installer!
                         </dd>
                         <dt>
-                            Doesn't work on your system?
+                            Installer not running at all?
                         </dt>
                         <dd class="p-0">
-                            It's possible that your system is not modern enough to run the installer.
+                            Your system might not be modern enough to run the installer.
                             Try&nbsp;
                             <a href="?via=reapack" class="link">installation via ReaPack</a>
                             &nbsp;instead!
@@ -139,19 +148,19 @@ function getDownloadConfig(osName: string): ReabootDownloadConfig {
             switch (UA_PARSER_RESULT.cpu.architecture) {
                 case "arm64":
                     return {
-                        downloadComment: <>{SUSPICIOUS_DOWNLOAD_COMMENT}</>,
+                        downloadComment: <>{REGULAR_DOWNLOAD_COMMENT}</>,
                         mainDownloads: [macOsArm64Download, macOsX86_64Download],
                         recommendFirstDownload: true,
                     };
                 case "amd64":
                     return {
-                        downloadComment: <>{SUSPICIOUS_DOWNLOAD_COMMENT}</>,
+                        downloadComment: <>{REGULAR_DOWNLOAD_COMMENT}</>,
                         mainDownloads: [macOsX86_64Download, macOsArm64Download],
                         recommendFirstDownload: true,
                     };
                 default:
                     return {
-                        downloadComment: <>{SUSPICIOUS_DOWNLOAD_COMMENT}</>,
+                        downloadComment: <>{REGULAR_DOWNLOAD_COMMENT}</>,
                         mainDownloads: [macOsArm64Download, macOsX86_64Download],
                         recommendFirstDownload: false,
                     };
@@ -162,33 +171,21 @@ function getDownloadConfig(osName: string): ReabootDownloadConfig {
                 case "8":
                     return {
                         downloadComment: <>
-                            You are running an older version of Windows. To proceed, you must first install the&#32;
+                            <span class="text-error font-bold mr-1">Attention:</span>
+                            Before executing the installer, you <span class="font-bold">must</span> install the&#32;
                             <a class="link" href="https://go.microsoft.com/fwlink/p/?LinkId=2124703">
                                 Microsoft Edge WebView2 runtime
-                            </a>, or the installer will not work. Alternatively, you can opt for &nbsp;
-                            <a href="?via=reapack" class="link">installation via ReaPack</a>
-                            &nbsp;instead.
+                            </a>!
+                            This is necessary on Windows 7 and 8 only.
                         </>,
                         mainDownloads: [windowsX64ExeDownload],
                         recommendFirstDownload: false,
                     };
-                case "11":
-                    return {
-                        downloadComment: <>
-                            {SUSPICIOUS_DOWNLOAD_COMMENT}
-                        </>,
-                        mainDownloads: [windowsX64ExeDownload],
-                        recommendFirstDownload: false,
-                    };
-                // Windows 10 or not detected
                 default:
+                    // Windows 10, 11 or undetected
                     return {
                         downloadComment: <>
-                            {SUSPICIOUS_DOWNLOAD_COMMENT} If the normal download doesn't work, either use the
-                            MSI installer or first install the&#32;
-                            <a class="link" href="https://go.microsoft.com/fwlink/p/?LinkId=2124703">
-                                Microsoft Edge WebView2 runtime
-                            </a>.
+                            {REGULAR_DOWNLOAD_COMMENT}
                         </>,
                         mainDownloads: [windowsX64ExeDownload],
                         recommendFirstDownload: false,
@@ -215,8 +212,7 @@ function getDownloadConfig(osName: string): ReabootDownloadConfig {
 
 const UA_PARSER_RESULT = UAParser();
 
-const PREFER_PORTABLE_COMMENT = "If possible, take the normal download instead, because installing an installer is not optimal ;)";
-const SUSPICIOUS_DOWNLOAD_COMMENT = "It's possible that some browsers flag the download as suspicious. In this case, you need to ignore the warning!";
+const REGULAR_DOWNLOAD_COMMENT = "Some browsers may flag the download as suspicious — just ignore the warning! You might also need to grant your browser permission to copy text to the clipboard.";
 
 const macOsArm64Download = {
     label: "macOS ARM64",
@@ -238,23 +234,11 @@ const windowsX64ExeDownload = {
     asset: "ReaBoot-windows-x64.exe",
     description: "This runs ReaBoot directly without having to install it first (recommended)."
 };
-const windowsX64NsisDownload = {
-    label: "Windows x64 (NSIS Installer)",
-    asset: "ReaBoot-windows-x64-setup.exe",
-    description: `This is an installer for ReaBoot that's compatible even with older Windows versions. ${PREFER_PORTABLE_COMMENT}`,
-};
-const windowsX64MsiDownload = {
-    label: "Windows x64 (MSI Installer)",
-    asset: "ReaBoot-windows-x64-setup.msi",
-    description: `This is a native installer for ReaBoot. ${PREFER_PORTABLE_COMMENT}`,
-};
 
 const reabootDownloads = [
     macOsArm64Download,
     macOsX86_64Download,
     windowsX64ExeDownload,
-    windowsX64NsisDownload,
-    windowsX64MsiDownload,
     linuxX86_64Download,
 ];
 
