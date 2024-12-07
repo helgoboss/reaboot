@@ -97,7 +97,7 @@ export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
                                 "More info" and then "Run anyway".
                             </dd>
                             <dt>
-                                Does the windows open and immediately close again?
+                                Does the installer window open and immediately close again?
                             </dt>
                             <dd class="p-0">
                                 First, install the&#32;
@@ -115,7 +115,7 @@ export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
                             &#32;and then&#32; paste the recipe into the installer!
                         </dd>
                         <dt>
-                            Installer not running at all?
+                            Installer not starting at all?
                         </dt>
                         <dd class="p-0">
                             Your system might not be modern enough to run the installer.
@@ -143,6 +143,7 @@ type ReabootDownload = {
 }
 
 function getDownloadConfig(osName: string): ReabootDownloadConfig {
+    // Unknown or undetected
     switch (osName) {
         case "macOS":
             switch (UA_PARSER_RESULT.cpu.architecture) {
@@ -181,11 +182,24 @@ function getDownloadConfig(osName: string): ReabootDownloadConfig {
                         mainDownloads: [windowsX64ExeDownload],
                         recommendFirstDownload: false,
                     };
-                default:
-                    // Windows 10, 11 or undetected
+                case "10":
+                case "11":
                     return {
                         downloadComment: <>
                             {REGULAR_DOWNLOAD_COMMENT}
+                        </>,
+                        mainDownloads: [windowsX64ExeDownload],
+                        recommendFirstDownload: false,
+                    };
+                default:
+                    // Unknown or undetected
+                    return {
+                        downloadComment: <>
+                            <span class="text-error font-bold mr-1">Attention:</span>
+                            If you are running Windows 7 or 8, you might have to install the&#32;
+                            <a class="link" href="https://go.microsoft.com/fwlink/p/?LinkId=2124703">
+                                Microsoft Edge WebView2 runtime
+                            </a> before executing the installer. Otherwise it won't start!
                         </>,
                         mainDownloads: [windowsX64ExeDownload],
                         recommendFirstDownload: false,
