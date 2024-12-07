@@ -143,7 +143,6 @@ type ReabootDownload = {
 }
 
 function getDownloadConfig(osName: string): ReabootDownloadConfig {
-    // Unknown or undetected
     switch (osName) {
         case "macOS":
             switch (UA_PARSER_RESULT.cpu.architecture) {
@@ -182,24 +181,23 @@ function getDownloadConfig(osName: string): ReabootDownloadConfig {
                         mainDownloads: [windowsX64ExeDownload],
                         recommendFirstDownload: false,
                     };
-                case "10":
-                case "11":
-                    return {
-                        downloadComment: <>
-                            {REGULAR_DOWNLOAD_COMMENT}
-                        </>,
-                        mainDownloads: [windowsX64ExeDownload],
-                        recommendFirstDownload: false,
-                    };
                 default:
-                    // Unknown or undetected
+                    // 10, 11, unknown or undetected
+                    // Windows 7 can be incorrectly detected as Windows 10, unfortunately:
+                    // https://github.com/faisalman/ua-parser-js/issues/768, that's why we don't have
+                    // a Windows 10/11 clause.
                     return {
                         downloadComment: <>
-                            <span class="text-error font-bold mr-1">Attention:</span>
-                            If you are running Windows 7 or 8, you might have to install the&#32;
-                            <a class="link" href="https://go.microsoft.com/fwlink/p/?LinkId=2124703">
-                                Microsoft Edge WebView2 runtime
-                            </a> before executing the installer. Otherwise it won't start!
+                            <p>
+                                {REGULAR_DOWNLOAD_COMMENT}
+                            </p>
+                            <p class="mt-2">
+                                <span class="text-error font-bold mr-1">Attention:</span>
+                                If you're using Windows 7 or 8, you may need to install the&#32;
+                                <a class="link" href="https://go.microsoft.com/fwlink/p/?LinkId=2124703">
+                                    Microsoft Edge WebView2 runtime
+                                </a> before executing the installer. Otherwise it will not launch!
+                            </p>
                         </>,
                         mainDownloads: [windowsX64ExeDownload],
                         recommendFirstDownload: false,
