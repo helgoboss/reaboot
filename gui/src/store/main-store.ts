@@ -164,7 +164,9 @@ export class MainStore {
             return true;
         }
         const requiredPackages = recipe.required_packages || [];
-        if (requiredPackages.length == 0 && this.state.installerConfig.selected_features.length == 0) {
+        const features = recipe.features || {};
+        if (requiredPackages.length == 0 && Object.keys(features).length > 0
+            && this.state.installerConfig.selected_features.length == 0) {
             // Continuing without any required package and selected feature would be confusing. ReaBoot would
             // implicitly install REAPER and ReaPack, but that's it! None of the things that are
             // part of the recipe would be installed. This behavior would be confusing because users often
