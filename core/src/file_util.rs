@@ -152,11 +152,8 @@ pub fn file_or_dir_is_writable_or_creatable(path: &Path) -> bool {
 pub fn existing_file_or_dir_is_writable(path: &Path) -> bool {
     match fs::metadata(path) {
         Ok(md) => {
-            // If the path is marked as read-only, we can know early.
-            if md.permissions().readonly() {
-                return false;
-            }
-            // Not read-only, but we can still have a permission issues.
+            // Check if we can write.
+            // IMPORTANT: We must not check the readonly flag! See https://github.com/helgoboss/reaboot/issues/16.
             if md.is_dir() {
                 // It's a directory. Attempt to write a temporary dir.
                 tempdir::TempDir::new_in(path, "reaboot-check-").is_ok()
