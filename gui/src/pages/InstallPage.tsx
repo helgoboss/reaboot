@@ -72,7 +72,7 @@ export function InstallPage() {
                                             </li>
                                             <li>
                                                 <b>Platform:</b>
-                                                <span class="font-mono">{resolvedConfig.platform}</span>
+                                                <span class="font-mono ml-1">{resolvedConfig.platform}</span>
                                             </li>
                                             <li>
                                                 Packages which are already installed will be
