@@ -6,7 +6,15 @@ import {Toast, toaster} from "@kobalte/core";
 import {FaSolidX} from "solid-icons/fa";
 
 export function showError(message: any) {
-    showToast("alert-error", message);
+    showDialog<boolean>({
+        title: "Error",
+        content: <p class="text-center">{message}</p>,
+        buildButtons: (close) => {
+            return <>
+                <button class="btn" onClick={() => close(false)}>Close</button>
+            </>;
+        }
+    });
 }
 
 export function showInfo(message: any) {
