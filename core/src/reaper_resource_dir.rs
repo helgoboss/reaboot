@@ -17,6 +17,12 @@ impl ReaperResourceDir {
         let absolute_dir = if dir.exists() {
             // Dir exists
             ensure!(dir.is_dir(), "REAPER resource dir is a file");
+            // Prevent the user from accidentally picking a main REAPER installation
+            ensure!(
+                contains_reaper_ini_or_is_empty(&dir),
+                "This doesn't look like a portable REAPER installation. Either select a valid portable REAPER installation (directory must contain a \"reaper.ini\" file) or an empty directory (to create a new portable installation)!"
+            );
+            // Make canonical
             dunce::canonicalize(dir)?
         } else if dir.is_absolute() {
             // Dir doesn't exist and is absolute. Make sure that this actually can be
@@ -109,3 +115,11 @@ pub const REAPER_INI_FILE_PATH: &str = "reaper.ini";
 pub const REAPACK_REGISTRY_DB_FILE_PATH: &str = "ReaPack/registry.db";
 pub const REAPACK_CACHE_DIR_PATH: &str = "ReaPack/Cache";
 pub const REAPACK_INI_FILE_PATH: &str = "reapack.ini";
+
+fn contains_reaper_ini_or_is_empty(dir: &Path) -> bool {
+    dir.join("reaper.ini").exists() || dir_is_empty(dir)
+}
+
+fn dir_is_empty(dir: &Path) -> bool {
+    fs::read_dir(dir).is_ok_and(|mut d| d.next().is_none())
+}

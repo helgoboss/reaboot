@@ -33,5 +33,6 @@ export async function configureInstaller(args: PatchConfigurationArgs) {
         mainStore.setInstallerConfig(newConfig);
     } catch (e) {
         showError(e);
+        throw e;
     }
 }

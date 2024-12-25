@@ -90,20 +90,24 @@ export function PickReaperPage() {
 }
 
 async function configurePortable(forcePick: boolean) {
-    if (forcePick || !mainStore.state.lastPickedPortableReaperDir) {
-        await pickPortableReaperDir();
+    const lastPickedPortableReaperDir = mainStore.state.lastPickedPortableReaperDir;
+    const portableReaperDir = forcePick || !lastPickedPortableReaperDir ? await pickPortableReaperDir() : lastPickedPortableReaperDir;
+    if (!portableReaperDir) {
+        return;
     }
-    configureInstaller({customReaperResourceDir: mainStore.state.lastPickedPortableReaperDir});
+    await configureInstaller({customReaperResourceDir: portableReaperDir});
+    // Only when configuration successful, memorize directory
+    mainStore.setLastPickedPortableReaperDir(portableReaperDir);
 }
 
-async function pickPortableReaperDir() {
+async function pickPortableReaperDir(): Promise<string | null> {
     const chosenDir = await open({
         title: "Pick the root directory of your portable REAPER installation!",
         multiple: false,
         directory: true,
     });
     if (chosenDir == null || Array.isArray(chosenDir)) {
-        return;
+        return null;
     }
-    mainStore.setLastPickedPortableReaperDir(chosenDir);
+    return chosenDir;
 }
