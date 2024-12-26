@@ -89,6 +89,7 @@ pub async fn install(args: InstallArgs) -> anyhow::Result<()> {
         skip_failed_packages: args.skip_failed_packages,
         recipe: None,
         selected_features: Default::default(),
+        install_reaper: None,
         install_reapack: None,
     };
     let (interaction_sender, interaction_receiver) = tokio::sync::broadcast::channel(10);
@@ -104,9 +105,11 @@ pub async fn install(args: InstallArgs) -> anyhow::Result<()> {
     let installer = Installer::new(installer_new_args).await?;
     // Show REAPER EULA if necessary
     let skip_license_prompts = args.non_interactive || args.accept_licenses;
+    let resolved_config = installer.resolved_config();
     if !skip_license_prompts
-        && installer.reaper_is_installable()
-        && !installer.resolved_config().reaper_exe_exists
+        && !resolved_config.reaper_exe_exists
+        && resolved_config.reaper_is_installable
+        && resolved_config.install_reaper
         && !confirm_license().await?
     {
         println!("You haven't agreed to the license terms. Exiting.");

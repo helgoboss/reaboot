@@ -4,6 +4,8 @@ import {showDialog} from "../components/GlobalDialog.tsx";
 import {createResource, Match, Switch} from "solid-js";
 import {Toast, toaster} from "@kobalte/core";
 import {FaSolidX} from "solid-icons/fa";
+import {ResolvedInstallerConfig} from "../../src-tauri/bindings/ResolvedInstallerConfig.ts";
+import {configureInstaller} from "./install.ts";
 
 export function showError(message: any) {
     showDialog<boolean>({
@@ -44,6 +46,31 @@ function showToast(clazz: string, message: string) {
             </div>
         </Toast.Root>
     ));
+}
+
+async function confirmReaperInstall(resolvedConfig: ResolvedInstallerConfig): Promise<boolean> {
+    const yes = await showDialog<boolean>({
+        title: "Install REAPER?",
+        fullScreen: false,
+        content: <div class="text-center">
+            <p>
+                We found REAPER configuration files on your disk, but we couldn't detect an existing installation at:
+            </p>
+            <p class="mt-2 font-mono">{resolvedConfig.reaper_exe}</p>
+            <p class="mt-2">
+                Would you like to install REAPER at this default location?
+            </p>
+        </div>,
+        buildButtons: (close) => {
+            return <>
+                <button class="btn" onClick={() => close(true)}>Yes, please install it!</button>
+                <button class="btn btn-primary" onClick={() => close(false)}>
+                    No, it's already installed!
+                </button>
+            </>;
+        }
+    });
+    return yes || false
 }
 
 async function confirmReaperEula(): Promise<boolean> {
@@ -126,15 +153,37 @@ export function getPage(pageId: PageId) {
 }
 
 async function ensureUserAgreedToEula(): Promise<boolean> {
-    if (mainStore.state.resolvedConfig?.reaper_exe_exists) {
+    const resolvedConfig = mainStore.state.resolvedConfig;
+    if (!resolvedConfig) {
+        return false;
+    }
+    if (resolvedConfig.reaper_exe_exists) {
         // If REAPER is already installed, we are not going to install REAPER from scratch, so we don't need
         // to let the user confirm the EULA again.
         return true;
+    }
+    if (!resolvedConfig.install_reaper) {
+        // If REAPER has opted out from installing REAPER, there's also no need to get an agreement.
+        return true;
+    }
+    if (!resolvedConfig.portable && resolvedConfig.reaper_ini_exists
+        && mainStore.state.installerConfig.install_reaper === undefined) {
+        // ReaBoot detected an existing main REAPER resource path but no main binaries, at least not at their default
+        // location. Ask user if he wants to install REAPER.
+        const installReaper = await confirmReaperInstall(resolvedConfig);
+        await configureInstaller({
+            installReaper
+        });
+        if (!installReaper) {
+            // User opted out from REAPER installation
+            return true;
+        }
     }
     if (mainStore.state.agreedToReaperEula) {
         // User agreed to EULA within this ReaBoot session
         return true;
     }
+    // User has not opted out from REAPER install and not confirmed the EULA yet. Display dialog.
     if (await confirmReaperEula()) {
         mainStore.agreeToEula();
         return true;

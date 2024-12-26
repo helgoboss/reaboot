@@ -20,14 +20,7 @@ export function PickReaperPage() {
     return (
         <Page>
             <p class="text-center font-bold">
-                <Switch>
-                    <Match when={backendInfo.main_reaper_exe_exists}>
-                        Which REAPER installation do you want to modify?
-                    </Match>
-                    <Match when={true}>
-                        Do you want to create a new main REAPER installation or pick a portable one?
-                    </Match>
-                </Switch>
+                Which type of REAPER installation would you like to set up?
             </p>
             <div class="grow my-4 flex flex-col items-center justify-center">
                 <ProminentChoice selected={!resolvedConfig.portable}
@@ -39,7 +32,7 @@ export function PickReaperPage() {
                     </h2>
                     <p class="text-base-content/50">
                         <Switch>
-                            <Match when={backendInfo.main_reaper_exe_exists}>
+                            <Match when={backendInfo.main_reaper_exe_exists || backendInfo.main_reaper_ini_exists}>
                                 Add packages to your existing main REAPER installation.
                             </Match>
                             <Match when={true}>

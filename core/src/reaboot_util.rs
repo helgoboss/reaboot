@@ -115,6 +115,8 @@ pub async fn resolve_config(config: InstallerConfig) -> anyhow::Result<ResolvedI
         reaper_resource_dir,
         reaper_exe,
         portable,
+        // An automated main installation is only possible on Windows
+        reaper_is_installable: portable || cfg!(target_os = "windows"),
         platform: reaper_platform,
         package_urls: package_urls.into_iter().collect(),
         backup_dir,
@@ -128,6 +130,7 @@ pub async fn resolve_config(config: InstallerConfig) -> anyhow::Result<ResolvedI
             .unwrap_or(DEFAULT_CONCURRENT_DOWNLOADS),
         dry_run: config.dry_run,
         reaper_version: config.reaper_version.unwrap_or_default(),
+        install_reaper: config.install_reaper.unwrap_or(true),
         update_reaper: config.update_reaper,
         skip_failed_packages: config.skip_failed_packages,
         recipe: config.recipe,
@@ -169,7 +172,7 @@ pub async fn complain_if_reapack_db_too_new(
 pub async fn determine_initial_installation_stage(
     resolved_config: &ResolvedInstallerConfig,
 ) -> anyhow::Result<InstallationStage> {
-    let reaper_installed = resolved_config.reaper_exe_exists;
+    let reaper_installed = resolved_config.reaper_exe_exists || !resolved_config.install_reaper;
     if !reaper_installed {
         return Ok(InstallationStage::NothingInstalled);
     };

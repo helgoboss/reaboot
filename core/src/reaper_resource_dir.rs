@@ -20,7 +20,7 @@ impl ReaperResourceDir {
             // Prevent the user from accidentally picking a main REAPER installation
             ensure!(
                 contains_reaper_ini_or_is_empty(&dir),
-                "This doesn't look like a portable REAPER installation. Either select a valid portable REAPER installation (directory must contain a \"reaper.ini\" file) or an empty directory (to create a new portable installation)!"
+                "This doesn't appear to be a portable REAPER installation. Please select a valid portable installation (directory must contain a 'reaper.ini' file) or an empty directory to create a new portable installation."
             );
             // Make canonical
             dunce::canonicalize(dir)?

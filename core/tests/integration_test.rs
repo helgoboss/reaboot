@@ -218,8 +218,8 @@ impl TestCase {
         let installer = reaboot_core::installer::Installer::new(installer_new_args)
             .await
             .unwrap();
-        assert!(installer.reaper_is_installable());
         let resolved_config = installer.resolved_config();
+        assert!(resolved_config.reaper_is_installable);
         assert_eq!(resolved_config.reaper_exe_exists, true);
         assert_eq!(resolved_config.reaper_ini_exists, true);
         assert_eq!(resolved_config.portable, true);

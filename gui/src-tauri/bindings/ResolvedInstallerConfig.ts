@@ -39,6 +39,10 @@ reaper_exe_exists: boolean,
  */
 portable: boolean, 
 /**
+ * Whether ReaBoot would be capable of installing REAPER automatically.
+ */
+reaper_is_installable: boolean, 
+/**
  * Resolved REAPER platform.
  */
 platform: ReaperPlatform, 
@@ -52,4 +56,8 @@ package_urls: Array<PackageUrl>,
 /**
  * Directory into which ReaBoot writes backups of modified configuration files.
  */
-backup_dir: string, num_download_retries: number, temp_parent_dir: string, keep_temp_dir: boolean, concurrent_downloads: number, dry_run: boolean, reaper_version: VersionRef, skip_failed_packages: boolean, update_reaper: boolean, install_reapack: boolean, recipe?: Recipe, };
+backup_dir: string, num_download_retries: number, temp_parent_dir: string, keep_temp_dir: boolean, concurrent_downloads: number, dry_run: boolean, reaper_version: VersionRef, skip_failed_packages: boolean, 
+/**
+ * Whether to install REAPER if necessary.
+ */
+install_reaper: boolean, update_reaper: boolean, install_reapack: boolean, recipe?: Recipe, };

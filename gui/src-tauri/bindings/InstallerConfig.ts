@@ -88,6 +88,13 @@ recipe?: Recipe,
  */
 selected_features: Array<string>, 
 /**
+ * Whether to install REAPER or not if ReaBoot detects that it's missing (by default true).
+ *
+ * Important because ReaBoot's detection can only detect main installations in the default
+ * location.
+ */
+install_reaper?: boolean, 
+/**
  * Update REAPER if there's a new version available (by default false).
  */
 update_reaper: boolean, 

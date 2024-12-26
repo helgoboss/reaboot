@@ -106,6 +106,12 @@ pub struct InstallerConfig {
     ///
     /// Features not contained in the recipe will be ignored.
     pub selected_features: HashSet<String>,
+    /// Whether to install REAPER or not if ReaBoot detects that it's missing (by default true).
+    ///
+    /// Important because ReaBoot's detection can only detect main installations in the default
+    /// location.
+    #[ts(optional)]
+    pub install_reaper: Option<bool>,
     /// Update REAPER if there's a new version available (by default false).
     pub update_reaper: bool,
     /// Install ReaPack (by default true).
@@ -135,6 +141,8 @@ pub struct ResolvedInstallerConfig {
     /// Whether the resolved REAPER resource directory belongs to the main REAPER installation
     /// or to a portable REAPER installation.
     pub portable: bool,
+    /// Whether ReaBoot would be capable of installing REAPER automatically.
+    pub reaper_is_installable: bool,
     /// Resolved REAPER platform.
     pub platform: ReaperPlatform,
     /// Resolved package URLs.
@@ -151,6 +159,8 @@ pub struct ResolvedInstallerConfig {
     pub dry_run: bool,
     pub reaper_version: VersionRef,
     pub skip_failed_packages: bool,
+    /// Whether to install REAPER if necessary.
+    pub install_reaper: bool,
     pub update_reaper: bool,
     pub install_reapack: bool,
     #[ts(optional)]

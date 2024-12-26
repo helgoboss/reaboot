@@ -7,6 +7,7 @@ type PatchConfigurationArgs = {
     customReaperResourceDir?: string | null,
     packageUrls?: string[],
     selectedFeatures?: string[],
+    installReaper?: boolean,
     updateReaper?: boolean,
 };
 
@@ -25,6 +26,7 @@ export async function configureInstaller(args: PatchConfigurationArgs) {
         custom_reaper_resource_dir: args.customReaperResourceDir === undefined ? oldConfig.custom_reaper_resource_dir : (args.customReaperResourceDir ?? undefined),
         package_urls: args.packageUrls ?? oldConfig.package_urls,
         selected_features: args.selectedFeatures ?? oldConfig.selected_features,
+        install_reaper: args.installReaper ?? oldConfig.install_reaper,
         update_reaper: args.updateReaper ?? oldConfig.update_reaper,
     };
     try {

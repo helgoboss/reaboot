@@ -120,12 +120,6 @@ impl<L: InstallerListener> Installer<L> {
         Ok(installer)
     }
 
-    /// Returns whether ReaBoot is capable of installing REAPER automatically.
-    pub fn reaper_is_installable(&self) -> bool {
-        // An automated main installation is only possible on Windows
-        self.resolved_config.portable || cfg!(target_os = "windows")
-    }
-
     pub fn resolved_config(&self) -> &ResolvedInstallerConfig {
         &self.resolved_config
     }
@@ -768,7 +762,9 @@ impl<L: InstallerListener> Installer<L> {
     async fn download_and_prepare_reaper_if_necessary(
         &self,
     ) -> anyhow::Result<Option<ReaperPreparationOutcome>> {
-        if self.resolved_config.reaper_exe_exists && !self.resolved_config.update_reaper {
+        if (self.resolved_config.reaper_exe_exists && !self.resolved_config.update_reaper)
+            || (!self.resolved_config.reaper_exe_exists && !self.resolved_config.install_reaper)
+        {
             return Ok(None);
         }
         // Check for latest REAPER version
@@ -837,7 +833,7 @@ impl<L: InstallerListener> Installer<L> {
         &self,
         reaper_download: ToolDownload,
     ) -> anyhow::Result<ReaperPreparationOutcome> {
-        if !self.reaper_is_installable() {
+        if !self.resolved_config.reaper_is_installable {
             let outcome = ReaperPreparationOutcome::InstallManually(reaper_download);
             return Ok(outcome);
         }
