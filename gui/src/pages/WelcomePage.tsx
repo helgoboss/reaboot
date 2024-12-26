@@ -60,7 +60,7 @@ export function WelcomePage() {
                                         </p>
                                         <ButtonRow>
                                             <Help
-                                                help="ReaBoot's default recipe allows to you to install some of the most popular REAPER scripts and extensions out there!">
+                                                help="ReaBoot's default recipe allows to you to install some of the most popular REAPER extensions out there!">
                                                 <button class="btn btn-accent btn-xs mt-2"
                                                         onClick={() => applyRecipeFromText(RECIPE_DEFAULT_URL)}>
                                                     Use default recipe
