@@ -12,7 +12,7 @@ import {showToast} from "../util/toast-util";
 import {Help} from "reaboot-commons/src/components/Help";
 import {ReapackRef} from "reaboot-commons/src/components/ReapackRef";
 
-const LATEST_REABOOT_VERSION = "1.1.2";
+const LATEST_REABOOT_VERSION = "1.2.0";
 
 export function InstallViaReaboot(props: { recipe: ParsedRecipe }) {
     const osName = UA_PARSER_RESULT.os.name;
