@@ -1,0 +1,6 @@
+[build]
+command = "npm run build"
+
+[deploy]
+source = "dist"
+subdomain = "www.reaboot.com"
