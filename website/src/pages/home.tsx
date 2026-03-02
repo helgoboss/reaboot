@@ -50,7 +50,7 @@ export default function Home() {
                                 </Tabs.Content>
                                 <Tabs.Content value="dev" class="flex flex-col">
                                     <h3 class="font-bold text-lg text-center">Already familiar with ReaBoot?</h3>
-                                    <div class="mt-6 text-center">
+                                    <div className="mt-6 text-center">
                                         <A href="/share" class="btn btn-secondary">Start creating installation
                                             links!</A>
                                     </div>
@@ -81,7 +81,7 @@ export default function Home() {
                                         The following links are example links, solely made for demonstrating ReaBoot's
                                         features. Don't share them!
                                     </p>
-                                    <div class="mt-6 flex flex-wrap justify-center gap-4">
+                                    <div className="mt-6 flex flex-wrap justify-center gap-4">
                                         <Index each={examples}>
                                             {example =>
                                                 <RecipeLink href={example()[2]} class={example()[1]}>
@@ -91,14 +91,23 @@ export default function Home() {
                                         </Index>
                                     </div>
                                     <h3 class="mt-6 font-bold text-lg text-center">Introduction video</h3>
-                                    <iframe
-                                        class="mt-6 w-full aspect-video"
-                                        width="560" height="315"
-                                        src="https://www.youtube-nocookie.com/embed/LFveUpUrHFA?si=04UBLIDqVSpfjMXD"
-                                        title="YouTube video player"
-                                        frameborder="0"
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                        referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+                                    <div class="not-prose relative cursor-pointer w-full aspect-video group my-4">
+                                        <a href="https://youtu.be/LFveUpUrHFA"
+                                           target="_blank" rel="noopener noreferrer" class="mt-6"><img
+                                            src="https://img.youtube.com/vi/LFveUpUrHFA/maxresdefault.jpg"
+                                            alt="Introduction video on YouTube"
+                                            class="w-full object-cover rounded-lg shadow-xl "/>
+                                            <div
+                                                class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition-transform duration-200 group-hover:scale-110">
+                                                <svg viewBox="0 0 68 48" width="68" height="48">
+                                                    <path
+                                                        d="M66.52,7.74c-0.78-2.93-2.49-5.41-5.42-6.19C55.79,.13,34,0,34,0S12.21,.13,6.9,1.55 C3.97,2.33,2.27,4.81,1.48,7.74C0.06,13.05,0,24,0,24s0.06,10.95,1.48,16.26c0.78,2.93,2.49,5.41,5.42,6.19 C12.21,47.87,34,48,34,48s21.79-0.13,27.1-1.55c2.93-0.78,4.64-3.26,5.42-6.19C67.94,34.95,68,24,68,24S67.94,13.05,66.52,7.74z"
+                                                        fill="#f00"></path>
+                                                    <path d="M 45,24 27,14 27,34" fill="#fff"></path>
+                                                </svg>
+                                            </div>
+                                        </a>
+                                    </div>
                                 </Tabs.Content>
                             </div>
                         </div>
